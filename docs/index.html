@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monthly ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --pad:#e6ece4;        /* columnar pad ground */
+    --pad-rule:#c3d0c0;   /* printed rule */
+    --ink:#14201c;        /* ledger ink */
+    --ink-soft:#5d6d66;
+    --black:#14201c;      /* in the black */
+    --red:#a32c1c;        /* in the red */
+    --sheet:#f4f7f2;
+  }
+
+  *{box-sizing:border-box}
+
+  html{-webkit-text-size-adjust:100%}
+
+  body{
+    margin:0;
+    background:var(--pad);
+    color:var(--ink);
+    font-family:"IBM Plex Sans",system-ui,sans-serif;
+    font-size:16px;
+    line-height:1.5;
+    font-variant-numeric:tabular-nums;
+    padding:clamp(20px,5vw,64px) clamp(16px,4vw,32px);
+  }
+
+  main{max-width:860px;margin:0 auto}
+
+  /* ---- masthead ---- */
+  .masthead{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:12px;
+    padding-bottom:14px;
+    border-bottom:2px solid var(--ink);
+  }
+  .masthead h1{
+    font-size:19px;
+    font-weight:600;
+    letter-spacing:-0.01em;
+    margin:0;
+  }
+  .stamp{font-size:13px;color:var(--ink-soft)}
+
+  /* ---- month tabs ---- */
+  .months{
+    display:flex;
+    flex-wrap:wrap;
+    gap:2px;
+    margin:0;
+    padding:0;
+    list-style:none;
+  }
+  .months button{
+    font:inherit;
+    font-weight:500;
+    color:var(--ink-soft);
+    background:none;
+    border:none;
+    border-bottom:2px solid transparent;
+    padding:14px 16px 11px;
+    cursor:pointer;
+    text-transform:capitalize;
+  }
+  .months button:hover{color:var(--ink)}
+  .months button[aria-current="true"]{
+    color:var(--ink);
+    border-bottom-color:var(--ink);
+  }
+  .months button:focus-visible{
+    outline:2px solid var(--ink);
+    outline-offset:-2px;
+  }
+
+  /* ---- result ---- */
+  .result{padding:38px 0 30px;border-bottom:1px solid var(--pad-rule)}
+  .result-label{font-size:14px;color:var(--ink-soft);margin:0 0 6px}
+  .result-figure{
+    font-size:clamp(46px,11vw,82px);
+    font-weight:600;
+    letter-spacing:-0.035em;
+    line-height:1;
+    margin:0;
+  }
+  .result-figure.loss{color:var(--red)}
+  .result-note{font-size:15px;color:var(--ink-soft);margin:12px 0 0}
+
+  /* ---- allocation bar ---- */
+  .allocation{padding:30px 0;border-bottom:1px solid var(--pad-rule)}
+  .bar{
+    display:flex;
+    height:34px;
+    background:var(--sheet);
+    overflow:hidden;
+  }
+  .bar span{
+    display:block;
+    border-right:1px solid var(--pad);
+  }
+  .bar span:last-child{border-right:none}
+  .seg-direct{background:#2f4a41}
+  .seg-operating{background:#5c7a6d}
+  .seg-varoh{background:#93ab9b}
+  .seg-fixoh{background:#c2d1c3}
+  .seg-profit{background:transparent}
+  .seg-loss{background:repeating-linear-gradient(135deg,var(--red),var(--red) 3px,#c4523f 3px,#c4523f 6px)}
+
+  .key{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px 22px;
+    margin:14px 0 0;
+    padding:0;
+    list-style:none;
+    font-size:14px;
+  }
+  .key li{display:flex;align-items:center;gap:8px}
+  .key i{width:11px;height:11px;flex:none}
+  .key b{font-weight:500;color:var(--ink-soft)}
+
+  /* ---- ledger ---- */
+  table{width:100%;border-collapse:collapse;margin:30px 0 0}
+  caption{
+    text-align:left;
+    font-size:14px;
+    color:var(--ink-soft);
+    padding-bottom:10px;
+  }
+  th,td{
+    padding:9px 0;
+    border-bottom:1px solid var(--pad-rule);
+    font-weight:400;
+    text-align:right;
+  }
+  th{text-align:left;font-weight:400}
+  thead th{font-size:14px;color:var(--ink-soft);border-bottom-color:var(--ink)}
+  tbody tr:nth-child(odd) th,
+  tbody tr:nth-child(odd) td{background:var(--sheet)}
+  th,td{padding-left:10px;padding-right:10px}
+  .group th,.group td{
+    font-weight:600;
+    border-bottom:2px solid var(--ink);
+  }
+  .indent{padding-left:26px;color:var(--ink-soft)}
+  .total th,.total td{font-weight:600;border-bottom:3px double var(--ink)}
+  .neg{color:var(--red)}
+
+  /* ---- budget ---- */
+  .budget{margin:30px 0 0}
+  .budget-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:16px;
+    font-size:15px;
+  }
+  .budget-head strong{font-weight:600}
+  .gauge{
+    position:relative;
+    height:10px;
+    background:var(--sheet);
+    margin-top:10px;
+  }
+  .gauge-fill{height:100%;background:var(--black)}
+  .gauge-fill.over{background:var(--red)}
+  .gauge-mark{
+    position:absolute;
+    top:-4px;
+    bottom:-4px;
+    width:1px;
+    background:var(--ink);
+  }
+
+  .notice{
+    padding:20px;
+    background:var(--sheet);
+    border-left:3px solid var(--red);
+    font-size:15px;
+  }
+  .notice code{font-size:14px}
+
+  footer{
+    margin-top:36px;
+    padding-top:16px;
+    border-top:1px solid var(--pad-rule);
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+
+  @media (max-width:560px){
+    .result-figure{letter-spacing:-0.03em}
+    .months button{padding:12px 11px 9px;font-size:15px}
+    th,td{padding-left:4px;padding-right:4px;font-size:15px}
+    .indent{padding-left:14px}
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="masthead">
+    <h1>Monthly ledger</h1>
+    <span class="stamp" id="stamp"></span>
+  </div>
+
+  <ul class="months" id="months"></ul>
+  <div id="sheet"></div>
+
+  <footer id="footer"></footer>
+</main>
+
+<script>
+/* Fallback so the page still works when opened directly from the file system,
+   where fetch() is blocked. Replaced by data.json whenever it loads. */
+const FALLBACK = {
+  generated: "sample data",
+  months: [
+    {month:"july",monthNum:7,revenue:72000,cogs:26000,labor:12000,utilities:2800,
+     maintenance:950,hardware:0,directExpenses:45500,operatingExpenses:7750,
+     variableOverhead:3750,fixedOverhead:7420,totalExpenses:64420,
+     grossProfit:26500,netProfit:7580,budget:66000,budgetPercent:97.61},
+    {month:"august",monthNum:8,revenue:64000,cogs:21000,labor:9000,utilities:3100,
+     maintenance:4200,hardware:0,directExpenses:37500,operatingExpenses:6160,
+     variableOverhead:7300,fixedOverhead:7620,totalExpenses:58580,
+     grossProfit:26500,netProfit:5420,budget:57000,budgetPercent:102.77},
+    {month:"september",monthNum:9,revenue:33000,cogs:11000,labor:3500,utilities:1900,
+     maintenance:310,hardware:2400,directExpenses:20200,operatingExpenses:5560,
+     variableOverhead:2210,fixedOverhead:8670,totalExpenses:36640,
+     grossProfit:12800,netProfit:-3640,budget:34000,budgetPercent:107.76}
+  ]
+};
+
+const money = n => (n < 0 ? "−" : "") + "$" +
+  Math.abs(n).toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
+
+const pct = (part, whole) => whole ? (part / whole) * 100 : 0;
+const fmtPct = n => n.toFixed(1) + "%";
+
+let data, active;
+
+function row(label, amount, revenue, cls = "") {
+  const share = revenue ? fmtPct(pct(amount, revenue)) : "—";
+  return `<tr class="${cls}">
+    <th scope="row">${label}</th>
+    <td>${money(amount)}</td>
+    <td>${share}</td>
+  </tr>`;
+}
+
+function draw(m) {
+  const rev = m.revenue;
+  const net = m.netProfit;
+  const loss = net < 0;
+
+  // Allocation bar: each bucket as a share of revenue, profit as the remainder.
+  const segs = [
+    ["direct",    "Direct",            m.directExpenses],
+    ["operating", "Operating",         m.operatingExpenses],
+    ["varoh",     "Variable overhead", m.variableOverhead],
+    ["fixoh",     "Fixed overhead",    m.fixedOverhead]
+  ];
+  const bar = segs.map(([k,, v]) =>
+    `<span class="seg-${k}" style="width:${pct(v, rev)}%"></span>`).join("");
+  const tail = loss
+    ? `<span class="seg-loss" style="width:${pct(Math.abs(net), rev)}%"></span>`
+    : `<span class="seg-profit" style="width:${pct(net, rev)}%"></span>`;
+
+  const key = segs.map(([k, name, v]) =>
+    `<li><i class="seg-${k}"></i><b>${name}</b> ${fmtPct(pct(v, rev))}</li>`).join("");
+
+  const overBy = m.totalExpenses - m.budget;
+  const used = m.budgetPercent;
+
+  document.getElementById("sheet").innerHTML = `
+    <section class="result">
+      <p class="result-label">${m.month.charAt(0).toUpperCase() + m.month.slice(1)} net result</p>
+      <p class="result-figure${loss ? " loss" : ""}">${money(net)}</p>
+      <p class="result-note">
+        ${fmtPct(pct(net, rev))} of ${money(rev)} in revenue.
+        ${loss
+          ? `Costs exceeded revenue by ${money(Math.abs(net))}.`
+          : `Kept ${money(net)} after every cost.`}
+      </p>
+    </section>
+
+    <section class="allocation">
+      <div class="bar">${bar}${tail}</div>
+      <ul class="key">${key}
+        <li><i style="background:${loss ? "var(--red)" : "var(--pad)"};
+               border:1px solid var(--pad-rule)"></i>
+            <b>${loss ? "Shortfall" : "Profit"}</b> ${fmtPct(Math.abs(pct(net, rev)))}</li>
+      </ul>
+    </section>
+
+    <table>
+      <caption>Every cost, as dollars and as a share of revenue</caption>
+      <thead>
+        <tr><th scope="col">Line</th><th scope="col">Amount</th><th scope="col">Of revenue</th></tr>
+      </thead>
+      <tbody>
+        ${row("Revenue", rev, rev, "group")}
+
+        ${row("Direct expenses", m.directExpenses, rev, "group")}
+        ${row("Cost of goods sold", m.cogs, rev, "indent-row")}
+        ${row("Labor", m.labor, rev, "indent-row")}
+
+        ${row("Operating expenses", m.operatingExpenses, rev, "group")}
+        ${row("Hardware", m.hardware, rev, "indent-row")}
+
+        ${row("Variable overhead", m.variableOverhead, rev, "group")}
+        ${row("Utilities", m.utilities, rev, "indent-row")}
+        ${row("Maintenance", m.maintenance, rev, "indent-row")}
+
+        ${row("Fixed overhead", m.fixedOverhead, rev, "group")}
+
+        ${row("Total expenses", m.totalExpenses, rev, "total")}
+        <tr class="total">
+          <th scope="row">Net profit</th>
+          <td class="${loss ? "neg" : ""}">${money(net)}</td>
+          <td class="${loss ? "neg" : ""}">${fmtPct(pct(net, rev))}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <section class="budget">
+      <div class="budget-head">
+        <span>Budget <strong>${money(m.budget)}</strong></span>
+        <span>
+          <strong class="${used > 100 ? "neg" : ""}">${fmtPct(used)} used</strong>
+          — ${overBy > 0 ? money(overBy) + " over" : money(-overBy) + " left"}
+        </span>
+      </div>
+      <div class="gauge">
+        <div class="gauge-fill${used > 100 ? " over" : ""}"
+             style="width:${Math.min(used, 100)}%"></div>
+        ${used > 100 ? '<div class="gauge-mark" style="left:100%"></div>' : ""}
+      </div>
+    </section>`;
+
+  // Indent the component rows under their bucket heading.
+  document.querySelectorAll(".indent-row th").forEach(th => th.classList.add("indent"));
+}
+
+function build() {
+  const list = document.getElementById("months");
+  list.innerHTML = data.months.map(m =>
+    `<li><button type="button" data-num="${m.monthNum}">${m.month}</button></li>`).join("");
+
+  list.addEventListener("click", e => {
+    const btn = e.target.closest("button");
+    if (btn) select(Number(btn.dataset.num));
+  });
+
+  document.getElementById("stamp").textContent = data.generated
+    ? "Generated " + data.generated : "";
+  document.getElementById("footer").textContent =
+    "Figures come from data.json, written by the Java dashboard on each run.";
+
+  select(data.months[0].monthNum);
+}
+
+function select(num) {
+  active = data.months.find(m => m.monthNum === num);
+  document.querySelectorAll(".months button").forEach(b =>
+    b.setAttribute("aria-current", Number(b.dataset.num) === num));
+  draw(active);
+}
+
+fetch("data.json")
+  .then(r => r.ok ? r.json() : Promise.reject(r.status))
+  .then(json => { data = json; build(); })
+  .catch(() => {
+    data = FALLBACK;
+    build();
+    document.getElementById("footer").innerHTML =
+      'Showing sample figures. <code>data.json</code> could not be loaded — ' +
+      'serve this folder over http (<code>python3 -m http.server</code>) ' +
+      'or place data.json alongside this file.';
+    document.getElementById("footer").classList.add("notice");
+  });
+</script>
+</body>
+</html>

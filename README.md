@@ -20,8 +20,8 @@ javac -d bin CFODashboard.java Expenses.java && java -cp bin CFODashboard
 ```
 
 > **Run from the project root.** The CSV paths (`data/expenses.csv`, `data/dashboard.csv`)
-> are relative to the working directory. In VS Code, the included `.vscode/launch.json`
-> config named **CFODashboard** already handles this.
+> are relative to the working directory, so running from anywhere else will fail to
+> find them.
 
 ## Example usage
 
@@ -143,8 +143,10 @@ month num,cogs,packaging,rent,utilities,maintenance,hardware,insurance,marketing
 double counting — so the four category totals sum to total expenses, and revenue minus
 total expenses equals net profit.
 
-Column order matters: the parser reads by index, not by header name. Reordering columns
-will silently load values into the wrong fields rather than throwing an error.
+Column order matters **to the Java app**: it reads fields by index, not by header name,
+so reordering columns silently loads values into the wrong fields rather than throwing
+an error. The browser loader is the opposite — it matches on header names, so it
+tolerates reordering but needs the headers spelled exactly as above.
 
 Parsing notes:
 
@@ -234,8 +236,10 @@ choices, and changing one mid-year makes months incomparable.
 ## JSON output
 
 Every run writes `docs/data.json` — the same months and metrics in machine-readable
-form, for charting or a web front end. All calculations happen in Java, so the JSON
-carries finished values and consumers never recompute them.
+form, for charting or a web front end. The JSON carries finished values rather than raw
+inputs, so a consumer never has to recompute them. (The one exception is the browser
+loader described under [Without recompiling](#without-recompiling), which runs the same
+arithmetic itself when you hand it CSVs directly.)
 
 ```json
 {
@@ -263,6 +267,27 @@ carries finished values and consumers never recompute them.
   ]
 }
 ```
+
+## Web dashboard
+
+`docs/index.html` renders the same figures as a web page, published by GitHub Pages
+from the `/docs` folder on `main`:
+
+**<https://spinfern-o.github.io/FinDash/>**
+
+To view it locally, serve the folder over http and open <http://localhost:8000>:
+
+```bash
+python3 -m http.server 8000 --directory docs
+```
+
+Opening the file directly (a `file://` URL) will not work: browsers block `fetch()`
+there, so `data.json` never loads and the page falls back to built-in sample figures
+with a notice in the footer.
+
+The local server reads files off disk, so whatever branch is checked out is what it
+serves. That is how a branch gets tested before it reaches `main` — GitHub Pages only
+ever builds `main`, so a branch is never reachable at the public URL.
 
 ## Using your own numbers
 
@@ -293,8 +318,8 @@ totals stay meaningful.
 CFODashboard.java   Main class: CSV loading, metrics, prompts, display, comparison
 Expenses.java       Per-month expense record with getters and derived sums
 data/               Input CSVs
+docs/               Published by GitHub Pages from the /docs folder on main
 docs/data.json      Generated on every run
-docs/index.html     Web dashboard, published by GitHub Pages from /docs
+docs/index.html     Web dashboard
 bin/                Compiled classes (git-ignored)
-.vscode/launch.json VS Code run configuration
 ```

@@ -214,7 +214,7 @@
   .gauge-foot{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-3);margin-top:8px}
 
   /* ---- monthly net bars ---- */
-  .trend-scroll{overflow-x:auto;overflow-y:hidden;padding-top:24px}
+  .trend-scroll{--colw:78px;overflow-x:auto;overflow-y:hidden;padding-top:24px}
   .trend{
     display:flex;align-items:flex-end;gap:14px;height:150px;position:relative;
     min-width:max-content;
@@ -223,8 +223,17 @@
      labels do, so an auto basis would drift the two rows out of alignment.
      66px holds "September" at 12px; past that the row scrolls. */
   .trend .col{
-    flex:1 0 66px;display:flex;flex-direction:column;height:100%;position:relative;
+    flex:1 0 var(--colw);min-width:0;
+    display:flex;flex-direction:column;height:100%;position:relative;
   }
+  /* transparent overlay: the whole column is the hit target, not just the bar */
+  .trend .hit{
+    position:absolute;inset:0;width:100%;
+    background:none;border:none;padding:0;margin:0;
+    cursor:pointer;border-radius:6px;
+  }
+  .trend .hit:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .trend .col:hover .mark{filter:brightness(.94)}
   .trend .above{flex:none;display:flex;align-items:flex-end}
   .trend .below{flex:none;display:flex;align-items:flex-start}
   .trend .mark{
@@ -237,9 +246,11 @@
   .trend .zero{position:absolute;left:0;right:0;height:1px;background:var(--line)}
   .trend-labels{display:flex;gap:14px;margin-top:8px;min-width:max-content}
   .trend-labels div{
-    flex:1 0 66px;text-align:center;font-size:12px;color:var(--ink-3);
-    text-transform:capitalize;
+    flex:1 0 var(--colw);min-width:0;white-space:nowrap;
+    text-align:center;font-size:12px;color:var(--ink-3);
+    text-transform:capitalize;cursor:pointer;
   }
+  .trend-labels div:hover{color:var(--ink)}
   .trend-labels div.on{color:var(--ink);font-weight:600}
   .trend .val{
     position:absolute;left:0;right:0;text-align:center;
@@ -408,11 +419,14 @@ function trend(months, activeNum) {
         ${neg ? `<div class="mark" style="height:${h}px"></div>` : ""}
       </div>
       ${label}
+      <button type="button" class="hit" data-month="${m.monthNum}"
+              aria-label="${m.month}, net ${money0(n)}"></button>
     </div>`;
   }).join("");
 
   const labels = months.map(m =>
-    `<div class="${m.monthNum === activeNum ? "on" : ""}">${m.month}</div>`).join("");
+    `<div class="${m.monthNum === activeNum ? "on" : ""}" data-month="${m.monthNum}"
+     >${m.month}</div>`).join("");
 
   return `<div class="trend-scroll">
             <div class="trend">${cols}<div class="zero" style="top:${zero}px"></div></div>
@@ -478,8 +492,8 @@ function draw(m) {
       </section>
 
       <section class="card wide">
-        <h2>The ledger</h2>
-        <p class="sub">Every line, as dollars and as a share of revenue</p>
+        <h2>Financial Report</h2>
+        <p class="sub">Every line is the amount of dollars and the percent of the revenue</p>
         <table>
           <thead>
             <tr><th scope="col">Line</th><th scope="col">Amount</th><th scope="col">Of revenue</th></tr>
@@ -736,6 +750,12 @@ function wireLoader() {
   els.reset  = document.getElementById("reset");
   const loader = document.getElementById("loader");
   const input  = document.getElementById("file");
+
+  // #sheet is never replaced, only refilled, so one listener covers every redraw
+  document.getElementById("sheet").addEventListener("click", e => {
+    const hit = e.target.closest("[data-month]");
+    if (hit) select(Number(hit.dataset.month));
+  });
 
   document.getElementById("pick").addEventListener("click", () => input.click());
   input.addEventListener("change", e => { handleFiles(e.target.files); input.value = ""; });

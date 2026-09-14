@@ -439,7 +439,7 @@ public class CFODashboard {
             System.out.println(m.monthNum + " - " + m.month);
         }
 
-        writeJson(months, "output/data.json");
+        writeJson(months, "docs/data.json");
 
         while(true){
             CFODashboard selectedMonth = askForMonth(input, months, "Which month's dashboard do you wish to see? (month num, 0 to quit)");

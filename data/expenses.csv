@@ -1,4 +1,4 @@
-month num,cogs,rent,tax,labor,direct expenses,operating expenses
-7,26000,6000,5000,12000,40500,21000
-8,21000,6200,5500,9000,32000,16500
-9,11000,6000,5200,3500,15000,12000
+month num,cogs,packaging,rent,utilities,maintenance,hardware,insurance,marketing,credit card fees,business license,telephone,employee meals,tax,labor
+7,26000,3400,6000,2800,950,0,1100,2200,2150,0,320,2500,5000,12000
+8,21000,2600,6200,3100,4200,0,1100,1800,1760,0,320,2000,5500,9000
+9,11000,1350,6000,1900,310,2400,1100,900,910,1250,320,500,5200,3500

@@ -1,56 +1,80 @@
 {
-  "generated": "2026-09-12",
+  "generated": "2026-09-14",
   "months": [
     {
       "month": "july",
       "monthNum": 7,
-      "revenue": 100000.00,
+      "revenue": 72000.00,
+
+      "maintenance": 950.00,
+      "hardware": 0.00,
+      "utilities": 2800.00,
       "cogs": 26000.00,
-      "rent": 6000.00,
       "labor": 12000.00,
-      "totalExpenses": 61500.00,
-      "grossProfit": 59.50,
-      "netProfit": 38.50,
-      "primeCost": 38.00,
-      "foodCost": 26.00,
-      "laborCost": 12.00,
-      "occupancy": 11.00,
-      "budget": 60000.00,
-      "budgetPercent": 102.50
+
+      "grossProfit": 26500.00,
+      "netProfit": 7580.00,
+
+      "variableOverhead": 3750.00,
+      "fixedOverhead": 7420.00,
+
+      "directExpenses": 45500.00,
+      "operatingExpenses": 7750.00,
+
+      "totalExpenses": 64420.00,
+
+      "budget": 66000.00,
+      "budgetPercent": 97.61
     },
     {
       "month": "august",
       "monthNum": 8,
-      "revenue": 80000.00,
+      "revenue": 64000.00,
+
+      "maintenance": 4200.00,
+      "hardware": 0.00,
+      "utilities": 3100.00,
       "cogs": 21000.00,
-      "rent": 6200.00,
       "labor": 9000.00,
-      "totalExpenses": 48500.00,
-      "grossProfit": 60.00,
-      "netProfit": 39.38,
-      "primeCost": 37.50,
-      "foodCost": 26.25,
-      "laborCost": 11.25,
-      "occupancy": 14.63,
-      "budget": 50000.00,
-      "budgetPercent": 97.00
+
+      "grossProfit": 26500.00,
+      "netProfit": 5420.00,
+
+      "variableOverhead": 7300.00,
+      "fixedOverhead": 7620.00,
+
+      "directExpenses": 37500.00,
+      "operatingExpenses": 6160.00,
+
+      "totalExpenses": 58580.00,
+
+      "budget": 57000.00,
+      "budgetPercent": 102.77
     },
     {
       "month": "september",
       "monthNum": 9,
-      "revenue": 50000.00,
+      "revenue": 33000.00,
+
+      "maintenance": 310.00,
+      "hardware": 2400.00,
+      "utilities": 1900.00,
       "cogs": 11000.00,
-      "rent": 6000.00,
       "labor": 3500.00,
-      "totalExpenses": 27000.00,
-      "grossProfit": 70.00,
-      "netProfit": 46.00,
-      "primeCost": 29.00,
-      "foodCost": 22.00,
-      "laborCost": 7.00,
-      "occupancy": 22.40,
-      "budget": 30000.00,
-      "budgetPercent": 90.00
+
+      "grossProfit": 12800.00,
+      "netProfit": -3640.00,
+
+      "variableOverhead": 2210.00,
+      "fixedOverhead": 8670.00,
+
+      "directExpenses": 20200.00,
+      "operatingExpenses": 5560.00,
+
+      "totalExpenses": 36640.00,
+
+      "budget": 34000.00,
+      "budgetPercent": 107.76
     }
   ]
 }

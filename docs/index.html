@@ -297,8 +297,8 @@
 </main>
 
 <script>
-/* Fallback so the page still reads when opened straight off the file system,
-   where fetch() is blocked. Replaced by data.json whenever it loads. */
+// fallback for loading the real .json data after it loads
+
 const FALLBACK = {
   generated: "sample data",
   months: [
@@ -382,7 +382,7 @@ function trend(months, activeNum) {
   const top  = Math.max(0, ...nets);
   const bot  = Math.min(0, ...nets);
   const span = (top - bot) || 1;
-  const H    = 150;
+  const H    = 112; 
   const zero = (top / span) * H;
 
   const cols = months.map(m => {

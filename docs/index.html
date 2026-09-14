@@ -96,6 +96,29 @@
   }
   .filters button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 
+  /* ---- csv loader ---- */
+  .loader{
+    display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+    gap:10px 16px;background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:12px 14px 12px 18px;margin-bottom:16px;
+    transition:border-color .12s,box-shadow .12s;
+  }
+  .loader.over{border-color:var(--accent);box-shadow:0 0 0 3px var(--line-soft)}
+  .loader-text{min-width:0;font-size:13px;color:var(--ink-3)}
+  .loader-text strong{display:block;font-size:14px;font-weight:600;color:var(--ink)}
+  .loader-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .btn{
+    font:inherit;font-size:13px;font-weight:500;
+    border:1px solid var(--line);background:var(--card);color:var(--ink);
+    border-radius:10px;padding:8px 14px;cursor:pointer;
+    transition:border-color .12s,background .12s;
+  }
+  .btn:hover{border-color:var(--ink-3)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover{filter:brightness(1.06)}
+  .btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .loader-text .bad{color:var(--critical)}
+
   /* ---- cards ---- */
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
   .card{
@@ -255,6 +278,18 @@
     <span class="stamp" id="stamp"></span>
   </div>
 
+  <div class="loader" id="loader">
+    <div class="loader-text">
+      <strong id="source">Published figures</strong>
+      <span id="status">Read from data.json</span>
+    </div>
+    <div class="loader-actions">
+      <input type="file" id="file" accept=".csv,text/csv" multiple hidden>
+      <button type="button" class="btn primary" id="pick">Choose CSV files</button>
+      <button type="button" class="btn" id="reset" hidden>Use published figures</button>
+    </div>
+  </div>
+
   <ul class="filters" id="months"></ul>
   <div id="sheet"></div>
 
@@ -291,6 +326,8 @@ const fmtPct = n => (n < 0 ? "\u2212" : "") + Math.abs(n).toFixed(1) + "%";
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 
 let data, active;
+const PUBLISHED_NOTE = "Figures come from data.json, written by the Java dashboard on each run.";
+let sourceNote = PUBLISHED_NOTE;
 
 /* ---------- the allocation bar ---------- */
 /* Scaled to max(revenue, total costs) so a loss month cannot overflow the track.
@@ -504,8 +541,9 @@ function build() {
 
   document.getElementById("stamp").textContent =
     data.generated ? "Generated " + data.generated : "";
-  document.getElementById("footer").textContent =
-    "Figures come from data.json, written by the Java dashboard on each run.";
+  const foot = document.getElementById("footer");
+  foot.textContent = sourceNote;
+  foot.classList.remove("notice");
 
   select(data.months[0].monthNum);
 }
@@ -517,6 +555,190 @@ function select(num) {
   draw(active);
 }
 
+
+/* ================= CSV loading =================
+   The browser does the same arithmetic CFODashboard.java does, so a CSV
+   dropped here never has to make a round trip through the Java app.
+   CSV only for now - PDFs and statements are a separate job.
+   Nothing is uploaded: files are read locally and never leave the page. */
+
+/* Character-scanning parser: handles quoted fields, embedded commas,
+   doubled "" escapes, and both \n and \r\n line endings. */
+function parseCsv(text) {
+  const rows = [];
+  let row = [], field = "", quoted = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }   // "" -> literal quote
+        else quoted = false;
+      } else field += c;
+    } else if (c === '"') {
+      quoted = true;
+    } else if (c === ",") {
+      row.push(field); field = "";
+    } else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(field); field = "";
+      if (row.some(v => v.trim() !== "")) rows.push(row);
+      row = [];
+    } else field += c;
+  }
+  row.push(field);
+  if (row.some(v => v.trim() !== "")) rows.push(row);
+
+  if (!rows.length) return {headers: [], rows: []};
+  const headers = rows[0].map(h => h.trim().toLowerCase());
+  return {
+    headers,
+    rows: rows.slice(1).map(r => {
+      const o = {};
+      headers.forEach((h, i) => o[h] = (r[i] === undefined ? "" : r[i]).trim());
+      return o;
+    })
+  };
+}
+
+const NUM = v => {
+  const n = Number(String(v).replace(/[$,\s]/g, ""));
+  return Number.isFinite(n) ? n : 0;
+};
+const round2 = n => Math.round(n * 100) / 100;
+
+/* The four buckets, column for column as CFODashboard.java defines them. */
+const BUCKETS = {
+  direct:    ["cogs", "labor", "employee meals", "tax"],
+  operating: ["packaging", "credit card fees", "marketing", "hardware"],
+  variable:  ["utilities", "maintenance"],
+  fixed:     ["rent", "insurance", "business license", "telephone"]
+};
+const sumOf = (r, keys) => keys.reduce((t, k) => t + NUM(r[k]), 0);
+
+/* Which of the two files is this? Decided by header, not by filename. */
+const classify = h =>
+  h.includes("revenue") ? "dashboard" :
+  h.includes("cogs")    ? "expenses"  : null;
+
+function monthsFromCsv(dash, exp) {
+  const byNum = new Map(exp.rows.map(r => [NUM(r["month num"]), r]));
+  const months = [], skipped = [];
+
+  dash.rows.forEach(d => {
+    const n = NUM(d["month num"]);
+    const e = byNum.get(n);
+    if (!e) { skipped.push(d.month || ("month " + n)); return; }
+
+    const revenue = NUM(d.revenue), budget = NUM(d.budget);
+    const directExpenses    = sumOf(e, BUCKETS.direct);
+    const operatingExpenses = sumOf(e, BUCKETS.operating);
+    const variableOverhead  = sumOf(e, BUCKETS.variable);
+    const fixedOverhead     = sumOf(e, BUCKETS.fixed);
+    const totalExpenses = directExpenses + operatingExpenses + variableOverhead + fixedOverhead;
+    const grossProfit   = revenue - directExpenses;
+    const netProfit     = grossProfit - operatingExpenses - variableOverhead - fixedOverhead;
+
+    months.push({
+      month: (d.month || ("month " + n)).toLowerCase(),
+      monthNum: n, revenue,
+      cogs: NUM(e.cogs), labor: NUM(e.labor), utilities: NUM(e.utilities),
+      maintenance: NUM(e.maintenance), hardware: NUM(e.hardware),
+      directExpenses, operatingExpenses, variableOverhead, fixedOverhead,
+      totalExpenses, grossProfit, netProfit,
+      budget, budgetPercent: budget ? round2(totalExpenses / budget * 100) : 0
+    });
+  });
+
+  months.sort((a, b) => a.monthNum - b.monthNum);
+  return {months, skipped};
+}
+
+/* ---- wiring ---- */
+let published = null;                 // whatever data.json gave us, kept for Reset
+const held = {dashboard: null, expenses: null};   // files picked so far
+
+const els = {};
+function say(main, detail, bad) {
+  els.source.textContent = main;
+  els.status.textContent = detail;
+  els.status.className = bad ? "bad" : "";
+}
+
+async function handleFiles(list) {
+  const files = [...list];
+  if (!files.length) return;
+
+  const rejected = files.filter(f => !/\.csv$/i.test(f.name));
+  const csvs     = files.filter(f =>  /\.csv$/i.test(f.name));
+
+  if (!csvs.length) {
+    return say("Not read", rejected.map(f => f.name).join(", ") +
+      " — CSV is the only format read right now.", true);
+  }
+
+  const unknown = [];
+  for (const f of csvs) {
+    let parsed;
+    try { parsed = parseCsv(await f.text()); }
+    catch { unknown.push(f.name); continue; }
+
+    const kind = classify(parsed.headers);
+    if (kind) held[kind] = Object.assign(parsed, {fileName: f.name});
+    else unknown.push(f.name);
+  }
+
+  if (unknown.length) {
+    return say("Unrecognised columns", unknown.join(", ") +
+      " — need a revenue column (dashboard) or a cogs column (expenses).", true);
+  }
+  if (!held.dashboard) return say("Need one more file", "Got the expenses CSV. Still need the one with month, revenue and budget.", true);
+  if (!held.expenses)  return say("Need one more file", "Got the dashboard CSV. Still need the one with the expense columns.", true);
+
+  const {months, skipped} = monthsFromCsv(held.dashboard, held.expenses);
+  if (!months.length) {
+    return say("Nothing to show", "No month number in the dashboard CSV matched a row in the expenses CSV.", true);
+  }
+
+  const note = skipped.length ? " · skipped " + skipped.join(", ") + " (no expenses row)" : "";
+  sourceNote = "Calculated in your browser from " + held.dashboard.fileName +
+               " and " + held.expenses.fileName + ". Nothing was uploaded.";
+  render({generated: null, months});
+  say("Your figures", months.length + " month" + (months.length > 1 ? "s" : "") +
+      " from " + held.dashboard.fileName + " + " + held.expenses.fileName + note, false);
+  els.reset.hidden = !published;
+}
+
+function wireLoader() {
+  els.source = document.getElementById("source");
+  els.status = document.getElementById("status");
+  els.reset  = document.getElementById("reset");
+  const loader = document.getElementById("loader");
+  const input  = document.getElementById("file");
+
+  document.getElementById("pick").addEventListener("click", () => input.click());
+  input.addEventListener("change", e => { handleFiles(e.target.files); input.value = ""; });
+
+  els.reset.addEventListener("click", () => {
+    held.dashboard = held.expenses = null;
+    sourceNote = PUBLISHED_NOTE;
+    render(published);
+    say("Published figures", "Read from data.json", false);
+    els.reset.hidden = true;
+  });
+
+  // Drop anywhere on the page. preventDefault on dragover is what stops the
+  // browser from just navigating to the dropped file.
+  let depth = 0;
+  document.addEventListener("dragenter", e => { e.preventDefault(); depth++; loader.classList.add("over"); });
+  document.addEventListener("dragover",  e => e.preventDefault());
+  document.addEventListener("dragleave", e => { e.preventDefault(); if (--depth <= 0) loader.classList.remove("over"); });
+  document.addEventListener("drop", e => {
+    e.preventDefault(); depth = 0; loader.classList.remove("over");
+    handleFiles(e.dataTransfer.files);
+  });
+}
+
 /* Single entry point for the data. Anything that can produce the same shape
    as data.json can call render() - that is where a future upload would hand
    its parsed result in. */
@@ -525,16 +747,20 @@ function render(json) {
   build();
 }
 
+wireLoader();
+
 fetch("data.json")
   .then(r => r.ok ? r.json() : Promise.reject(r.status))
-  .then(render)
+  .then(json => { published = json; render(json); })
   .catch(() => {
+    sourceNote = "";
     render(FALLBACK);
     const f = document.getElementById("footer");
     f.innerHTML = 'Showing sample figures. <code>data.json</code> could not be loaded — ' +
       'serve this folder over http (<code>python3 -m http.server</code>) ' +
       'or place data.json alongside this file.';
     f.classList.add("notice");
+    say("Sample figures", "data.json could not be read \u2014 load your CSVs above", true);
   });
 </script>
 </body>

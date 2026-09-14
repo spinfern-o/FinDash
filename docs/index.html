@@ -262,7 +262,12 @@
   caption{text-align:left;font-size:13px;color:var(--ink-3);padding-bottom:14px}
   th,td{padding:9px 0;border-bottom:1px solid var(--line-soft);font-weight:400;text-align:right}
   th{text-align:left}                      /* row labels in the Line column */
-  thead th:not(:first-child){text-align:right}  /* column headers over the numbers */
+  /* Numeric columns are centred, header and values alike. Every cell in a
+     column is the same width, so centring puts each value on the same centre
+     line as its header. */
+  thead th:not(:first-child),
+  td.amt,
+  td.share{text-align:center}
   thead th{
     font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;
     color:var(--ink-3);border-bottom:1px solid var(--line);

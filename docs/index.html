@@ -689,7 +689,7 @@ async function handleFiles(list) {
   }
 
   if (unknown.length) {
-    return say("Unrecognised columns", unknown.join(", ") +
+    return say("Unrecognized columns", unknown.join(", ") +
       " — need a revenue column (dashboard) or a cogs column (expenses).", true);
   }
   if (!held.dashboard) return say("Need one more file", "Got the expenses CSV. Still need the one with month, revenue and budget.", true);

@@ -25,7 +25,7 @@ javac -d bin CFODashboard.java Expenses.java && java -cp bin CFODashboard
 
 ## Example usage
 
-The app lists the months it loaded, writes `output/data.json`, then loops on two prompts:
+The app lists the months it loaded, writes `docs/data.json`, then loops on two prompts:
 
 1. **Pick a month** — enter its month number to print that month's dashboard.
 2. **Pick a month to compare against** — enter another month number for a side-by-side
@@ -233,7 +233,7 @@ choices, and changing one mid-year makes months incomparable.
 
 ## JSON output
 
-Every run writes `output/data.json` — the same months and metrics in machine-readable
+Every run writes `docs/data.json` — the same months and metrics in machine-readable
 form, for charting or a web front end. All calculations happen in Java, so the JSON
 carries finished values and consumers never recompute them.
 
@@ -272,6 +272,17 @@ carries finished values and consumers never recompute them.
    A month with no revenue row will divide by zero and print `NaN` in every cell.
 3. Recompile and run — the menu is built from whatever loaded.
 
+### Without recompiling
+
+The web dashboard can also read the two CSVs directly. Open the published page,
+click **Choose CSV files**, and pick `dashboard.csv` and `expenses.csv` (together
+or one at a time, in either order — each file is identified by its headers, not
+its name). The browser runs the same bucket arithmetic the Java app does and
+renders the result; **Use published figures** switches back to `data.json`.
+
+Files are read locally and never uploaded anywhere. CSV is the only format read —
+PDFs and bank statements are not supported.
+
 Costs that don't fit an existing column should be added to the bucket that matches
 their behavior, not appended arbitrarily — the point of the structure is that the four
 totals stay meaningful.
@@ -282,7 +293,8 @@ totals stay meaningful.
 CFODashboard.java   Main class: CSV loading, metrics, prompts, display, comparison
 Expenses.java       Per-month expense record with getters and derived sums
 data/               Input CSVs
-output/data.json    Generated on every run
+docs/data.json      Generated on every run
+docs/index.html     Web dashboard, published by GitHub Pages from /docs
 bin/                Compiled classes (git-ignored)
 .vscode/launch.json VS Code run configuration
 ```

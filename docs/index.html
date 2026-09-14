@@ -214,8 +214,17 @@
   .gauge-foot{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-3);margin-top:8px}
 
   /* ---- monthly net bars ---- */
-  .trend{display:flex;align-items:flex-end;gap:14px;height:150px;position:relative}
-  .trend .col{flex:1;display:flex;flex-direction:column;height:100%;position:relative}
+  .trend-scroll{overflow-x:auto;overflow-y:hidden;padding-top:24px}
+  .trend{
+    display:flex;align-items:flex-end;gap:14px;height:150px;position:relative;
+    min-width:max-content;
+  }
+  /* basis, not content, sets the column width - the bars carry no text and the
+     labels do, so an auto basis would drift the two rows out of alignment.
+     66px holds "September" at 12px; past that the row scrolls. */
+  .trend .col{
+    flex:1 0 66px;display:flex;flex-direction:column;height:100%;position:relative;
+  }
   .trend .above{flex:none;display:flex;align-items:flex-end}
   .trend .below{flex:none;display:flex;align-items:flex-start}
   .trend .mark{
@@ -226,9 +235,9 @@
   .trend .col.on .mark{background:var(--accent)}
   .trend .col.on.neg .mark{background:var(--critical)}
   .trend .zero{position:absolute;left:0;right:0;height:1px;background:var(--line)}
-  .trend-labels{display:flex;gap:14px;margin-top:8px}
+  .trend-labels{display:flex;gap:14px;margin-top:8px;min-width:max-content}
   .trend-labels div{
-    flex:1;text-align:center;font-size:12px;color:var(--ink-3);
+    flex:1 0 66px;text-align:center;font-size:12px;color:var(--ink-3);
     text-transform:capitalize;
   }
   .trend-labels div.on{color:var(--ink);font-weight:600}
@@ -405,8 +414,10 @@ function trend(months, activeNum) {
   const labels = months.map(m =>
     `<div class="${m.monthNum === activeNum ? "on" : ""}">${m.month}</div>`).join("");
 
-  return `<div class="trend">${cols}<div class="zero" style="top:${zero}px"></div></div>
-          <div class="trend-labels">${labels}</div>`;
+  return `<div class="trend-scroll">
+            <div class="trend">${cols}<div class="zero" style="top:${zero}px"></div></div>
+            <div class="trend-labels">${labels}</div>
+          </div>`;
 }
 
 function row(label, amount, revenue, cls = "") {
@@ -502,6 +513,16 @@ function draw(m) {
 
   document.querySelectorAll(".indent-row th").forEach(th => th.classList.add("indent"));
   wireTooltip();
+  centreActiveMonth();
+}
+
+/* With enough months the bar row scrolls; keep the selected one in view. */
+function centreActiveMonth() {
+  const box = document.querySelector(".trend-scroll");
+  const col = document.querySelector(".trend .col.on");
+  if (!box || !col) return;
+  if (box.scrollWidth <= box.clientWidth) return;        // nothing to scroll
+  box.scrollLeft = col.offsetLeft - (box.clientWidth - col.offsetWidth) / 2;
 }
 
 /* Hover/focus readout on the allocation bar. The same numbers live in the

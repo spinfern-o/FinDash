@@ -6,202 +6,244 @@
 <title>Monthly ledger</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..600&family=Newsreader:opsz,wght@6..72,300..500&display=swap" rel="stylesheet">
 <style>
   :root{
-    --pad:#e6ece4;        /* columnar pad ground */
-    --pad-rule:#c3d0c0;   /* printed rule */
-    --ink:#14201c;        /* ledger ink */
-    --ink-soft:#5d6d66;
-    --black:#14201c;      /* in the black */
-    --red:#a32c1c;        /* in the red */
-    --sheet:#f4f7f2;
+    color-scheme:light;
+    --ground:#f9fafb;
+    --card:#ffffff;
+    --line:#e7e5e4;
+    --line-soft:#f1f0ee;
+    --ink:#111827;
+    --ink-2:#4b5563;
+    --ink-3:#6b7280;
+    --accent:#059669;
+
+    /* categorical slots - validated light, surface #ffffff */
+    --s1:#047857;   /* direct expenses    */
+    --s2:#2a78d6;   /* operating expenses */
+    --s3:#eb6834;   /* variable overhead  */
+    --s4:#4a3aa7;   /* fixed overhead     */
+    --rest:#e4e4e1; /* profit remainder   */
+
+    --critical:#d03b3b;
+    --radius:20px;
+  }
+
+  @media (prefers-color-scheme:dark){
+    :root{
+      color-scheme:dark;
+      --ground:#141715;
+      --card:#1c201e;
+      --line:#2f3431;
+      --line-soft:#262b28;
+      --ink:#f2f4f2;
+      --ink-2:#b7bdb9;
+      --ink-3:#8b928e;
+      --accent:#34d399;
+
+      /* same hues, re-stepped for the dark surface #1c201e */
+      --s1:#199e70;
+      --s2:#3987e5;
+      --s3:#d95926;
+      --s4:#9085e9;
+      --rest:#313733;
+
+      --critical:#e26a6a;
+    }
   }
 
   *{box-sizing:border-box}
-
   html{-webkit-text-size-adjust:100%}
 
   body{
     margin:0;
-    background:var(--pad);
+    background:var(--ground);
     color:var(--ink);
-    font-family:"IBM Plex Sans",system-ui,sans-serif;
-    font-size:16px;
-    line-height:1.5;
-    font-variant-numeric:tabular-nums;
-    padding:clamp(20px,5vw,64px) clamp(16px,4vw,32px);
+    font-family:Inter,ui-sans-serif,system-ui,sans-serif;
+    font-size:15px;
+    line-height:1.55;
+    padding-block:clamp(24px,5vw,56px);
+    padding-left:clamp(16px,4vw,32px);
+    padding-right:clamp(16px,4vw,32px);
   }
 
-  main{max-width:860px;margin:0 auto}
+  main{max-width:1060px;margin:0 auto}
 
   /* ---- masthead ---- */
   .masthead{
-    display:flex;
-    flex-wrap:wrap;
-    align-items:baseline;
-    justify-content:space-between;
-    gap:12px;
-    padding-bottom:14px;
-    border-bottom:2px solid var(--ink);
+    display:flex;flex-wrap:wrap;align-items:baseline;
+    justify-content:space-between;gap:10px;margin-bottom:26px;
   }
-  .masthead h1{
-    font-size:19px;
-    font-weight:600;
-    letter-spacing:-0.01em;
+  .wordmark{font-size:16px;font-weight:600;letter-spacing:-0.01em;margin:0}
+  .stamp{font-size:13px;color:var(--ink-3)}
+
+  /* ---- filter row: scopes every card below it ---- */
+  .filters{
+    display:flex;flex-wrap:wrap;gap:6px;
+    margin:0 0 20px;padding:0;list-style:none;
+  }
+  .filters button{
+    font:inherit;font-size:14px;font-weight:500;
+    color:var(--ink-2);background:var(--card);
+    border:1px solid var(--line);border-radius:999px;
+    padding:7px 16px;cursor:pointer;text-transform:capitalize;
+    transition:background .12s,color .12s,border-color .12s;
+  }
+  .filters button:hover{border-color:var(--ink-3);color:var(--ink)}
+  .filters button[aria-current="true"]{
+    background:var(--accent);border-color:var(--accent);color:#fff;
+  }
+  .filters button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+  /* ---- cards ---- */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:24px;
+    min-width:0;
+  }
+  .card.wide{grid-column:1/-1}
+
+  .card h2{
+    font-family:Newsreader,"Iowan Old Style",Georgia,serif;
+    font-size:21px;font-weight:400;letter-spacing:-0.005em;
     margin:0;
   }
-  .stamp{font-size:13px;color:var(--ink-soft)}
+  .card .sub{font-size:13px;color:var(--ink-3);margin:2px 0 20px}
 
-  /* ---- month tabs ---- */
-  .months{
-    display:flex;
-    flex-wrap:wrap;
-    gap:2px;
-    margin:0;
-    padding:0;
-    list-style:none;
+  /* ---- hero ---- */
+  .hero{padding:30px 28px 26px}
+  .eyebrow{
+    font-size:11px;font-weight:600;letter-spacing:.07em;
+    text-transform:uppercase;color:var(--ink-3);margin:0 0 10px;
   }
-  .months button{
-    font:inherit;
-    font-weight:500;
-    color:var(--ink-soft);
-    background:none;
-    border:none;
-    border-bottom:2px solid transparent;
-    padding:14px 16px 11px;
-    cursor:pointer;
-    text-transform:capitalize;
+  .figure{
+    font-family:Newsreader,"Iowan Old Style",Georgia,serif;
+    font-size:clamp(42px,7.5vw,64px);
+    font-weight:400;line-height:1.04;letter-spacing:-0.02em;
+    font-variant-numeric:normal;   /* proportional figures at display size */
+    margin:0;color:var(--accent);
   }
-  .months button:hover{color:var(--ink)}
-  .months button[aria-current="true"]{
-    color:var(--ink);
-    border-bottom-color:var(--ink);
+  .figure.loss{color:var(--critical)}
+  .note{font-size:14px;color:var(--ink-2);margin:12px 0 0;max-width:52ch}
+
+  /* ---- stacked allocation bar ---- */
+  .barwrap{position:relative}
+  .bar{display:flex;gap:2px;height:38px}
+  .bar .seg{
+    border:none;padding:0;font:inherit;cursor:default;
+    min-width:2px;border-radius:2px;transition:filter .12s;
   }
-  .months button:focus-visible{
-    outline:2px solid var(--ink);
-    outline-offset:-2px;
+  .bar .seg:first-child{border-radius:8px 2px 2px 8px}
+  .bar .seg:last-child{border-radius:2px 8px 8px 2px}
+  .bar .seg:hover,.bar .seg:focus-visible{filter:brightness(1.12);outline:none}
+  .bar .seg:focus-visible{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--ink)}
+  .seg-1{background:var(--s1)}
+  .seg-2{background:var(--s2)}
+  .seg-3{background:var(--s3)}
+  .seg-4{background:var(--s4)}
+  .seg-rest{background:var(--rest)}
+  .seg-short{background:var(--critical)}
+
+  /* revenue cut-off marker, shown only on a loss month */
+  .revmark{position:absolute;top:-7px;bottom:-7px;width:2px;background:var(--ink)}
+  .shortspan{
+    position:absolute;bottom:-9px;height:3px;border-radius:2px;
+    background:var(--critical);
+  }
+  .revmark span{
+    position:absolute;top:-19px;left:0;transform:translateX(-50%);
+    white-space:nowrap;font-size:11px;font-weight:600;color:var(--ink);
   }
 
-  /* ---- result ---- */
-  .result{padding:38px 0 30px;border-bottom:1px solid var(--pad-rule)}
-  .result-label{font-size:14px;color:var(--ink-soft);margin:0 0 6px}
-  .result-figure{
-    font-size:clamp(46px,11vw,82px);
-    font-weight:600;
-    letter-spacing:-0.035em;
-    line-height:1;
-    margin:0;
+  .tip{
+    position:absolute;z-index:5;pointer-events:none;opacity:0;
+    transform:translate(-50%,-100%);
+    background:var(--ink);color:var(--ground);
+    border-radius:8px;padding:7px 10px;font-size:12px;line-height:1.4;
+    white-space:nowrap;transition:opacity .1s;
   }
-  .result-figure.loss{color:var(--red)}
-  .result-note{font-size:15px;color:var(--ink-soft);margin:12px 0 0}
-
-  /* ---- allocation bar ---- */
-  .allocation{padding:30px 0;border-bottom:1px solid var(--pad-rule)}
-  .bar{
-    display:flex;
-    height:34px;
-    background:var(--sheet);
-    overflow:hidden;
-  }
-  .bar span{
-    display:block;
-    border-right:1px solid var(--pad);
-  }
-  .bar span:last-child{border-right:none}
-  .seg-direct{background:#2f4a41}
-  .seg-operating{background:#5c7a6d}
-  .seg-varoh{background:#93ab9b}
-  .seg-fixoh{background:#c2d1c3}
-  .seg-profit{background:transparent}
-  .seg-loss{background:repeating-linear-gradient(135deg,var(--red),var(--red) 3px,#c4523f 3px,#c4523f 6px)}
+  .tip.on{opacity:1}
+  .tip b{font-weight:600}
 
   .key{
-    display:flex;
-    flex-wrap:wrap;
-    gap:6px 22px;
-    margin:14px 0 0;
-    padding:0;
-    list-style:none;
-    font-size:14px;
+    display:flex;flex-wrap:wrap;gap:8px 20px;
+    margin:16px 0 0;padding:0;list-style:none;font-size:13px;
   }
-  .key li{display:flex;align-items:center;gap:8px}
-  .key i{width:11px;height:11px;flex:none}
-  .key b{font-weight:500;color:var(--ink-soft)}
+  .key li{display:flex;align-items:center;gap:7px;color:var(--ink-2)}
+  .key i{width:10px;height:10px;border-radius:2px;flex:none}
+  .key b{font-weight:500;color:var(--ink)}
 
-  /* ---- ledger ---- */
-  table{width:100%;border-collapse:collapse;margin:30px 0 0}
-  caption{
-    text-align:left;
-    font-size:14px;
-    color:var(--ink-soft);
-    padding-bottom:10px;
+  /* ---- budget gauge ---- */
+  .gaugeline{
+    display:flex;justify-content:space-between;align-items:baseline;
+    gap:14px;font-size:14px;color:var(--ink-2);margin-bottom:12px;
   }
-  th,td{
-    padding:9px 0;
-    border-bottom:1px solid var(--pad-rule);
-    font-weight:400;
-    text-align:right;
-  }
-  th{text-align:left;font-weight:400}
-  thead th{font-size:14px;color:var(--ink-soft);border-bottom-color:var(--ink)}
-  tbody tr:nth-child(odd) th,
-  tbody tr:nth-child(odd) td{background:var(--sheet)}
-  th,td{padding-left:10px;padding-right:10px}
-  .group th,.group td{
-    font-weight:600;
-    border-bottom:2px solid var(--ink);
-  }
-  .indent{padding-left:26px;color:var(--ink-soft)}
-  .total th,.total td{font-weight:600;border-bottom:3px double var(--ink)}
-  .neg{color:var(--red)}
+  .gaugeline strong{color:var(--ink);font-weight:600}
+  .gaugeline strong.neg{color:var(--critical)}
+  .gauge{position:relative;height:12px;background:var(--line-soft);border-radius:6px}
+  .gauge-fill{height:100%;background:var(--accent);border-radius:6px}
+  .gauge-fill.over{background:var(--critical)}
+  .gauge-mark{position:absolute;top:-5px;bottom:-5px;width:2px;background:var(--ink)}
+  .gauge-foot{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-3);margin-top:8px}
 
-  /* ---- budget ---- */
-  .budget{margin:30px 0 0}
-  .budget-head{
-    display:flex;
-    justify-content:space-between;
-    align-items:baseline;
-    gap:16px;
-    font-size:15px;
+  /* ---- monthly net bars ---- */
+  .trend{display:flex;align-items:flex-end;gap:14px;height:150px;position:relative}
+  .trend .col{flex:1;display:flex;flex-direction:column;height:100%;position:relative}
+  .trend .above{flex:none;display:flex;align-items:flex-end}
+  .trend .below{flex:none;display:flex;align-items:flex-start}
+  .trend .mark{
+    width:100%;background:var(--line);border:none;padding:0;cursor:default;
   }
-  .budget-head strong{font-weight:600}
-  .gauge{
-    position:relative;
-    height:10px;
-    background:var(--sheet);
-    margin-top:10px;
+  .trend .above .mark{border-radius:4px 4px 0 0}
+  .trend .below .mark{border-radius:0 0 4px 4px}
+  .trend .col.on .mark{background:var(--accent)}
+  .trend .col.on.neg .mark{background:var(--critical)}
+  .trend .zero{position:absolute;left:0;right:0;height:1px;background:var(--line)}
+  .trend-labels{display:flex;gap:14px;margin-top:8px}
+  .trend-labels div{
+    flex:1;text-align:center;font-size:12px;color:var(--ink-3);
+    text-transform:capitalize;
   }
-  .gauge-fill{height:100%;background:var(--black)}
-  .gauge-fill.over{background:var(--red)}
-  .gauge-mark{
-    position:absolute;
-    top:-4px;
-    bottom:-4px;
-    width:1px;
-    background:var(--ink);
+  .trend-labels div.on{color:var(--ink);font-weight:600}
+  .trend .val{
+    position:absolute;left:0;right:0;text-align:center;
+    font-size:12px;font-weight:600;color:var(--ink);
   }
+
+  /* ---- ledger table ---- */
+  table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+  caption{text-align:left;font-size:13px;color:var(--ink-3);padding-bottom:14px}
+  th,td{padding:9px 0;border-bottom:1px solid var(--line-soft);font-weight:400;text-align:right}
+  th{text-align:left}
+  thead th{
+    font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;
+    color:var(--ink-3);border-bottom:1px solid var(--line);
+  }
+  .group th,.group td{font-weight:600}
+  .indent{padding-left:22px;color:var(--ink-2);font-weight:400}
+  .total th,.total td{font-weight:600;border-top:1px solid var(--line);border-bottom:none}
+  .neg{color:var(--critical)}
+  td.share{color:var(--ink-3);width:7.5em}
+  td.amt{width:10em}
 
   .notice{
-    padding:20px;
-    background:var(--sheet);
-    border-left:3px solid var(--red);
-    font-size:15px;
+    margin-top:16px;padding:14px 16px;background:var(--card);
+    border:1px solid var(--line);border-left:3px solid var(--critical);
+    border-radius:10px;font-size:13px;color:var(--ink-2);
   }
-  .notice code{font-size:14px}
+  .notice code{font-size:12px}
 
-  footer{
-    margin-top:36px;
-    padding-top:16px;
-    border-top:1px solid var(--pad-rule);
-    font-size:13px;
-    color:var(--ink-soft);
-  }
+  footer{margin-top:22px;font-size:12px;color:var(--ink-3)}
 
-  @media (max-width:560px){
-    .result-figure{letter-spacing:-0.03em}
-    .months button{padding:12px 11px 9px;font-size:15px}
-    th,td{padding-left:4px;padding-right:4px;font-size:15px}
+  @media (max-width:760px){
+    .grid{grid-template-columns:1fr}
+    .card{padding:20px}
+    .hero{padding:24px 20px 22px}
+    th,td{font-size:14px}
     .indent{padding-left:14px}
   }
 </style>
@@ -209,18 +251,18 @@
 <body>
 <main>
   <div class="masthead">
-    <h1>Monthly ledger</h1>
+    <p class="wordmark">Monthly ledger</p>
     <span class="stamp" id="stamp"></span>
   </div>
 
-  <ul class="months" id="months"></ul>
+  <ul class="filters" id="months"></ul>
   <div id="sheet"></div>
 
   <footer id="footer"></footer>
 </main>
 
 <script>
-/* Fallback so the page still works when opened directly from the file system,
+/* Fallback so the page still reads when opened straight off the file system,
    where fetch() is blocked. Replaced by data.json whenever it loads. */
 const FALLBACK = {
   generated: "sample data",
@@ -242,113 +284,212 @@ const FALLBACK = {
 
 const money = n => (n < 0 ? "−" : "") + "$" +
   Math.abs(n).toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
-
+const money0 = n => (n < 0 ? "−" : "") + "$" +
+  Math.round(Math.abs(n)).toLocaleString("en-US");
 const pct = (part, whole) => whole ? (part / whole) * 100 : 0;
-const fmtPct = n => n.toFixed(1) + "%";
+const fmtPct = n => (n < 0 ? "\u2212" : "") + Math.abs(n).toFixed(1) + "%";
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 
 let data, active;
 
+/* ---------- the allocation bar ---------- */
+/* Scaled to max(revenue, total costs) so a loss month cannot overflow the track.
+   When costs outrun revenue, a marker shows where revenue ran out. */
+function allocation(m) {
+  const buckets = [
+    [1, "Direct",            m.directExpenses],
+    [2, "Operating",         m.operatingExpenses],
+    [3, "Variable overhead", m.variableOverhead],
+    [4, "Fixed overhead",    m.fixedOverhead]
+  ];
+  const net  = m.netProfit;
+  const loss = net < 0;
+  const span = Math.max(m.revenue, m.totalExpenses) || 1;
+
+  const segs = buckets
+    .filter(([, , v]) => v > 0)
+    .map(([slot, name, v]) =>
+      `<button type="button" class="seg seg-${slot}" style="flex:0 0 ${pct(v, span)}%"
+         data-name="${name}" data-amt="${money(v)}" data-share="${fmtPct(pct(v, m.revenue))}"></button>`);
+
+  if (!loss && net > 0) {
+    segs.push(`<button type="button" class="seg seg-rest" style="flex:0 0 ${pct(net, span)}%"
+      data-name="Profit" data-amt="${money(net)}" data-share="${fmtPct(pct(net, m.revenue))}"></button>`);
+  }
+
+  // On a loss month the costs run past the revenue line; the stretch beyond it
+  // is the shortfall, marked under the track rather than stacked into it.
+  const marker = loss
+    ? `<div class="revmark" style="left:${pct(m.revenue, span)}%"><span>Revenue</span></div>
+       <div class="shortspan" style="left:${pct(m.revenue, span)}%;right:0"></div>`
+    : "";
+
+  const key = buckets.map(([slot, name, v]) =>
+    `<li><i class="seg-${slot}"></i><b>${name}</b> ${fmtPct(pct(v, m.revenue))}</li>`).join("");
+  const tail = loss
+    ? `<li><i class="seg-short"></i><b>Shortfall</b> ${fmtPct(pct(Math.abs(net), m.revenue))}</li>`
+    : `<li><i class="seg-rest"></i><b>Profit</b> ${fmtPct(pct(net, m.revenue))}</li>`;
+
+  return `
+    <div class="barwrap">
+      <div class="bar">${segs.join("")}</div>
+      ${marker}
+      <div class="tip" id="tip"></div>
+    </div>
+    <ul class="key">${key}${tail}</ul>`;
+}
+
+/* ---------- net profit across every month on file ---------- */
+function trend(months, activeNum) {
+  const nets = months.map(m => m.netProfit);
+  const top  = Math.max(0, ...nets);
+  const bot  = Math.min(0, ...nets);
+  const span = (top - bot) || 1;
+  const H    = 150;
+  const zero = (top / span) * H;
+
+  const cols = months.map(m => {
+    const n = m.netProfit, on = m.monthNum === activeNum, neg = n < 0;
+    const h = (Math.abs(n) / span) * H;
+    const label = on
+      ? `<div class="val" style="${neg ? `top:${zero + h + 4}px` : `top:${zero - h - 20}px`}">${money0(n)}</div>`
+      : "";
+    return `<div class="col${on ? " on" : ""}${neg ? " neg" : ""}">
+      <div class="above" style="height:${zero}px">
+        ${neg ? "" : `<div class="mark" style="height:${h}px"></div>`}
+      </div>
+      <div class="below" style="height:${H - zero}px">
+        ${neg ? `<div class="mark" style="height:${h}px"></div>` : ""}
+      </div>
+      ${label}
+    </div>`;
+  }).join("");
+
+  const labels = months.map(m =>
+    `<div class="${m.monthNum === activeNum ? "on" : ""}">${m.month}</div>`).join("");
+
+  return `<div class="trend">${cols}<div class="zero" style="top:${zero}px"></div></div>
+          <div class="trend-labels">${labels}</div>`;
+}
+
 function row(label, amount, revenue, cls = "") {
-  const share = revenue ? fmtPct(pct(amount, revenue)) : "—";
   return `<tr class="${cls}">
     <th scope="row">${label}</th>
-    <td>${money(amount)}</td>
-    <td>${share}</td>
+    <td class="amt">${money(amount)}</td>
+    <td class="share">${revenue ? fmtPct(pct(amount, revenue)) : "—"}</td>
   </tr>`;
 }
 
 function draw(m) {
-  const rev = m.revenue;
-  const net = m.netProfit;
+  const rev  = m.revenue;
+  const net  = m.netProfit;
   const loss = net < 0;
-
-  // Allocation bar: each bucket as a share of revenue, profit as the remainder.
-  const segs = [
-    ["direct",    "Direct",            m.directExpenses],
-    ["operating", "Operating",         m.operatingExpenses],
-    ["varoh",     "Variable overhead", m.variableOverhead],
-    ["fixoh",     "Fixed overhead",    m.fixedOverhead]
-  ];
-  const bar = segs.map(([k,, v]) =>
-    `<span class="seg-${k}" style="width:${pct(v, rev)}%"></span>`).join("");
-  const tail = loss
-    ? `<span class="seg-loss" style="width:${pct(Math.abs(net), rev)}%"></span>`
-    : `<span class="seg-profit" style="width:${pct(net, rev)}%"></span>`;
-
-  const key = segs.map(([k, name, v]) =>
-    `<li><i class="seg-${k}"></i><b>${name}</b> ${fmtPct(pct(v, rev))}</li>`).join("");
-
-  const overBy = m.totalExpenses - m.budget;
+  const over = m.totalExpenses - m.budget;
   const used = m.budgetPercent;
 
   document.getElementById("sheet").innerHTML = `
-    <section class="result">
-      <p class="result-label">${m.month.charAt(0).toUpperCase() + m.month.slice(1)} net result</p>
-      <p class="result-figure${loss ? " loss" : ""}">${money(net)}</p>
-      <p class="result-note">
-        ${fmtPct(pct(net, rev))} of ${money(rev)} in revenue.
-        ${loss
-          ? `Costs exceeded revenue by ${money(Math.abs(net))}.`
-          : `Kept ${money(net)} after every cost.`}
-      </p>
-    </section>
+    <div class="grid">
+      <section class="card wide hero">
+        <p class="eyebrow">${cap(m.month)} &middot; net result</p>
+        <p class="figure${loss ? " loss" : ""}">${money(net)}</p>
+        <p class="note">
+          ${fmtPct(pct(net, rev))} of ${money(rev)} in revenue.
+          ${loss
+            ? `Costs ran past revenue by ${money(Math.abs(net))}.`
+            : `Kept ${money(net)} after every cost.`}
+        </p>
+      </section>
 
-    <section class="allocation">
-      <div class="bar">${bar}${tail}</div>
-      <ul class="key">${key}
-        <li><i style="background:${loss ? "var(--red)" : "var(--pad)"};
-               border:1px solid var(--pad-rule)"></i>
-            <b>${loss ? "Shortfall" : "Profit"}</b> ${fmtPct(Math.abs(pct(net, rev)))}</li>
-      </ul>
-    </section>
+      <section class="card wide">
+        <h2>Where revenue goes</h2>
+        <p class="sub">Every cost bucket as a share of ${money(rev)} in revenue</p>
+        ${allocation(m)}
+      </section>
 
-    <table>
-      <caption>Every cost, as dollars and as a share of revenue</caption>
-      <thead>
-        <tr><th scope="col">Line</th><th scope="col">Amount</th><th scope="col">Of revenue</th></tr>
-      </thead>
-      <tbody>
-        ${row("Revenue", rev, rev, "group")}
+      <section class="card">
+        <h2>Against budget</h2>
+        <p class="sub">Total costs measured against the month's budget</p>
+        <div class="gaugeline">
+          <span>Budget <strong>${money(m.budget)}</strong></span>
+          <span><strong class="${used > 100 ? "neg" : ""}">${fmtPct(used)} used</strong></span>
+        </div>
+        <div class="gauge">
+          <div class="gauge-fill${used > 100 ? " over" : ""}" style="width:${Math.min(used, 100)}%"></div>
+          ${used > 100 ? '<div class="gauge-mark" style="left:100%"></div>' : ""}
+        </div>
+        <div class="gauge-foot">
+          <span>${money(m.totalExpenses)} spent</span>
+          <span>${over > 0 ? money(over) + " over" : money(-over) + " left"}</span>
+        </div>
+      </section>
 
-        ${row("Direct expenses", m.directExpenses, rev, "group")}
-        ${row("Cost of goods sold", m.cogs, rev, "indent-row")}
-        ${row("Labor", m.labor, rev, "indent-row")}
+      <section class="card">
+        <h2>Net profit by month</h2>
+        <p class="sub">Every month on file &middot; ${cap(m.month)} highlighted</p>
+        ${trend(data.months, m.monthNum)}
+      </section>
 
-        ${row("Operating expenses", m.operatingExpenses, rev, "group")}
-        ${row("Hardware", m.hardware, rev, "indent-row")}
+      <section class="card wide">
+        <h2>The ledger</h2>
+        <p class="sub">Every line, as dollars and as a share of revenue</p>
+        <table>
+          <thead>
+            <tr><th scope="col">Line</th><th scope="col">Amount</th><th scope="col">Of revenue</th></tr>
+          </thead>
+          <tbody>
+            ${row("Revenue", rev, rev, "group")}
 
-        ${row("Variable overhead", m.variableOverhead, rev, "group")}
-        ${row("Utilities", m.utilities, rev, "indent-row")}
-        ${row("Maintenance", m.maintenance, rev, "indent-row")}
+            ${row("Direct expenses", m.directExpenses, rev, "group")}
+            ${row("Cost of goods sold", m.cogs, rev, "indent-row")}
+            ${row("Labor", m.labor, rev, "indent-row")}
 
-        ${row("Fixed overhead", m.fixedOverhead, rev, "group")}
+            ${row("Operating expenses", m.operatingExpenses, rev, "group")}
+            ${row("Hardware", m.hardware, rev, "indent-row")}
 
-        ${row("Total expenses", m.totalExpenses, rev, "total")}
-        <tr class="total">
-          <th scope="row">Net profit</th>
-          <td class="${loss ? "neg" : ""}">${money(net)}</td>
-          <td class="${loss ? "neg" : ""}">${fmtPct(pct(net, rev))}</td>
-        </tr>
-      </tbody>
-    </table>
+            ${row("Variable overhead", m.variableOverhead, rev, "group")}
+            ${row("Utilities", m.utilities, rev, "indent-row")}
+            ${row("Maintenance", m.maintenance, rev, "indent-row")}
 
-    <section class="budget">
-      <div class="budget-head">
-        <span>Budget <strong>${money(m.budget)}</strong></span>
-        <span>
-          <strong class="${used > 100 ? "neg" : ""}">${fmtPct(used)} used</strong>
-          — ${overBy > 0 ? money(overBy) + " over" : money(-overBy) + " left"}
-        </span>
-      </div>
-      <div class="gauge">
-        <div class="gauge-fill${used > 100 ? " over" : ""}"
-             style="width:${Math.min(used, 100)}%"></div>
-        ${used > 100 ? '<div class="gauge-mark" style="left:100%"></div>' : ""}
-      </div>
-    </section>`;
+            ${row("Fixed overhead", m.fixedOverhead, rev, "group")}
 
-  // Indent the component rows under their bucket heading.
+            ${row("Total expenses", m.totalExpenses, rev, "total")}
+            <tr class="total">
+              <th scope="row">Net profit</th>
+              <td class="amt ${loss ? "neg" : ""}">${money(net)}</td>
+              <td class="share ${loss ? "neg" : ""}">${fmtPct(pct(net, rev))}</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </div>`;
+
   document.querySelectorAll(".indent-row th").forEach(th => th.classList.add("indent"));
+  wireTooltip();
+}
+
+/* Hover/focus readout on the allocation bar. The same numbers live in the
+   legend and the ledger below, so the tooltip only ever enhances. */
+function wireTooltip() {
+  const wrap = document.querySelector(".barwrap");
+  const tip  = document.getElementById("tip");
+  if (!wrap || !tip) return;
+
+  const show = seg => {
+    const box = seg.getBoundingClientRect();
+    const ref = wrap.getBoundingClientRect();
+    tip.innerHTML = `<b>${seg.dataset.name}</b> &middot; ${seg.dataset.amt}<br>${seg.dataset.share} of revenue`;
+    tip.style.left = (box.left - ref.left + box.width / 2) + "px";
+    tip.style.top  = "-8px";
+    tip.classList.add("on");
+  };
+  const hide = () => tip.classList.remove("on");
+
+  wrap.querySelectorAll(".seg").forEach(seg => {
+    seg.addEventListener("mouseenter", () => show(seg));
+    seg.addEventListener("focus", () => show(seg));
+    seg.addEventListener("mouseleave", hide);
+    seg.addEventListener("blur", hide);
+  });
 }
 
 function build() {
@@ -361,8 +502,8 @@ function build() {
     if (btn) select(Number(btn.dataset.num));
   });
 
-  document.getElementById("stamp").textContent = data.generated
-    ? "Generated " + data.generated : "";
+  document.getElementById("stamp").textContent =
+    data.generated ? "Generated " + data.generated : "";
   document.getElementById("footer").textContent =
     "Figures come from data.json, written by the Java dashboard on each run.";
 
@@ -371,22 +512,29 @@ function build() {
 
 function select(num) {
   active = data.months.find(m => m.monthNum === num);
-  document.querySelectorAll(".months button").forEach(b =>
+  document.querySelectorAll(".filters button").forEach(b =>
     b.setAttribute("aria-current", Number(b.dataset.num) === num));
   draw(active);
 }
 
+/* Single entry point for the data. Anything that can produce the same shape
+   as data.json can call render() - that is where a future upload would hand
+   its parsed result in. */
+function render(json) {
+  data = json;
+  build();
+}
+
 fetch("data.json")
   .then(r => r.ok ? r.json() : Promise.reject(r.status))
-  .then(json => { data = json; build(); })
+  .then(render)
   .catch(() => {
-    data = FALLBACK;
-    build();
-    document.getElementById("footer").innerHTML =
-      'Showing sample figures. <code>data.json</code> could not be loaded — ' +
+    render(FALLBACK);
+    const f = document.getElementById("footer");
+    f.innerHTML = 'Showing sample figures. <code>data.json</code> could not be loaded — ' +
       'serve this folder over http (<code>python3 -m http.server</code>) ' +
       'or place data.json alongside this file.';
-    document.getElementById("footer").classList.add("notice");
+    f.classList.add("notice");
   });
 </script>
 </body>

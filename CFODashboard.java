@@ -302,7 +302,10 @@ public class CFODashboard {
     }
 
     public static void writeJson(ArrayList<CFODashboard> months, String path) {
-        new File("output").mkdirs();          // create the folder if absent
+        File parent = new File(path).getParentFile();
+        if (parent != null) {
+            parent.mkdirs();              // create the folder if absent
+        }
 
         try (PrintWriter out = new PrintWriter(path)) {
             out.println("{");

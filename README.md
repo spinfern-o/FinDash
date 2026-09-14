@@ -3,8 +3,9 @@
 A Java console app that turns two CSV files of monthly business financials into a
 readable dashboard of KPIs, and lets you compare any two months side by side.
 
-Built for food-service businesses, which are managed by prime cost, food cost, labor
-cost, occupancy, gross/net margin, and budget utilization.
+Costs are grouped into four non-overlapping buckets — direct expenses, operating
+expenses, variable overhead, and fixed overhead — so the same structure works for a
+restaurant, a retailer, a trades business, or a service firm.
 
 ## Requirements
 
@@ -42,35 +43,51 @@ Months on file:
 Which month's dashboard do you wish to see? (month num, 0 to quit)
 7
 july's financial dashboard
-Revenue                 $100,000.00
-Gross Profit                  59.5%
-Net Profit                    38.5%
+Month Number                      7
+Revenue                  $72,000.00
 
-Prime Cost                    38.0%
-Food Cost                     26.0%
-Labor Cost                    12.0%
-Occupancy                     11.0%
-You used 102.50% of your budget ($1,500.00 over)
+Maintenance                  $950.00
+Hardware                       $0.00
+Utilities                  $2,800.00
+COGS                      $26,000.00
+Labor                     $12,000.00
+
+Gross Profit                  36.8%
+Net Profit                    10.5%
+
+Variable Overhead              5.2%
+Fixed Overhead                10.3%
+
+Direct Expenses               63.2%
+Operating Expenses            10.8%
+
+Total Expenses                89.5%
+
+Budget                    $66,000.00
+Budget Used                   97.6%
+You used 97.61% of your budget ($1,580.00 under)
 Which month's dashboard would you like to compare it to? (month num, 0 to quit)
-8
+9
 
-july vs august
-Metrics                        july       august     Difference
-Revenue                $ 100,000.00 $  80,000.00 $  +20,000.00
+july vs september
+Metrics                        july    september     Difference
+Revenue                $  72,000.00 $  33,000.00 $  +39,000.00
 
-Gross Profit                  59.5%        60.0%        -0.5 pts
-Net Profit                    38.5%        39.4%        -0.9 pts
-Prime Cost                    38.0%        37.5%        +0.5 pts
+Gross Profit                  36.8%        38.8%        -2.0 pts
+Net Profit                    10.5%       -11.0%       +21.5 pts
+Fixed Overhead                10.3%        26.3%       -16.0 pts
 
-Food Cost                     26.0%        26.3%        -0.3 pts
-Labor Cost                    12.0%        11.3%        +0.8 pts
-Occupancy                     11.0%        14.6%        -3.6 pts
-Direct Expenses               40.5%        40.0%        +0.5 pts
-Operating Expenses            21.0%        20.6%        +0.4 pts
+Variable Overhead              5.2%         6.7%        -1.5 pts
 
-Total Expenses                61.5%        60.6%        +0.9 pts
-Budget Used                  102.5%        97.0%        +5.5 pts
+Direct Expenses               63.2%        61.2%        +2.0 pts
+Operating Expenses            10.8%        16.8%        -6.1 pts
+
+Total Expenses                89.5%       111.0%       -21.6 pts
+Budget Used                   97.6%       107.8%       -10.2 pts
 ```
+
+The difference column is computed as **month 1 minus month 2**, so a cost that rose
+from the first month to the second prints negative.
 
 ## Data files
 
@@ -87,33 +104,47 @@ Both files live in `data/` and are joined on the **month num** column.
 
 ```csv
 month,month num,revenue,budget
-july,7,100000,60000
-august,8,80000,50000
-september,9,50000,30000
+july,7,72000,66000
+august,8,64000,57000
+september,9,33000,34000
 ```
 
 ### `data/expenses.csv`
 
-| Column               | Meaning                                                   |
-| -------------------- | --------------------------------------------------------- |
-| `month num`          | Integer key matching `dashboard.csv`                      |
-| `cogs`               | Cost of goods sold (food and beverage)                    |
-| `rent`               | Rent, counted toward occupancy cost                       |
-| `tax`                | Property tax, counted toward occupancy cost               |
-| `labor`              | Total labor cost                                          |
-| `direct expenses`    | All costs that scale with sales (COGS + labor + other)    |
-| `operating expenses` | All overhead (rent + tax + utilities, marketing, admin)   |
+Fifteen columns. Every line item is stored individually; the four category totals are
+derived in Java rather than stored, so they cannot drift out of sync with their parts.
+
+| Column              | Bucket             |
+| ------------------- | ------------------ |
+| `month num`         | Integer key matching `dashboard.csv` |
+| `cogs`              | Direct             |
+| `packaging`         | Operating          |
+| `rent`              | Fixed overhead     |
+| `utilities`         | Variable overhead  |
+| `maintenance`       | Variable overhead  |
+| `hardware`          | Operating          |
+| `insurance`         | Fixed overhead     |
+| `marketing`         | Operating          |
+| `credit card fees`  | Operating          |
+| `business license`  | Fixed overhead     |
+| `telephone`         | Fixed overhead     |
+| `employee meals`    | Direct             |
+| `tax`               | Direct             |
+| `labor`             | Direct             |
 
 ```csv
-month num,cogs,rent,tax,labor,direct expenses,operating expenses
-7,26000,6000,5000,12000,40500,21000
-8,21000,6200,5500,9000,32000,16500
-9,11000,6000,5200,3500,15000,12000
+month num,cogs,packaging,rent,utilities,maintenance,hardware,insurance,marketing,credit card fees,business license,telephone,employee meals,tax,labor
+7,26000,3400,6000,2800,950,0,1100,2200,2150,0,320,2500,5000,12000
+8,21000,2600,6200,3100,4200,0,1100,1800,1760,0,320,2000,5500,9000
+9,11000,1350,6000,1900,310,2400,1100,900,910,1250,320,500,5200,3500
 ```
 
-`direct expenses` and `operating expenses` are the totals used for every calculation.
-`cogs`, `rent`, `tax`, and `labor` are components reported individually — they are
-subsets of those totals, not additions to them.
+**Every line item appears in exactly one bucket.** Fourteen costs, fourteen slots, no
+double counting — so the four category totals sum to total expenses, and revenue minus
+total expenses equals net profit.
+
+Column order matters: the parser reads by index, not by header name. Reordering columns
+will silently load values into the wrong fields rather than throwing an error.
 
 Parsing notes:
 
@@ -128,34 +159,77 @@ Parsing notes:
 
 All ratios are expressed as a percentage of revenue, except Budget Used.
 
-| Metric             | Formula                                                      |
-| ------------------ | ------------------------------------------------------------ |
-| Gross Profit       | `(revenue − direct expenses) / revenue`                      |
-| Net Profit         | `(revenue − direct expenses − operating expenses) / revenue` |
-| Prime Cost         | `(COGS + labor) / revenue`                                   |
-| Food Cost          | `COGS / revenue`                                             |
-| Labor Cost         | `labor / revenue`                                            |
-| Occupancy          | `(rent + tax) / revenue`                                     |
-| Total Expenses     | `(direct + operating expenses) / revenue`                    |
-| Budget Used        | `(direct + operating expenses) / budget`                     |
+| Metric             | Formula                                                     |
+| ------------------ | ----------------------------------------------------------- |
+| Direct Expenses    | `(cogs + labor + employee meals + tax) / revenue`           |
+| Operating Expenses | `(packaging + credit card fees + marketing + hardware) / revenue` |
+| Variable Overhead  | `(utilities + maintenance) / revenue`                       |
+| Fixed Overhead     | `(rent + insurance + business license + telephone) / revenue` |
+| Total Expenses     | `(direct + operating + variable OH + fixed OH) / revenue`   |
+| Gross Profit       | `(revenue − direct expenses) / revenue`                     |
+| Net Profit         | `(revenue − total expenses) / revenue`                      |
+| Budget Used        | `total expenses / budget`                                   |
 
 In the comparison table, the revenue row shows a signed dollar difference and every
 percentage row shows a signed change in **percentage points** (`pts`).
 
-### Industry benchmarks
+### What each bucket means
 
-For a full-service restaurant, healthy ranges are roughly:
+**Direct expenses** are costs traceable to a specific unit, job, or client. If you can
+name what it was for, it belongs here. This plus direct labor is prime cost — usually
+the largest share of spend and the part management can actually change week to week.
+
+**Operating expenses** scale with volume but aren't traceable to one unit — packaging,
+processing fees, marketing.
+
+**Variable overhead** rises with activity, but not proportionally. Utilities are the
+textbook case.
+
+**Fixed overhead** doesn't move with sales at all. It's also the hardest to cut, since
+most of it is contractual.
+
+### Reading the ratios
+
+Every percentage has revenue in the denominator, so a ratio can move because the cost
+changed **or** because revenue changed. September in the sample data shows this: fixed
+overhead jumps from 10.3% to 26.3%, but those dollars barely moved — revenue halved.
+When a ratio spikes, check the dollar figure before concluding anything about spending.
+
+Watch percentages on the large, steady lines (COGS, labor) where stability is the
+signal. Watch dollars on the lumpy ones (maintenance, hardware, business license),
+where a percentage of an irregular number tells you little.
+
+### Benchmarks
+
+Healthy ranges are entirely industry-dependent, so the most useful comparison is
+against your own trend rather than a published figure. As a rough orientation for
+full-service food operations:
 
 | Metric      | Target  |
 | ----------- | ------- |
-| Food cost   | 28–35%  |
-| Labor cost  | 28–32%  |
+| COGS        | 28–35%  |
+| Labor       | 28–32%  |
 | Prime cost  | 55–65%  |
 | Occupancy   | 6–10%   |
 | Net margin  | 3–6%    |
 
-Prime cost is the one operators watch most closely: it is the largest share of spend
-and the part management can actually change week to week.
+## Assumptions worth knowing
+
+A few judgment calls are baked into the categories. They're defensible, but they're
+choices, and changing one mid-year makes months incomparable.
+
+- **`tax` is treated as payroll tax** and sits in direct expenses alongside labor. If
+  your figure includes property tax it belongs in fixed overhead; if it includes income
+  tax it shouldn't be in total expenses at all, since income tax comes after net profit.
+- **`hardware` is expensed, not capitalized.** Anything above your capitalization
+  threshold (commonly $2,500) is really a fixed asset that should reach the P&L as
+  depreciation instead.
+- **`maintenance` is treated as variable.** Strictly it splits: recurring service
+  contracts are fixed, unplanned breakdowns are variable.
+- **`employee meals` are compensation,** not cost of goods. If your COGS figure already
+  includes that food, credit it out or the same inventory is counted twice.
+- **`packaging` is an operating expense,** not COGS, so prime cost stays comparable to
+  published benchmarks. Heavy takeout operations may prefer it in COGS.
 
 ## JSON output
 
@@ -165,14 +239,26 @@ carries finished values and consumers never recompute them.
 
 ```json
 {
-  "generated": "2026-09-12",
+  "generated": "2026-09-14",
   "months": [
     {
       "month": "july",
       "monthNum": 7,
-      "revenue": 100000.00,
-      "primeCost": 38.00,
-      "budgetPercent": 102.50
+      "revenue": 72000.00,
+      "maintenance": 950.00,
+      "hardware": 0.00,
+      "utilities": 2800.00,
+      "cogs": 26000.00,
+      "labor": 12000.00,
+      "grossProfit": 26500.00,
+      "netProfit": 7580.00,
+      "variableOverhead": 3750.00,
+      "fixedOverhead": 7420.00,
+      "directExpenses": 45500.00,
+      "operatingExpenses": 7750.00,
+      "totalExpenses": 64420.00,
+      "budget": 66000.00,
+      "budgetPercent": 97.61
     }
   ]
 }
@@ -183,7 +269,12 @@ carries finished values and consumers never recompute them.
 1. Replace the rows in `data/dashboard.csv` and `data/expenses.csv`, keeping the
    headers and column order intact.
 2. Make sure every `month num` in `dashboard.csv` has a matching row in `expenses.csv`.
+   A month with no revenue row will divide by zero and print `NaN` in every cell.
 3. Recompile and run — the menu is built from whatever loaded.
+
+Costs that don't fit an existing column should be added to the bucket that matches
+their behavior, not appended arbitrarily — the point of the structure is that the four
+totals stay meaningful.
 
 ## Project layout
 

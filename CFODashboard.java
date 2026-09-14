@@ -30,35 +30,67 @@ public class CFODashboard {
     }
 
     public double grossProfit() {
-        return ((revenue - expenses.getDirectExpenses())/revenue) * 100;
+        return revenue - directExpenses();
+    }
+
+    public double grossProfitPct() {
+        return ((grossProfit()/revenue) * 100);
     }
 
     public double netProfit() {
-        return ((revenue - expenses.getDirectExpenses() - expenses.getOperatingExpenses())/revenue) * 100;
+        return grossProfit() - operatingExpenses() - variableOverhead() - fixedOverhead();
     }
 
-    public double foodCost() {
-        return (expenses.getCOGS()/revenue) * 100;
+    public double netProfitPct() {
+        return (netProfit()/revenue) * 100;
     }
 
-    public double laborCost() {
-        return (expenses.getLabor()/revenue) * 100;
+    public double fixedOverhead() {
+        return (expenses.rent() + expenses.insurance() + expenses.businessLicense() + expenses.telephone());
     }
 
-    public double primeCost(){
-        return ((expenses.getCOGS() + expenses.getLabor())/revenue) * 100;
+    public double fixedOverheadPct() {
+        return (fixedOverhead()/revenue) * 100;
     }
 
-    public double occupancy(){
-        return ((expenses.getRent() + expenses.getTax())/revenue) * 100;
+    public double variableOverhead() {
+        return (expenses.utilities() + expenses.maintenance());
+    }
+
+    public double variableOverheadPct() {
+        return (variableOverhead()/revenue) * 100;
+    }
+
+    public double directExpenses(){
+        return (expenses.COGS() + expenses.labor() + expenses.employeeMeals() + expenses.tax());
+    }
+
+    public double directExpensesPct(){
+        return (directExpenses()/revenue) * 100;
+    }
+
+    public double operatingExpenses(){
+        return (expenses.packaging() + expenses.creditCardFees() + expenses.marketing() + expenses.hardware());
+    }
+
+    public double operatingExpensesPct(){
+        return (operatingExpenses()/revenue) * 100;
+    }
+
+    public double totalExpenses(){
+        return directExpenses() + operatingExpenses() + variableOverhead() + fixedOverhead();
+    }
+
+    public double totalExpensesPct(){
+        return (totalExpenses()/revenue) * 100;
     }
 
     public double budgetPercent(){
-        return (expenses.getTotalExpenses()/budget) * 100;
+        return (totalExpenses()/budget) * 100;
     }
 
     public void onBudget(){
-        double remaining = budget - expenses.getTotalExpenses();
+        double remaining = budget - totalExpenses();
         double percentUsed = (Math.round(budgetPercent() * 100)/100.0); //trucated to 2 decimal numbers w/printf
 
         if (remaining > 0){
@@ -83,7 +115,7 @@ public class CFODashboard {
         );
 
         System.out.printf(
-            "\033[1m%-22s $%,11.2f $%,11.2f $%+,12.2f%n\033[0m%n",
+            "%-22s $%,11.2f $%,11.2f $%+,12.2f%n%n",
             "Revenue",
             month1.revenue,
             month2.revenue,
@@ -94,56 +126,39 @@ public class CFODashboard {
         System.out.printf(
             "%-22s %11.1f%% %11.1f%% %+11.1f pts%n",
             "Gross Profit",
-            month1.grossProfit(),
-            month2.grossProfit(),
-            month1.grossProfit() - month2.grossProfit()
+            month1.grossProfitPct(),
+            month2.grossProfitPct(),
+            month1.grossProfitPct() - month2.grossProfitPct()
         );
 
         System.out.printf(
             "%-22s %11.1f%% %11.1f%% %+11.1f pts%n",
             "Net Profit",
-            month1.netProfit(),
-            month2.netProfit(),
-            month1.netProfit() - month2.netProfit()
+            month1.netProfitPct(),
+            month2.netProfitPct(),
+            month1.netProfitPct() - month2.netProfitPct()
         );
 
         System.out.printf(
-            "\033[1m%-22s %11.1f%% %11.1f%% %+11.1f pts%n\033[0m%n",
-            "Prime Cost",
-            month1.primeCost(),
-            month2.primeCost(),
-            month1.primeCost() - month2.primeCost()
+            "%-22s %11.1f%% %11.1f%% %+11.1f pts%n%n",
+            "Fixed Overhead",
+            month1.fixedOverheadPct(),
+            month2.fixedOverheadPct(),
+            month1.fixedOverheadPct() - month2.fixedOverheadPct()
         );
 
         System.out.printf(
-            "%-22s %11.1f%% %11.1f%% %+11.1f pts%n",
-            "Food Cost",
-            month1.foodCost(),
-            month2.foodCost(),
-            month1.foodCost() - month2.foodCost()
+            "%-22s %11.1f%% %11.1f%% %+11.1f pts%n%n",
+            "Variable Overhead",
+            month1.variableOverheadPct(),
+            month2.variableOverheadPct(),
+            month1.variableOverheadPct() - month2.variableOverheadPct()
         );
-
-        System.out.printf(
-            "%-22s %11.1f%% %11.1f%% %+11.1f pts%n",
-            "Labor Cost",
-            month1.laborCost(),
-            month2.laborCost(),
-            month1.laborCost() - month2.laborCost()
-        );
-
-        System.out.printf(
-            "%-22s %11.1f%% %11.1f%% %+11.1f pts%n",
-            "Occupancy",
-            month1.occupancy(),
-            month2.occupancy(),
-            month1.occupancy() - month2.occupancy()
-        );
-
         double direct1 =
-            (month1.expenses.getDirectExpenses() / month1.revenue) * 100;
+            month1.directExpensesPct();
 
         double direct2 =
-            (month2.expenses.getDirectExpenses() / month2.revenue) * 100;
+            month2.directExpensesPct();
 
         System.out.printf(
             "%-22s %11.1f%% %11.1f%% %+11.1f pts%n",
@@ -154,10 +169,10 @@ public class CFODashboard {
         );
 
         double operating1 =
-            (month1.expenses.getOperatingExpenses() / month1.revenue) * 100;
+            month1.operatingExpensesPct();
 
         double operating2 =
-            (month2.expenses.getOperatingExpenses() / month2.revenue) * 100;
+            month2.operatingExpensesPct();
 
         System.out.printf(
             "%-22s %11.1f%% %11.1f%% %+11.1f pts%n",
@@ -168,10 +183,10 @@ public class CFODashboard {
         );
 
         double total1 =
-            (month1.expenses.getTotalExpenses() / month1.revenue) * 100;
+            month1.totalExpensesPct();
 
         double total2 =
-            (month2.expenses.getTotalExpenses() / month2.revenue) * 100;
+            month2.totalExpensesPct();
 
         System.out.println();
         System.out.printf(
@@ -227,16 +242,37 @@ public class CFODashboard {
         return null;
     }
 
-    public void displayBoard(){
+    public void displayBoard() {
         System.out.println(month + "'s financial dashboard");
-        System.out.printf("%-22s %12s%n", "Revenue",      String.format("$%,.2f", revenue));
-        System.out.printf("%-22s %11.1f%%%n", "Gross Profit", grossProfit());
-        System.out.printf("%-22s %11.1f%%%n", "Net Profit",   netProfit());
+        System.out.printf("%-22s %12d%n", "Month Number", monthNum);
+        System.out.printf("%-22s %12s%n", "Revenue", String.format("$%,.2f", revenue));
+
         System.out.println();
-        System.out.printf("%-22s %11.1f%%%n", "Prime Cost", primeCost());
-        System.out.printf("%-22s %11.1f%%%n", "Food Cost",  foodCost());
-        System.out.printf("%-22s %11.1f%%%n", "Labor Cost", laborCost());
-        System.out.printf("%-22s %11.1f%%%n", "Occupancy",  occupancy());
+        System.out.printf("%-22s %12s%n", "Maintenance", String.format("$%,.2f", expenses.maintenance()));
+        System.out.printf("%-22s %12s%n", "Hardware",    String.format("$%,.2f", expenses.hardware()));
+        System.out.printf("%-22s %12s%n", "Utilities",   String.format("$%,.2f", expenses.utilities()));
+        System.out.printf("%-22s %12s%n", "COGS",        String.format("$%,.2f", expenses.COGS()));
+        System.out.printf("%-22s %12s%n", "Labor",       String.format("$%,.2f", expenses.labor()));
+
+        System.out.println();
+        System.out.printf("\033[1m%-22s %11.1f%%\033[0m%n", "Gross Profit", grossProfitPct());
+        System.out.printf("\033[1m%-22s %11.1f%%\033[0m%n", "Net Profit",   netProfitPct());
+
+        System.out.println();
+        System.out.printf("\033[1m%-22s %11.1f%%\033[0m%n", "Variable Overhead", variableOverheadPct());
+        System.out.printf("\033[1m%-22s %11.1f%%\033[0m%n", "Fixed Overhead",    fixedOverheadPct());
+
+        System.out.println();
+        System.out.printf("\033[1m%-22s %11.1f%%\033[0m%n", "Direct Expenses",    directExpensesPct());
+        System.out.printf("\033[1m%-22s %11.1f%%\033[0m%n", "Operating Expenses", operatingExpensesPct());
+
+        System.out.println();
+        System.out.printf("\033[1m%-22s %11.1f%%\033[0m%n", "Total Expenses", totalExpensesPct());
+
+        System.out.println();
+        System.out.printf("%-22s %12s%n", "Budget", String.format("$%,.2f", budget));
+        System.out.printf("%-22s %11.1f%%%n", "Budget Used", budgetPercent());
+
         onBudget();
     }
 
@@ -279,16 +315,24 @@ public class CFODashboard {
                 out.println("      \"month\": \"" + m.month + "\",");
                 out.println("      \"monthNum\": " + m.monthNum + ",");
                 out.println("      \"revenue\": " + num(m.revenue) + ",");
-                out.println("      \"cogs\": " + num(m.expenses.getCOGS()) + ",");
-                out.println("      \"rent\": " + num(m.expenses.getRent()) + ",");
-                out.println("      \"labor\": " + num(m.expenses.getLabor()) + ",");
-                out.println("      \"totalExpenses\": " + num(m.expenses.getTotalExpenses()) + ",");
+                out.println();
+                out.println("      \"maintenance\": " + num(m.expenses.maintenance()) + ",");
+                out.println("      \"hardware\": " + num(m.expenses.hardware()) + ",");
+                out.println("      \"utilities\": " + num(m.expenses.utilities()) + ",");
+                out.println("      \"cogs\": " + num(m.expenses.COGS()) + ",");
+                out.println("      \"labor\": " + num(m.expenses.labor()) + ",");
+                out.println();
                 out.println("      \"grossProfit\": " + num(m.grossProfit()) + ",");
                 out.println("      \"netProfit\": " + num(m.netProfit()) + ",");
-                out.println("      \"primeCost\": " + num(m.primeCost()) + ",");
-                out.println("      \"foodCost\": " + num(m.foodCost()) + ",");
-                out.println("      \"laborCost\": " + num(m.laborCost()) + ",");
-                out.println("      \"occupancy\": " + num(m.occupancy()) + ",");
+                out.println();
+                out.println("      \"variableOverhead\": " + num(m.variableOverhead()) + ",");
+                out.println("      \"fixedOverhead\": " + num(m.fixedOverhead()) + ",");
+                out.println();
+                out.println("      \"directExpenses\": " + num(m.directExpenses()) + ",");
+                out.println("      \"operatingExpenses\": " + num(m.operatingExpenses()) + ",");
+                out.println();
+                out.println("      \"totalExpenses\": " + num(m.totalExpenses()) + ",");
+                out.println();
                 out.println("      \"budget\": " + num(m.budget) + ",");
                 out.println("      \"budgetPercent\": " + num(m.budgetPercent()));
                 out.println("    }" + (i < months.size() - 1 ? "," : ""));
@@ -313,15 +357,39 @@ public class CFODashboard {
                 String line = expenseReader.nextLine();
                 String[] eData = parseCsvLine(line);
 
-                int monthNum = (int) parseAmount(eData[0]);
-                double COGS = parseAmount(eData[1]);
-                double rent = parseAmount(eData[2]);
-                double tax = parseAmount(eData[3]);
-                double labor = parseAmount(eData[4]);
-                double directExpenses = parseAmount(eData[5]);
-                double operatingExpenses = parseAmount(eData[6]);
+                int monthNum           = (int) parseAmount(eData[0]);
+                double COGS            = parseAmount(eData[1]);
+                double packaging       = parseAmount(eData[2]);
+                double rent            = parseAmount(eData[3]);
+                double utilities       = parseAmount(eData[4]);
+                double maintenance     = parseAmount(eData[5]);
+                double hardware        = parseAmount(eData[6]);
+                double insurance       = parseAmount(eData[7]);
+                double marketing       = parseAmount(eData[8]);
+                double creditCardFees  = parseAmount(eData[9]);
+                double businessLicense = parseAmount(eData[10]);
+                double telephone       = parseAmount(eData[11]);
+                double employeeMeals   = parseAmount(eData[12]);
+                double tax             = parseAmount(eData[13]);
+                double labor           = parseAmount(eData[14]);
 
-                Expenses expenses = new Expenses(monthNum, COGS, rent, tax, labor, directExpenses, operatingExpenses);
+                Expenses expenses = new Expenses(
+                    monthNum,
+                    COGS,
+                    packaging,
+                    rent,
+                    utilities,
+                    maintenance,
+                    hardware,
+                    insurance,
+                    marketing,
+                    creditCardFees,
+                    businessLicense,
+                    telephone,
+                    employeeMeals,
+                    tax,
+                    labor
+                );
 
                 expensesByMonth.put(monthNum, expenses); //into hashmap
             }

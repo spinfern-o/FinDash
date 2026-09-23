@@ -24,13 +24,21 @@ const MAX_HEADERS = 120;
 const MAX_FIELDS = 60;
 const MAX_LABEL = 200;
 
-/** Domains allowed to call this. Empty list = allow any origin. */
-const ALLOWED_HOSTS = [];
+/** Hostnames allowed to call this. Empty list = allow any origin. */
+const ALLOWED_HOSTS = ["findash.tech", "www.findash.tech", "localhost"];
 
 function originAllowed(req) {
   if (!ALLOWED_HOSTS.length) return true;
-  const origin = req.headers.origin || req.headers.referer || "";
-  return ALLOWED_HOSTS.some((h) => origin.includes(h));
+  const raw = req.headers.origin || req.headers.referer || "";
+  let host;
+  // Compare the parsed hostname, not a substring: "findash.tech" appears inside
+  // "findash.tech.attacker.com" too, and a substring test would wave it through.
+  try {
+    host = new URL(raw).hostname;
+  } catch {
+    return false;                       // no Origin, or one we cannot parse
+  }
+  return ALLOWED_HOSTS.includes(host);
 }
 
 const isCleanList = (v, max) =>

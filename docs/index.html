@@ -631,7 +631,7 @@ function parseCsv(text) {
   if (row.some(v => v.trim() !== "")) rows.push(row);
 
   if (!rows.length) return {headers: [], rows: []};
-  const headers = rows[0].map(h => h.trim().toLowerCase());
+  const headers = rows[0].map(canonical);
   return {
     headers,
     rows: rows.slice(1).map(r => {
@@ -640,6 +640,58 @@ function parseCsv(text) {
       return o;
     })
   };
+}
+
+/* ---- header matching ----
+   Headers arrive spelled however the author felt like spelling them. These
+   three steps fold the common variations onto our canonical names, so the
+   lookups below can stay simple. All of it runs locally - no network. */
+
+/* Case, punctuation and spacing collapse: "Credit_Card-Fees " -> "credit card fees" */
+const normalise = s =>
+  String(s == null ? "" : s).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+const CANONICAL = [
+  "month", "month num", "revenue", "budget",
+  "cogs", "packaging", "rent", "utilities", "maintenance", "hardware",
+  "insurance", "marketing", "credit card fees", "business license",
+  "telephone", "employee meals", "tax", "labor"
+];
+
+/* Different words for the same line. Keys are already normalised. */
+const SYNONYMS = {
+  "cost of goods": "cogs", "cost of goods sold": "cogs", "food cost": "cogs",
+  "salaries": "labor", "salaries wages": "labor", "wages": "labor",
+  "payroll": "labor", "staff costs": "labor",
+  "premises": "rent", "rent expense": "rent", "occupancy": "rent",
+  "computer and hardware": "hardware", "computer hardware": "hardware",
+  "equipment": "hardware",
+  "telephone internet": "telephone", "phone": "telephone",
+  "business license and permits": "business license",
+  "licenses and permits": "business license", "permits": "business license",
+  "insurance expenses": "insurance", "insurance expense": "insurance",
+  "marketing expense": "marketing", "advertising": "marketing",
+  "packaging supplies": "packaging",
+  "maintenance and repairs": "maintenance", "repairs": "maintenance",
+  "taxes": "tax", "payroll taxes": "tax",
+  "income": "revenue", "sales": "revenue", "total revenue": "revenue",
+  "month number": "month num", "month no": "month num", "period": "month num"
+};
+
+/* normalise -> exact synonym -> exact canonical -> longest whole-word prefix.
+   The prefix step is what rescues labels carrying a parenthetical, e.g.
+   "Utilities (gas, electricity, water)" -> "utilities". It requires a space
+   after the match so "monthly revenue" can never collapse to "month". */
+function canonical(header) {
+  const n = normalise(header);
+  if (SYNONYMS[n]) return SYNONYMS[n];
+  if (CANONICAL.includes(n)) return n;
+
+  let best = null;
+  for (const key of Object.keys(SYNONYMS).concat(CANONICAL)) {
+    if (n.startsWith(key + " ") && (!best || key.length > best.length)) best = key;
+  }
+  return best ? (SYNONYMS[best] || best) : n;
 }
 
 const NUM = v => {

@@ -5,6 +5,11 @@ import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.okhttp.AnthropicOkHttpClient;
@@ -354,16 +359,143 @@ public class CFODashboard {
         }
     }
 
-    static Map<String, Integer> resolveColumns(String[] headers){
-        static final AnthropicClient CLIENT = AnthropicOkHttpClient.fromEnv(); //for in case an empty api key is given
+    /** Canonical fields in the order data/expenses.csv uses them.
+        Doubles as the positional fallback when no mapping is available. */
+    static final List<String> EXPENSE_FIELDS = List.of(
+        "month num", "cogs", "packaging", "rent", "utilities", "maintenance",
+        "hardware", "insurance", "marketing", "credit card fees",
+        "business license", "telephone", "employee meals", "tax", "labor");
 
-        MessageCreateParams params = MessageCreateParams.builder()
-            .model("claude-opus-5")
-            .maxTokens(1024L)
-            .addUserMessage("...".formatted(String.join(", ", headers)))
-            .build();
+    /** Canonical fields in the order data/dashboard.csv uses them. */
+    static final List<String> DASHBOARD_FIELDS = List.of(
+        "month", "month num", "revenue", "budget");
 
-        Message response = CLIENT.messages().create(params);
+    // Built on first use, not at class load, so a missing API key breaks only
+    // the mapping step instead of stopping the program from starting at all.
+    private static AnthropicClient anthropic;
+
+    private static AnthropicClient anthropic() {
+        if (anthropic == null) {
+            anthropic = AnthropicOkHttpClient.fromEnv();
+        }
+        return anthropic;
+    }
+
+    /** Lowercase, collapse punctuation - so "Cost of Goods " and "cost_of_goods"
+        compare equal. */
+    static String normalise(String s) {
+        return s == null ? "" : s.toLowerCase().replaceAll("[^a-z0-9]+", " ").trim();
+    }
+
+    /**
+     * Works out which column index holds each canonical field for one CSV file.
+     *
+     * Headers that already match by name are resolved locally for free; only the
+     * leftovers go to the model, and only header text ever leaves the machine -
+     * never a row of figures. If the call fails, falls back to the positional
+     * order in `fields`, which is what the old hardcoded indices did.
+     */
+    static Map<String, Integer> resolveColumns(String[] headers, List<String> fields) {
+        Map<String, Integer> col = new HashMap<>();
+
+        // 1. free pass: exact match after normalising
+        for (int i = 0; i < headers.length; i++) {
+            String h = normalise(headers[i]);
+            for (String f : fields) {
+                if (!col.containsKey(f) && normalise(f).equals(h)) {
+                    col.put(f, i);
+                    break;
+                }
+            }
+        }
+        if (col.size() == fields.size()) {
+            return col;                      // everything placed, no API call needed
+        }
+
+        List<String> unplaced = new ArrayList<>();
+        for (String f : fields) {
+            if (!col.containsKey(f)) unplaced.add(f);
+        }
+
+        String prompt = """
+            You are mapping spreadsheet column headers to canonical accounting fields.
+
+            Canonical fields still needing a column: %s
+
+            The file's headers, in order: %s
+
+            Reply with JSON only - no prose, no code fences. One key per canonical
+            field listed above, whose value is the header text it corresponds to,
+            or null if no header fits. Copy header text exactly as given.
+            Example: {"cogs": "Cost of Goods", "labor": null}
+            """.formatted(String.join(", ", unplaced), String.join(", ", headers));
+
+        try {
+            MessageCreateParams params = MessageCreateParams.builder()
+                .model("claude-opus-5")
+                .maxTokens(1024L)
+                .addUserMessage(prompt)
+                .build();
+
+            Message response = anthropic().messages().create(params);
+
+            String text = response.content().stream()
+                .flatMap(block -> block.text().stream())
+                .map(t -> t.text())
+                .collect(Collectors.joining());
+
+            // Be forgiving about fences or stray prose around the object.
+            int open = text.indexOf('{'), close = text.lastIndexOf('}');
+            if (open < 0 || close <= open) {
+                System.out.println("Column mapping: model did not return JSON, using column order instead");
+                return positional(fields);
+            }
+
+            Map<String, String> reply = new ObjectMapper().readValue(
+                text.substring(open, close + 1),
+                new TypeReference<Map<String, String>>() {});
+
+            // 2. turn header NAMES into column INDICES, rejecting anything invented
+            for (Map.Entry<String, String> e : reply.entrySet()) {
+                String field = e.getKey(), header = e.getValue();
+                if (header == null || !unplaced.contains(field)) continue;
+
+                int idx = -1;
+                for (int i = 0; i < headers.length; i++) {
+                    if (normalise(headers[i]).equals(normalise(header))) { idx = i; break; }
+                }
+                if (idx < 0) {
+                    System.out.println("Column mapping: ignoring \"" + header + "\" - not a header in this file");
+                    continue;
+                }
+                if (!col.containsValue(idx)) col.put(field, idx);
+            }
+
+            for (String f : fields) {
+                if (!col.containsKey(f)) {
+                    System.out.println("Column mapping: no column for \"" + f + "\", treating it as 0");
+                }
+            }
+            return col;
+
+        } catch (Exception e) {
+            System.out.println("Column mapping unavailable (" + e.getMessage() + "), using column order instead");
+            return positional(fields);
+        }
+    }
+
+    /** field 0 -> column 0, field 1 -> column 1 ... the original hardcoded behaviour. */
+    static Map<String, Integer> positional(List<String> fields) {
+        Map<String, Integer> col = new HashMap<>();
+        for (int i = 0; i < fields.size(); i++) col.put(fields.get(i), i);
+        return col;
+    }
+
+    /** Reads one field out of a row, tolerating a missing or out-of-range column. */
+    static double cell(String[] row, Map<String, Integer> col, String field) {
+        Integer i = col.get(field);
+        if (i == null || i < 0 || i >= row.length) return 0.0;
+        return parseAmount(row[i]);
     }
 
     public static void main(String[] args) {

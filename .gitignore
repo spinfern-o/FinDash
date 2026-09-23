@@ -1,5 +1,15 @@
+#secrets - never commit an api key
+.env
+.env.*
+*.pem
+*.key
+secrets.properties
+
 #java compiled files
 *.class
+
+#maven build output
+target/
 
 #macOS
 .DS_Store

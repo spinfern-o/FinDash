@@ -4,6 +4,12 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.HashMap;
+import java.util.Map;
+
+import com.anthropic.client.AnthropicClient;
+import com.anthropic.client.okhttp.AnthropicOkHttpClient;
+import com.anthropic.models.messages.MessageCreateParams;
+import com.anthropic.models.messages.Message;
 
 public class CFODashboard {
 
@@ -347,6 +353,19 @@ public class CFODashboard {
             System.out.println("Could not write JSON: " + e.getMessage());
         }
     }
+
+    static Map<String, Integer> resolveColumns(String[] headers){
+        static final AnthropicClient CLIENT = AnthropicOkHttpClient.fromEnv(); //for in case an empty api key is given
+
+        MessageCreateParams params = MessageCreateParams.builder()
+            .model("claude-opus-5")
+            .maxTokens(1024L)
+            .addUserMessage("...".formatted(String.join(", ", headers)))
+            .build();
+
+        Message response = CLIENT.messages().create(params);
+    }
+
     public static void main(String[] args) {
         ArrayList<CFODashboard> months = new ArrayList<>();
         HashMap<Integer, Expenses> expensesByMonth = new HashMap<>(); //creates hashmap to link all the .javas via monthNum

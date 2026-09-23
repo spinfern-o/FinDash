@@ -9,14 +9,17 @@ restaurant, a retailer, a trades business, or a service firm.
 
 ## Requirements
 
-- JDK 17 or newer (developed against Temurin 21)
+- JDK 21 or newer (developed against Temurin 21)
+- Maven (`brew install maven`)
+- An `ANTHROPIC_API_KEY` in the environment — **optional**. Without one, column
+  mapping falls back to reading columns in file order, exactly as before.
 
 ## Quick start
 
 Compile and run from the project root:
 
 ```bash
-javac -d bin CFODashboard.java Expenses.java && java -cp bin CFODashboard
+mvn -q compile exec:java
 ```
 
 > **Run from the project root.** The CSV paths (`data/expenses.csv`, `data/dashboard.csv`)
@@ -315,8 +318,10 @@ totals stay meaningful.
 ## Project layout
 
 ```
-CFODashboard.java   Main class: CSV loading, metrics, prompts, display, comparison
-Expenses.java       Per-month expense record with getters and derived sums
+pom.xml             Maven build; pulls in the Anthropic Java SDK
+src/main/java/
+  CFODashboard.java Main class: CSV loading, metrics, prompts, display, comparison
+  Expenses.java     Per-month expense record with getters and derived sums
 data/               Input CSVs
 docs/               Published by GitHub Pages from the /docs folder on main
 docs/data.json      Generated on every run

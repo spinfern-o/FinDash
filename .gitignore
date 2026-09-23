@@ -11,6 +11,10 @@ secrets.properties
 #maven build output
 target/
 
+#node / vercel
+node_modules/
+.vercel/
+
 #macOS
 .DS_Store
 

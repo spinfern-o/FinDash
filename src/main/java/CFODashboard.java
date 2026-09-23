@@ -491,6 +491,13 @@ public class CFODashboard {
         return col;
     }
 
+    /** Reads one field as text, tolerating a missing or out-of-range column. */
+    static String text(String[] row, Map<String, Integer> col, String field) {
+        Integer i = col.get(field);
+        if (i == null || i < 0 || i >= row.length) return "";
+        return row[i].trim();
+    }
+
     /** Reads one field out of a row, tolerating a missing or out-of-range column. */
     static double cell(String[] row, Map<String, Integer> col, String field) {
         Integer i = col.get(field);
@@ -505,27 +512,28 @@ public class CFODashboard {
         try{ //expenses .csv first; double check on the order of the csvs3
             File file = new File("data/expenses.csv");
             Scanner expenseReader = new Scanner(file);
-            expenseReader.nextLine();
+            String[] headers = parseCsvLine(expenseReader.nextLine());
+            Map<String,Integer> col = resolveColumns(headers, EXPENSE_FIELDS);
 
             while(expenseReader.hasNextLine()){
                 String line = expenseReader.nextLine();
                 String[] eData = parseCsvLine(line);
 
-                int monthNum           = (int) parseAmount(eData[0]);
-                double COGS            = parseAmount(eData[1]);
-                double packaging       = parseAmount(eData[2]);
-                double rent            = parseAmount(eData[3]);
-                double utilities       = parseAmount(eData[4]);
-                double maintenance     = parseAmount(eData[5]);
-                double hardware        = parseAmount(eData[6]);
-                double insurance       = parseAmount(eData[7]);
-                double marketing       = parseAmount(eData[8]);
-                double creditCardFees  = parseAmount(eData[9]);
-                double businessLicense = parseAmount(eData[10]);
-                double telephone       = parseAmount(eData[11]);
-                double employeeMeals   = parseAmount(eData[12]);
-                double tax             = parseAmount(eData[13]);
-                double labor           = parseAmount(eData[14]);
+                int monthNum           = (int) cell(eData, col, "month num");
+                double COGS            = cell(eData, col, "cogs");
+                double packaging       = cell(eData, col, "packaging");
+                double rent            = cell(eData, col, "rent");
+                double utilities       = cell(eData, col, "utilities");
+                double maintenance     = cell(eData, col, "maintenance");
+                double hardware        = cell(eData, col, "hardware");
+                double insurance       = cell(eData, col, "insurance");
+                double marketing       = cell(eData, col, "marketing");
+                double creditCardFees  = cell(eData, col, "credit card fees");
+                double businessLicense = cell(eData, col, "business license");
+                double telephone       = cell(eData, col, "telephone");
+                double employeeMeals   = cell(eData, col, "employee meals");
+                double tax             = cell(eData, col, "tax");
+                double labor           = cell(eData, col, "labor");
 
                 Expenses expenses = new Expenses(
                     monthNum,
@@ -555,16 +563,17 @@ public class CFODashboard {
         try{
             File file = new File("data/dashboard.csv");
             Scanner fileReader = new Scanner(file);
-            fileReader.nextLine(); //skips the header
+            String[] headers = parseCsvLine(fileReader.nextLine());
+            Map<String,Integer> col = resolveColumns(headers, DASHBOARD_FIELDS);
 
             while(fileReader.hasNextLine()){
                 String line = fileReader.nextLine();
 
                 String[] data = parseCsvLine(line);
-                String month = data[0];
-                int monthNum = (int) parseAmount(data[1]);
-                double revenue = parseAmount(data[2]);
-                double budget = parseAmount(data[3]);
+                String month   = text(data, col, "month");
+                int monthNum   = (int) cell(data, col, "month num");
+                double revenue = cell(data, col, "revenue");
+                double budget  = cell(data, col, "budget");
                 Expenses expenses = expensesByMonth.get(monthNum); //retrieves the monthNum's expenses object
 
                 if (expenses == null){

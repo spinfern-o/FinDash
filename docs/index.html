@@ -630,16 +630,119 @@ function parseCsv(text) {
   row.push(field);
   if (row.some(v => v.trim() !== "")) rows.push(row);
 
+  return toTable(rows);
+}
+
+/* Grid of cells -> {headers, rows}. Shared by the CSV and xlsx readers so both
+   get the same canonical header handling. */
+function toTable(rows) {
   if (!rows.length) return {headers: [], rows: []};
   const headers = rows[0].map(canonical);
   return {
     headers,
     rows: rows.slice(1).map(r => {
       const o = {};
-      headers.forEach((h, i) => o[h] = (r[i] === undefined ? "" : r[i]).trim());
+      headers.forEach((h, i) => o[h] = String(r[i] === undefined ? "" : r[i]).trim());
       return o;
     })
   };
+}
+
+/* ================= xlsx reading =================
+   An .xlsx is a zip of XML. The browser can already unzip (DecompressionStream)
+   and parse XML (DOMParser), so we read the two parts we need directly rather
+   than pulling in a spreadsheet library. No dependency, no CDN, and the file
+   still never leaves the machine. */
+
+async function inflate(bytes, method) {
+  if (method === 0) return bytes;                       // stored, not compressed
+  const stream = new Blob([bytes]).stream()
+    .pipeThrough(new DecompressionStream("deflate-raw"));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+/* Walk the zip central directory -> {entryName: bytes} */
+async function unzip(buf) {
+  const dv = new DataView(buf), bytes = new Uint8Array(buf);
+
+  let eocd = -1;                                        // end-of-central-directory
+  for (let i = bytes.length - 22; i >= 0 && i > bytes.length - 65558; i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error("not a zip archive");
+
+  const count = dv.getUint16(eocd + 10, true);
+  let p = dv.getUint32(eocd + 16, true);
+  const files = {};
+
+  for (let n = 0; n < count; n++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) break;
+    const method   = dv.getUint16(p + 10, true);
+    const compLen  = dv.getUint32(p + 20, true);
+    const nameLen  = dv.getUint16(p + 28, true);
+    const extraLen = dv.getUint16(p + 30, true);
+    const cmtLen   = dv.getUint16(p + 32, true);
+    const localOff = dv.getUint32(p + 42, true);
+    const name = new TextDecoder().decode(bytes.subarray(p + 46, p + 46 + nameLen));
+
+    // the local header repeats name/extra at its own lengths before the data
+    const lnLen = dv.getUint16(localOff + 26, true);
+    const leLen = dv.getUint16(localOff + 28, true);
+    const start = localOff + 30 + lnLen + leLen;
+    files[name] = await inflate(bytes.subarray(start, start + compLen), method);
+
+    p += 46 + nameLen + extraLen + cmtLen;
+  }
+  return files;
+}
+
+/* "BC12" -> 54. xlsx omits empty cells, so the column comes from the ref. */
+function colIndex(ref) {
+  let n = 0;
+  for (const ch of ref) {
+    const c = ch.charCodeAt(0);
+    if (c < 65 || c > 90) break;
+    n = n * 26 + (c - 64);
+  }
+  return n - 1;
+}
+
+async function readXlsx(buf) {
+  const files = await unzip(buf);
+  const dec = new TextDecoder();
+  const xml = name => new DOMParser().parseFromString(dec.decode(files[name]), "application/xml");
+
+  let shared = [];
+  if (files["xl/sharedStrings.xml"]) {                  // one <si> may hold several runs
+    shared = [...xml("xl/sharedStrings.xml").getElementsByTagName("si")]
+      .map(si => [...si.getElementsByTagName("t")].map(t => t.textContent).join(""));
+  }
+
+  const sheet = Object.keys(files)
+    .filter(n => /^xl\/worksheets\/sheet\d+\.xml$/.test(n))
+    .sort()[0];
+  if (!sheet) throw new Error("no worksheet inside the workbook");
+
+  const rows = [];
+  for (const row of [...xml(sheet).getElementsByTagName("row")]) {
+    const cells = [];
+    for (const c of [...row.getElementsByTagName("c")]) {
+      const i = colIndex(c.getAttribute("r") || "");
+      const t = c.getAttribute("t");
+      let v;
+      if (t === "inlineStr") {
+        v = [...c.getElementsByTagName("t")].map(x => x.textContent).join("");
+      } else {
+        const vEl = c.getElementsByTagName("v")[0];
+        const raw = vEl ? vEl.textContent : "";
+        v = t === "s" ? (shared[Number(raw)] || "") : raw;
+      }
+      while (cells.length < i) cells.push("");          // pad the gaps xlsx leaves out
+      cells[i] = v;
+    }
+    if (cells.some(x => String(x).trim() !== "")) rows.push(cells);
+  }
+  return rows;
 }
 
 /* ---- header matching ----
@@ -762,25 +865,37 @@ async function handleFiles(list) {
   const files = [...list];
   if (!files.length) return;
 
-  const rejected = files.filter(f => !/\.csv$/i.test(f.name));
-  const csvs     = files.filter(f =>  /\.csv$/i.test(f.name));
+  const readable = f => /\.(csv|xlsx)$/i.test(f.name);
+  const rejected = files.filter(f => !readable(f));
+  const usable   = files.filter(readable);
 
-  if (!csvs.length) {
+  if (!usable.length) {
+    const xls = rejected.some(f => /\.xls$/i.test(f.name));
     return say("Not read", rejected.map(f => f.name).join(", ") +
-      " — CSV is the only format read right now.", true);
+      (xls ? " — .xls is the older Excel format; re-save it as .xlsx or CSV."
+           : " — CSV and .xlsx are the formats read right now."), true);
   }
 
-  const unknown = [];
-  for (const f of csvs) {
+  const unknown = [], unreadable = [];
+  for (const f of usable) {
     let parsed;
-    try { parsed = parseCsv(await f.text()); }
-    catch { unknown.push(f.name); continue; }
+    try {
+      parsed = /\.xlsx$/i.test(f.name)
+        ? toTable(await readXlsx(await f.arrayBuffer()))
+        : parseCsv(await f.text());
+    }
+    // a file we could not open at all is a different problem from one whose
+    // columns we did not recognise - don't give column advice for a broken file
+    catch (err) { unreadable.push(f.name + " (" + err.message + ")"); continue; }
 
     const kind = classify(parsed.headers);
     if (kind) held[kind] = Object.assign(parsed, {fileName: f.name});
     else unknown.push(f.name);
   }
 
+  if (unreadable.length) {
+    return say("Could not open", unreadable.join(", "), true);
+  }
   if (unknown.length) {
     return say("Unrecognized columns", unknown.join(", ") +
       " — need a revenue column (dashboard) or a cogs column (expenses).", true);

@@ -307,11 +307,11 @@
   <div class="loader" id="loader">
     <div class="loader-text">
       <strong id="source">Published figures</strong>
-      <span id="status">Read from data.json</span>
+      <span id="status">Read from data.json &middot; CSV or .xlsx accepted</span>
     </div>
     <div class="loader-actions">
-      <input type="file" id="file" accept=".csv,text/csv" multiple hidden>
-      <button type="button" class="btn primary" id="pick">Choose CSV files</button>
+      <input type="file" id="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple hidden>
+      <button type="button" class="btn primary" id="pick">Choose files</button>
       <button type="button" class="btn" id="reset" hidden>Use published figures</button>
     </div>
   </div>

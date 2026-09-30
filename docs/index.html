@@ -635,17 +635,26 @@ function parseCsv(text) {
 
 /* Grid of cells -> {headers, rows}. Shared by the CSV and xlsx readers so both
    get the same canonical header handling. */
-function toTable(rows) {
-  if (!rows.length) return {headers: [], rows: []};
-  const headers = rows[0].map(canonical);
-  return {
-    headers,
-    rows: rows.slice(1).map(r => {
-      const o = {};
-      headers.forEach((h, i) => o[h] = String(r[i] === undefined ? "" : r[i]).trim());
-      return o;
-    })
-  };
+function toTable(grid) {
+  const headers = headerRow(grid);
+  return {headers, rows: buildRows(grid, headers)};
+}
+
+/* What each column means. Local and synchronous - no network. */
+function headerRow(grid) {
+  if (!grid.length) return [];
+  return grid[0].map(canonical);
+}
+
+/* Build the row objects against a FINAL header list. Headers arrive as an
+   argument rather than being computed here, which is what lets a caller
+   correct them before the keys get baked into every row. */
+function buildRows(grid, headers) {
+  return grid.slice(1).map(r => {
+    const o = {};
+    headers.forEach((h, i) => o[h] = String(r[i] === undefined ? "" : r[i]).trim());
+    return o;
+  });
 }
 
 /* ================= xlsx reading =================

@@ -10,7 +10,11 @@
  *
  * Request:  { "headers": ["Month", "Cost of Goods", ...],
  *             "fields":  ["month num", "cogs", ...] }
- * Response: { "mapping": { "cogs": "Cost of Goods", "labor": null } }
+ * Response: { "mapping": { "cogs": "Cost of Goods", "labor": null },
+ *             "other":   { "Bank service charge": "operating" } }
+ *
+ * "other" assigns each column that matched no field to the bucket it behaves
+ * like, so its money still reaches the totals instead of silently reading zero.
  */
 
 import Anthropic from "@anthropic-ai/sdk";
@@ -23,6 +27,9 @@ const client = new Anthropic(); // reads ANTHROPIC_API_KEY from the environment
 const MAX_HEADERS = 120;
 const MAX_FIELDS = 60;
 const MAX_LABEL = 200;
+
+/** The four buckets an unmatched column can be assigned to. */
+const BUCKETS = ["direct", "operating", "variable", "fixed"];
 
 /** Domains allowed to call this. Empty list = allow any origin. */
 const ALLOWED_HOSTS = [];
@@ -62,10 +69,21 @@ Canonical fields needing a column: ${fields.join(", ")}
 
 The file's headers, in order: ${headers.join(", ")}
 
-Reply with JSON only - no prose, no code fences. One key per canonical field
-listed above, whose value is the header text it corresponds to, or null if no
-header fits. Copy header text exactly as given.
-Example: {"cogs": "Cost of Goods", "labor": null}`;
+Reply with JSON only - no prose, no code fences - shaped like:
+{"mapping": {"cogs": "Cost of Goods", "labor": null},
+ "other":   {"Bank service charge": "operating"}}
+
+"mapping": one key per canonical field listed above, whose value is the header
+text it corresponds to, or null if no header fits.
+
+"other": for each header that matched no field above but is a real cost, which
+of these four buckets it behaves like: direct (traceable to a unit or job),
+operating (scales with volume but not per-unit), variable (rises with activity,
+but not proportionally), fixed (does not move with sales). Omit a header that is
+not a cost, or that is a subtotal of other columns - counting a subtotal
+alongside its parts double-counts the money.
+
+Copy header text exactly as given.`;
 
   try {
     const response = await client.messages.create({
@@ -97,7 +115,7 @@ Example: {"cogs": "Cost of Goods", "labor": null}`;
     // Drop anything invented: every value must be a header actually sent to us,
     // and every key must be a field that was actually asked about.
     const clean = {};
-    for (const [field, header] of Object.entries(mapping)) {
+    for (const [field, header] of Object.entries(mapping.mapping ?? {})) {
       if (!fields.includes(field)) continue;
       if (header === null) continue;
       if (typeof header === "string" && headers.includes(header)) {
@@ -105,7 +123,16 @@ Example: {"cogs": "Cost of Goods", "labor": null}`;
       }
     }
 
-    return res.status(200).json({ mapping: clean });
+    // Same discipline for the bucket assignments: a real header, a real bucket,
+    // and never a column already claimed by a named field.
+    const claimed = new Set(Object.values(clean));
+    const other = {};
+    for (const [header, bucket] of Object.entries(mapping.other ?? {})) {
+      if (!headers.includes(header) || claimed.has(header)) continue;
+      if (BUCKETS.includes(bucket)) other[header] = bucket;
+    }
+
+    return res.status(200).json({ mapping: clean, other });
   } catch (err) {
     // Never echo the upstream error verbatim - it can carry request details.
     console.error("map-columns failed:", err);

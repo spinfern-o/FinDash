@@ -3,33 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Monthly Report</title>
+<title>FinDash &middot; Everyone can manage finances</title>
+<meta name="description" content="Revenue, costs, and budget read straight off your own CSVs — one clear monthly dashboard, built for non-tech, international, and everyday teams.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     color-scheme:dark;
     --ground:#0a0a0a;
     --card:#131313;
+    --card-2:#161616;
     --line:rgba(245,245,245,0.1);
     --line-soft:rgba(245,245,245,0.06);
     --ink:#f5f5f5;
     --ink-2:#b3b3b3;
     --ink-3:#8c8c8c;
     --accent:#94dc00;
+    --accent-2:#b4ff1f;
     --accent-ink:#0a0a0a;
-
-    /* categorical slots - validated dark, surface #191919 */
-    --s1:#3ddc84;   /* direct expenses    */
-    --s2:#5b9dff;   /* operating expenses */
-    --s3:#ff9b4d;   /* variable overhead  */
-    --s4:#b794f6;   /* fixed overhead     */
-    --rest:#94dc00; /* profit remainder   */
-
-    --critical:#e5484d;
-    --radius:12px;
-    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   }
 
   *{box-sizing:border-box}
@@ -39,1513 +32,319 @@
     margin:0;
     background:var(--ground);
     background-image:radial-gradient(var(--line) .7px, transparent .7px);
-    background-size:28px 28px;
+    background-size:26px 26px;
     color:var(--ink);
     font-family:Inter,ui-sans-serif,system-ui,sans-serif;
-    font-size:14px;
     line-height:1.5;
-    padding-block:clamp(24px,5vw,56px);
-    padding-left:clamp(16px,4vw,32px);
-    padding-right:clamp(16px,4vw,32px);
   }
 
-  main{max-width:1060px;margin:0 auto}
+  a{color:inherit}
+  .frame{max-width:1180px;margin:0 auto;border-inline:1px solid var(--line);min-height:100vh;position:relative}
 
-  /* ---- masthead ---- */
-  .masthead{
-    display:flex;flex-wrap:wrap;align-items:baseline;
-    justify-content:space-between;gap:10px 16px;margin-bottom:26px;
-  }
-  .masthead-left{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
-  .wordmark{font-size:16px;font-weight:700;letter-spacing:-0.01em;margin:0}
-  .home-link{
-    font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;
-    text-transform:uppercase;color:var(--ink-3);text-decoration:none;
-    display:inline-flex;align-items:center;gap:6px;
-  }
-  .home-link:hover{color:var(--accent)}
-  .stamp{font-size:13px;color:var(--ink-3)}
+  .cross{position:absolute;width:13px;height:13px;color:var(--line);pointer-events:none;z-index:2}
+  .cross::before,.cross::after{content:"";position:absolute;background:currentColor}
+  .cross::before{left:50%;top:0;width:1px;height:100%;transform:translateX(-50%)}
+  .cross::after{top:50%;left:0;height:1px;width:100%;transform:translateY(-50%)}
+  .cross.tl{top:92px;left:-6.5px}
+  .cross.tr{top:92px;right:-6.5px}
 
-  /* ---- filter row: scopes every card below it ---- */
-  .filters{
-    display:flex;flex-wrap:wrap;gap:6px;
-    margin:0 0 20px;padding:0;list-style:none;
+  /* ---- header ---- */
+  header{
+    min-height:92px;padding:22px 5%;
+    display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    border-bottom:1px solid var(--line);
   }
-  .filters button{
-    font:inherit;font-size:14px;font-weight:500;
-    color:var(--ink-2);background:var(--card);
-    border:1px solid var(--line);border-radius:999px;
-    padding:7px 16px;cursor:pointer;text-transform:capitalize;
-    transition:background .12s,color .12s,border-color .12s;
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:16px;font-weight:700;letter-spacing:.02em;text-decoration:none;text-transform:uppercase}
+  .brand svg{flex:none;color:var(--accent)}
+  .brand .period{color:var(--accent)}
+  nav.links{display:flex;align-items:center;gap:28px}
+  .nav-tag{
+    font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--ink-3);
   }
-  .filters button:hover{border-color:var(--ink-3);color:var(--ink)}
-  .filters button[aria-current="true"]{
-    background:var(--accent);border-color:var(--accent);color:var(--accent-ink);
+  .enter-link{
+    display:inline-flex;align-items:center;gap:10px;
+    font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    text-decoration:none;color:var(--accent-ink);
+    background:var(--accent);border:1px solid var(--accent);border-radius:8px;padding:11px 20px;
+    transition:filter .15s,transform .15s;
   }
-  .filters button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
-
-  /* ---- csv loader ---- */
-  .loader{
-    display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
-    gap:10px 16px;background:var(--card);border:1px solid var(--line);
-    border-radius:14px;padding:12px 14px 12px 18px;margin-bottom:16px;
-    transition:border-color .12s,box-shadow .12s;
-  }
-  .loader.over{border-color:var(--accent);box-shadow:0 0 0 3px var(--line-soft)}
-  .loader-text{min-width:0;font-size:13px;color:var(--ink-3)}
-  .loader-text strong{display:block;font-size:14px;font-weight:600;color:var(--ink)}
-  .loader-actions{display:flex;gap:8px;flex-wrap:wrap}
-  .btn{
-    font:inherit;font-size:13px;font-weight:500;
-    border:1px solid var(--line);background:var(--card);color:var(--ink);
-    border-radius:10px;padding:8px 14px;cursor:pointer;
-    transition:border-color .12s,background .12s;
-  }
-  .btn:hover{border-color:var(--ink-3)}
-  .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
-  .btn.primary:hover{filter:brightness(1.08)}
-  .btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
-  .loader-text .bad{color:var(--critical)}
-
-  /* ---- period selector ---- */
-  .periods{display:flex;gap:4px;margin:0 0 14px;padding:0;list-style:none}
-  .periods button{
-    font:inherit;font-size:12px;font-weight:500;color:var(--ink-3);
-    background:none;border:1px solid transparent;border-radius:7px;
-    padding:5px 10px;cursor:pointer;
-  }
-  .periods button:hover{color:var(--ink)}
-  .periods button[aria-current="true"]{
-    color:var(--ink);background:var(--card);border-color:var(--line);
-  }
-  .periods button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
-
-  /* ---- business pulse ---- */
-  .pulse{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
-  .pulse .stat{
-    background:var(--card);border:1px solid var(--line);
-    border-radius:var(--radius);padding:14px 16px;min-width:0;
-  }
-  .pulse .stat:first-child{border-color:var(--accent)}
-  .pulse .lab{font-size:12px;color:var(--ink-3);margin:0 0 6px;white-space:nowrap;
-              overflow:hidden;text-overflow:ellipsis}
-  .pulse .num{font-size:22px;font-weight:700;letter-spacing:-0.02em;margin:0;color:var(--ink)}
-  .pulse .chg{font-size:12px;font-weight:600;margin-top:4px;color:var(--accent)}
-  .pulse .chg.down{color:var(--critical)}
-  .pulse .chg span{font-weight:400;color:var(--ink-3)}
-  @media (max-width:760px){ .pulse{grid-template-columns:repeat(2,1fr)} }
-
-  /* ---- priorities ---- */
-  .prio{list-style:none;margin:0;padding:0}
-  .prio li{
-    display:flex;gap:10px;align-items:flex-start;
-    padding:10px 0;border-bottom:1px solid var(--line-soft);font-size:13px;
-  }
-  .prio li:last-child{border-bottom:none}
-  .prio .tag{
-    flex:none;font-size:10px;font-weight:600;letter-spacing:.04em;
-    text-transform:uppercase;padding:3px 7px;border-radius:5px;
-    background:var(--line-soft);color:var(--ink-2);
-  }
-  .prio .tag.urgent{background:var(--critical);color:#fff}
-  .prio .tag.watch{background:var(--s3);color:var(--accent-ink)}
-  .prio p{margin:0;color:var(--ink)}
-  .prio p em{font-style:normal;color:var(--ink-3)}
-  .prio .none{color:var(--ink-3);padding:10px 0}
-
-  /* ---- briefing ---- */
-  .brief-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px}
-  .brief-head .btn{margin-left:auto}
-  .brief-note{font-size:12px;color:var(--ink-3);margin:0}
-  .brief h3{
-    font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
-    color:var(--ink-3);margin:16px 0 8px;
-  }
-  .brief h3:first-child{margin-top:0}
-  .brief ul{margin:0;padding:0;list-style:none}
-  .brief li{
-    display:flex;gap:9px;align-items:flex-start;
-    padding:7px 0;font-size:13px;color:var(--ink);
-  }
-  .brief li::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;
-                    margin-top:6px;background:var(--ink-3)}
-  .brief .up li::before{background:var(--accent)}
-  .brief .risk li::before{background:var(--critical)}
-  .brief .act li::before{background:var(--s2)}
-
-  /* ---- cards ---- */
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  .card{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:var(--radius);
-    padding:18px 20px;
-    min-width:0;
-    position:relative;
-  }
-  .card.wide{grid-column:1/-1}
-
-  .card h2{
-    font-size:15px;font-weight:700;letter-spacing:-0.01em;
-    margin:0;color:var(--ink);
-  }
-  .card .sub{font-size:12px;color:var(--ink-3);margin:3px 0 16px}
-
-  /* the rounded icon badge Capitalio puts in each card's top-right */
-  .badge{
-    position:absolute;top:16px;right:16px;
-    width:28px;height:28px;border-radius:8px;
-    background:var(--accent);color:var(--accent-ink);
-    display:flex;align-items:center;justify-content:center;
-    font-size:13px;line-height:1;
-  }
+  .enter-link:hover{filter:brightness(1.1);transform:translateY(-1px)}
 
   /* ---- hero ---- */
-  .hero{padding:20px}
+  .hero{
+    min-height:600px;padding:84px 24px 64px;
+    display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;
+  }
   .eyebrow{
-    font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.06em;
-    text-transform:uppercase;color:var(--ink-2);margin:0 0 8px;
+    display:inline-flex;align-items:center;gap:9px;
+    font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--accent);border:1px solid var(--line);border-radius:999px;padding:9px 18px;
+    background:var(--card);
   }
-  .figure{
-    font-size:clamp(30px,5vw,40px);
-    font-weight:800;line-height:1.1;letter-spacing:-0.03em;
-    font-variant-numeric:normal;   /* proportional figures at display size */
-    margin:0;color:var(--ink);
-    display:inline-flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+  .status-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex:none;box-shadow:0 0 0 3px rgba(148,220,0,0.18)}
+  h1{
+    margin:32px 0 0;max-width:22ch;
+    font-size:clamp(36px,6.4vw,72px);font-weight:800;letter-spacing:-0.045em;line-height:1.08;
   }
-  .figure.loss{color:var(--ink)}
-  .delta{font-size:13px;font-weight:600;letter-spacing:0;color:var(--accent)}
-  .delta.down{color:var(--critical)}
-  .delta span{font-weight:400;color:var(--ink-3)}
-  .figure.loss{color:var(--critical)}
-  .note{font-size:14px;color:var(--ink-2);margin:12px 0 0;max-width:52ch}
-
-  /* ---- stacked allocation bar ---- */
-  .barwrap{position:relative}
-  .bar{display:flex;gap:2px;height:38px}
-  .bar .seg{
-    border:none;padding:0;font:inherit;cursor:default;
-    min-width:2px;border-radius:2px;transition:filter .12s;
+  h1 .line-2{display:block;margin-top:2px}
+  .rotator-wrap{
+    position:relative;display:inline-block;overflow:hidden;
+    height:1.15em;vertical-align:bottom;
   }
-  .bar .seg:first-child{border-radius:8px 2px 2px 8px}
-  .bar .seg:last-child{border-radius:2px 8px 8px 2px}
-  .bar .seg:hover,.bar .seg:focus-visible{filter:brightness(1.12);outline:none}
-  .bar .seg:focus-visible{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--ink)}
-  .seg-1{background:var(--s1)}
-  .seg-2{background:var(--s2)}
-  .seg-3{background:var(--s3)}
-  .seg-4{background:var(--s4)}
-  .seg-rest{background:var(--rest)}
-  .seg-short{background:var(--critical)}
-
-  /* revenue cut-off marker, shown only on a loss month */
-  .revmark{position:absolute;top:-7px;bottom:-7px;width:2px;background:var(--ink)}
-  .shortspan{
-    position:absolute;bottom:-9px;height:3px;border-radius:2px;
-    background:var(--critical);
+  .rotator{
+    position:absolute;left:0;top:0;display:inline-block;white-space:nowrap;
+    color:var(--accent);font-style:normal;will-change:transform,opacity;
   }
-  .revmark span{
-    position:absolute;top:-19px;left:0;transform:translateX(-50%);
-    white-space:nowrap;font-size:11px;font-weight:600;color:var(--ink);
+  .lede{
+    margin-top:26px;max-width:48ch;font-size:16px;line-height:1.7;color:var(--ink-2);
   }
-
-  .tip{
-    position:absolute;z-index:5;pointer-events:none;opacity:0;
-    transform:translate(-50%,-100%);
-    background:var(--ink);color:var(--ground);
-    border-radius:8px;padding:7px 10px;font-size:12px;line-height:1.4;
-    white-space:nowrap;transition:opacity .1s;
+  .example-line{
+    margin:18px 0 0;display:inline-flex;align-items:center;gap:10px;
+    font-family:var(--mono);font-size:12px;letter-spacing:.02em;color:var(--ink-3);
+    border:1px solid var(--line);background:var(--card);border-radius:999px;padding:9px 16px 9px 7px;
   }
-  .tip.on{opacity:1}
-  .tip b{font-weight:600}
-
-  .key{
-    display:flex;flex-wrap:wrap;gap:8px 20px;
-    margin:16px 0 0;padding:0;list-style:none;font-size:13px;
+  .example-tag{
+    display:inline-flex;align-items:center;
+    background:var(--accent);color:var(--accent-ink);
+    font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    border-radius:999px;padding:5px 10px;
   }
-  .key li{display:flex;align-items:center;gap:7px;color:var(--ink-2)}
-  .key i{width:10px;height:10px;border-radius:2px;flex:none}
-  .key b{font-weight:500;color:var(--ink)}
-
-  /* ---- budget gauge ---- */
-  .gaugeline{
-    display:flex;justify-content:space-between;align-items:baseline;
-    gap:14px;font-size:14px;color:var(--ink-2);margin-bottom:12px;
+  #example-text{transition:opacity .25s ease}
+  .cta-row{margin-top:36px;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:14px}
+  .cta{
+    display:inline-flex;align-items:center;gap:12px;
+    background:var(--accent);color:var(--accent-ink);
+    padding:16px 30px;border:1px solid var(--accent);border-radius:10px;
+    font-size:15px;font-weight:700;text-decoration:none;
+    transition:filter .15s,transform .15s;
   }
-  .gaugeline strong{color:var(--ink);font-weight:600}
-  .gaugeline strong.neg{color:var(--critical)}
-  .gauge{position:relative;height:12px;background:var(--line-soft);border-radius:6px}
-  .gauge-fill{height:100%;background:var(--accent);border-radius:6px}
-  .gauge-fill.over{background:var(--critical)}
-  .gauge-mark{position:absolute;top:-5px;bottom:-5px;width:2px;background:var(--ink)}
-  .gauge-foot{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-3);margin-top:8px}
-
-  /* ---- monthly net bars ---- */
-  .trend-scroll{--colw:78px;overflow-x:auto;overflow-y:hidden;padding-top:24px}
-  .trend{
-    display:flex;align-items:flex-end;gap:14px;height:150px;position:relative;
-    min-width:max-content;
-  }
-  /* basis, not content, sets the column width - the bars carry no text and the
-     labels do, so an auto basis would drift the two rows out of alignment.
-     66px holds "September" at 12px; past that the row scrolls. */
-  .trend .col{
-    flex:1 0 var(--colw);min-width:0;
-    display:flex;flex-direction:column;height:100%;position:relative;
-  }
-  /* transparent overlay: the whole column is the hit target, not just the bar */
-  .trend .hit{
-    position:absolute;inset:0;width:100%;
-    background:none;border:none;padding:0;margin:0;
-    cursor:pointer;border-radius:6px;
-  }
-  .trend .hit:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
-  .trend .col:hover .mark{filter:brightness(.94)}
-  .trend .above{flex:none;display:flex;align-items:flex-end}
-  .trend .below{flex:none;display:flex;align-items:flex-start}
-  .trend .mark{
-    width:100%;background:var(--line);border:none;padding:0;cursor:default;
-  }
-  .trend .above .mark{border-radius:4px 4px 0 0}
-  .trend .below .mark{border-radius:0 0 4px 4px}
-  .trend .col.on .mark{background:var(--accent)}
-  .trend .col.on.neg .mark{background:var(--critical)}
-  .trend .zero{position:absolute;left:0;right:0;height:1px;background:var(--line)}
-  .trend-labels{display:flex;gap:14px;margin-top:8px;min-width:max-content}
-  .trend-labels div{
-    flex:1 0 var(--colw);min-width:0;white-space:nowrap;
-    text-align:center;font-size:12px;color:var(--ink-3);
-    text-transform:capitalize;cursor:pointer;
-  }
-  .trend-labels div:hover{color:var(--ink)}
-  .trend-labels div.on{color:var(--ink);font-weight:600}
-  .trend .val{
-    position:absolute;left:0;right:0;text-align:center;
-    font-size:12px;font-weight:600;color:var(--ink);
+  .cta:hover{filter:brightness(1.08);transform:translateY(-1px)}
+  .cta.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+  .cta.ghost:hover{border-color:var(--accent);color:var(--accent);filter:none;transform:none}
+  .cta svg{flex:none}
+  .cta-note{
+    margin-top:18px;font-family:var(--mono);font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--ink-3);
   }
 
-  /* ---- revenue vs expenses, grouped bars ---- */
-  .pair-scroll{--pairw:104px;overflow-x:auto;overflow-y:hidden;padding-top:26px}
-  .pairs{display:flex;gap:16px;height:150px;align-items:flex-end;min-width:max-content}
-  .pair{
-    flex:1 0 var(--pairw);min-width:0;height:100%;position:relative;
-    display:flex;align-items:flex-end;justify-content:center;gap:6px;
+  /* ---- trust row ---- */
+  .trust{margin-top:56px;width:100%}
+  .trust-label{
+    display:flex;align-items:center;justify-content:center;gap:14px;
+    font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--ink-3);
   }
-  .pair .bar2{
-    width:34px;border:none;padding:0;cursor:pointer;border-radius:4px 4px 0 0;
-    transition:filter .12s;
+  .trust-label span.rule{width:32px;height:1px;background:var(--line)}
+  .trust-items{display:flex;justify-content:center;flex-wrap:wrap;gap:12px;margin-top:22px}
+  .trust-items span{
+    display:flex;align-items:center;gap:9px;
+    border:1px solid var(--line);background:var(--card);color:var(--ink-2);
+    padding:11px 18px;border-radius:999px;font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
   }
-  .pair .bar2:hover{filter:brightness(1.1)}
-  .pair .bar2:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
-  .bar-rev{background:var(--s1)}
-  .bar-exp{background:var(--s2)}
-  .pair .net{
-    position:absolute;top:-22px;left:0;right:0;text-align:center;
-    font-size:12px;font-weight:600;color:var(--accent);white-space:nowrap;
-  }
-  .pair .net.loss{color:var(--critical)}
-  .pair-labels{display:flex;gap:16px;margin-top:8px;min-width:max-content}
-  .pair-labels div{
-    flex:1 0 var(--pairw);min-width:0;text-align:center;font-size:12px;
-    color:var(--ink-3);text-transform:capitalize;white-space:nowrap;cursor:pointer;
-  }
-  .pair-labels div.on{color:var(--ink);font-weight:600}
-  .pair-vals{display:flex;gap:16px;margin-top:2px;min-width:max-content}
-  .pair-vals div{
-    flex:1 0 var(--pairw);min-width:0;text-align:center;font-size:11px;
-    color:var(--ink-3);white-space:nowrap;font-variant-numeric:tabular-nums;
-  }
+  .trust-items svg{flex:none;color:var(--accent)}
 
-  /* ---- ledger table ---- */
-  table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
-  caption{text-align:left;font-size:13px;color:var(--ink-3);padding-bottom:14px}
-  th,td{padding:9px 0;border-bottom:1px solid var(--line-soft);font-weight:400;text-align:right}
-  th{text-align:left}                      /* row labels in the Line column */
-  /* Numeric columns are centred, header and values alike. Every cell in a
-     column is the same width, so centring puts each value on the same centre
-     line as its header. */
-  thead th:not(:first-child),
-  td.amt,
-  td.share{text-align:center}
-  thead th{
-    font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;
-    color:var(--ink-3);border-bottom:1px solid var(--line);
+  /* ---- preview strip ---- */
+  .preview{
+    margin:68px 5% 0;padding:28px;border:1px solid var(--line);border-radius:14px;
+    background:var(--card);display:grid;grid-template-columns:repeat(4,1fr);gap:16px;
   }
-  .group th,.group td{font-weight:600}
-  .indent{padding-left:22px;color:var(--ink-2);font-weight:400}
-  .total th,.total td{font-weight:600;border-top:1px solid var(--line);border-bottom:none}
-  .neg{color:var(--critical)}
-  td.share{color:var(--ink-3);width:7.5em}
-  td.amt{width:10em}
+  .preview .cell{padding:4px 2px}
+  .preview .cell p{margin:0;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+  .preview .cell strong{display:block;margin-top:9px;font-size:21px;font-weight:700;letter-spacing:-0.02em}
+  .preview .cell small{display:block;margin-top:4px;font-size:12px;color:var(--accent);font-weight:600}
 
-  .notice{
-    margin-top:16px;padding:14px 16px;background:var(--card);
-    border:1px solid var(--line);border-left:3px solid var(--critical);
-    border-radius:10px;font-size:13px;color:var(--ink-2);
+  /* ---- for-everyone band ---- */
+  .band{margin:72px 5% 0;display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .band .item{background:var(--card-2);padding:26px 22px}
+  .band .item h3{margin:0 0 8px;font-size:15px;font-weight:700;letter-spacing:-0.01em}
+  .band .item p{margin:0;font-size:13px;line-height:1.6;color:var(--ink-3)}
+  .band .item .tag{display:block;margin-bottom:12px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+
+  /* ---- footer ---- */
+  footer{
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;
+    padding:26px 5%;border-top:1px solid var(--line);
+    font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--ink-3);margin-top:72px;
   }
-  .notice code{font-size:12px}
+  footer a{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--ink-2)}
+  footer a:hover{color:var(--accent)}
 
-  footer{margin-top:22px;font-size:12px;color:var(--ink-3)}
+  a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 
-  @media (max-width:760px){
-    .grid{grid-template-columns:1fr}
-    .card{padding:20px}
-    .hero{padding:24px 20px 22px}
-    th,td{font-size:14px}
-    .indent{padding-left:14px}
+  @media (max-width:900px){
+    .nav-tag{display:none}
+    .preview{grid-template-columns:repeat(2,1fr)}
+    .band{grid-template-columns:repeat(2,1fr)}
+  }
+  @media (max-width:640px){
+    .hero{padding:60px 20px 52px}
+    header{padding:18px 20px}
+    .trust-label span.rule{display:none}
+    footer{flex-direction:column;text-align:center}
+    .preview{grid-template-columns:1fr;margin-inline:20px}
+    .band{grid-template-columns:1fr;margin-inline:20px}
   }
 </style>
 </head>
 <body>
-<main>
-  <div class="masthead">
-    <div class="masthead-left">
-      <p class="wordmark">Monthly Output</p>
-      <a class="home-link" href="landing.html">&larr; Home</a>
-    </div>
-    <span class="stamp" id="stamp"></span>
-  </div>
+<div class="frame">
+  <span class="cross tl" aria-hidden="true"></span>
+  <span class="cross tr" aria-hidden="true"></span>
 
-  <div class="loader" id="loader">
-    <div class="loader-text">
-      <strong id="source">Published figures</strong>
-      <span id="status">Read from data.json &middot; CSV or .xlsx accepted</span>
-    </div>
-    <div class="loader-actions">
-      <input type="file" id="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple hidden>
-      <button type="button" class="btn primary" id="pick">Choose files</button>
-      <button type="button" class="btn" id="reset" hidden>Use published figures</button>
-    </div>
-  </div>
+  <header>
+    <a class="brand" href="index.html" aria-label="FinDash home">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 19V11"/><path d="M12 19V5"/><path d="M20 19V15"/></svg>
+      findash<span class="period">.</span>
+    </a>
+    <nav class="links">
+      <span class="nav-tag">Monthly financial report</span>
+      <a class="enter-link" href="dashboard.html">
+        Open dashboard
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+      </a>
+    </nav>
+  </header>
 
-  <ul class="filters" id="months"></ul>
-  <ul class="periods" id="periods"></ul>
-  <div id="sheet"></div>
+  <main>
+    <section class="hero">
+      <div class="eyebrow"><span class="status-dot"></span> Open the numbers — free forever</div>
+      <h1>
+        Everyone can manage finances
+        <span class="line-2">Built for <span class="rotator-wrap"><em class="rotator" id="rotator">non&#8209;tech</em></span></span>
+      </h1>
+      <p class="lede">
+        Revenue, costs, and budget — read straight off your own CSVs. No spreadsheets to
+        rebuild, no numbers to recheck by hand, no file ever leaves your machine.
+      </p>
+      <p class="example-line"><span class="example-tag">Example</span><span id="example-text">No formulas, no pivot tables — just open the file and read the month.</span></p>
+      <div class="cta-row">
+        <a class="cta" href="dashboard.html">
+          Open dashboard
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+        </a>
+        <a class="cta ghost" href="#preview">
+          See sample figures
+        </a>
+      </div>
+      <span class="cta-note">No signup. No upload. Your data stays local.</span>
 
-  <footer id="footer"></footer>
-</main>
+      <div class="trust">
+        <div class="trust-label"><span class="rule"></span> Trusted by owners who read the numbers themselves <span class="rule"></span></div>
+        <div class="trust-items">
+          <span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+            Every dollar tracked
+          </span>
+          <span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+            One month at a glance
+          </span>
+          <span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+            Budget vs. actual
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <section class="preview" id="preview" aria-label="Sample figures">
+      <div class="cell"><p>Revenue</p><strong>$72,000</strong><small>+12.5% vs prior</small></div>
+      <div class="cell"><p>Net margin</p><strong>10.5%</strong><small>Kept after every cost</small></div>
+      <div class="cell"><p>Total costs</p><strong>$64,420</strong><small>Across 4 buckets</small></div>
+      <div class="cell"><p>Budget used</p><strong>97.6%</strong><small>$1,580 under</small></div>
+    </section>
+
+    <section class="band" aria-label="Who it's built for">
+      <div class="item">
+        <span class="tag">No jargon</span>
+        <h3>Non-tech owners</h3>
+        <p>Plain labels, no pivot tables. If you can read a CSV, you can read this.</p>
+      </div>
+      <div class="item">
+        <span class="tag">Any currency</span>
+        <h3>International teams</h3>
+        <p>Works with any export format your bank or books hand you.</p>
+      </div>
+      <div class="item">
+        <span class="tag">One file</span>
+        <h3>Freelancers</h3>
+        <p>Drop in a single CSV and get a full month of financial clarity.</p>
+      </div>
+      <div class="item">
+        <span class="tag">Zero setup</span>
+        <h3>Small teams</h3>
+        <p>No accounts, no onboarding call. Open the file, see the month.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>FinDash / Monthly financial report</span>
+    <a href="dashboard.html">
+      The numbers start here
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+    </a>
+    <span>CFO dashboard</span>
+  </footer>
+</div>
 
 <script>
-// fallback for loading the real .json data after it loads
-
-const FALLBACK = {
-  generated: "sample data",
-  months: [
-    {month:"july",monthNum:7,revenue:72000,cogs:26000,labor:12000,utilities:2800,
-     maintenance:950,hardware:0,directExpenses:45500,operatingExpenses:7750,
-     variableOverhead:3750,fixedOverhead:7420,totalExpenses:64420,
-     grossProfit:26500,netProfit:7580,budget:66000,budgetPercent:97.61},
-    {month:"august",monthNum:8,revenue:64000,cogs:21000,labor:9000,utilities:3100,
-     maintenance:4200,hardware:0,directExpenses:37500,operatingExpenses:6160,
-     variableOverhead:7300,fixedOverhead:7620,totalExpenses:58580,
-     grossProfit:26500,netProfit:5420,budget:57000,budgetPercent:102.77},
-    {month:"september",monthNum:9,revenue:33000,cogs:11000,labor:3500,utilities:1900,
-     maintenance:310,hardware:2400,directExpenses:20200,operatingExpenses:5560,
-     variableOverhead:2210,fixedOverhead:8670,totalExpenses:36640,
-     grossProfit:12800,netProfit:-3640,budget:34000,budgetPercent:107.76}
-  ]
-};
-
-const money = n => (n < 0 ? "−" : "") + "$" +
-  Math.abs(n).toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
-const money0 = n => (n < 0 ? "−" : "") + "$" +
-  Math.round(Math.abs(n)).toLocaleString("en-US");
-const pct = (part, whole) => whole ? (part / whole) * 100 : 0;
-const fmtPct = n => (n < 0 ? "\u2212" : "") + Math.abs(n).toFixed(1) + "%";
-const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
-
-let data, active;
-const PUBLISHED_NOTE = "Figures come from data.json, written by the Java dashboard on each run.";
-let sourceNote = PUBLISHED_NOTE;
-
-/* ---------- the allocation bar ---------- */
-/* Scaled to max(revenue, total costs) so a loss month cannot overflow the track.
-   When costs outrun revenue, a marker shows where revenue ran out. */
-function allocation(m) {
-  const buckets = [
-    [1, "Direct",            m.directExpenses],
-    [2, "Operating",         m.operatingExpenses],
-    [3, "Variable overhead", m.variableOverhead],
-    [4, "Fixed overhead",    m.fixedOverhead]
+(function(){
+  var frames = [
+    { word: "non\u2011tech",      example: "No formulas, no pivot tables — just open the file and read the month." },
+    { word: "international",  example: "Any currency, any CSV format from any bank or books." },
+    { word: "freelancers",    example: "One invoice export in, one month of clarity out." },
+    { word: "small teams",    example: "No logins, no onboarding call — open the file, see the numbers." },
+    { word: "founders",       example: "Watch burn and runway without hiring a finance person." },
+    { word: "anyone",         example: "If you can open a CSV, you can read this dashboard." }
   ];
-  const net  = m.netProfit;
-  const loss = net < 0;
-  const span = Math.max(m.revenue, m.totalExpenses) || 1;
+  var el = document.getElementById("rotator");
+  var exampleEl = document.getElementById("example-text");
+  if (!el || !exampleEl) return;
 
-  const segs = buckets
-    .filter(([, , v]) => v > 0)
-    .map(([slot, name, v]) =>
-      `<button type="button" class="seg seg-${slot}" style="flex:0 0 ${pct(v, span)}%"
-         data-name="${name}" data-amt="${money(v)}" data-share="${fmtPct(pct(v, m.revenue))}"></button>`);
+  var i = 0;
+  var prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  if (!loss && net > 0) {
-    segs.push(`<button type="button" class="seg seg-rest" style="flex:0 0 ${pct(net, span)}%"
-      data-name="Profit" data-amt="${money(net)}" data-share="${fmtPct(pct(net, m.revenue))}"></button>`);
+  if (prefersReduced) {
+    exampleEl.textContent = frames[0].example;
+    return;
   }
 
-  // On a loss month the costs run past the revenue line; the stretch beyond it
-  // is the shortfall, marked under the track rather than stacked into it.
-  const marker = loss
-    ? `<div class="revmark" style="left:${pct(m.revenue, span)}%"><span>Revenue</span></div>
-       <div class="shortspan" style="left:${pct(m.revenue, span)}%;right:0"></div>`
-    : "";
-
-  const key = buckets.map(([slot, name, v]) =>
-    `<li><i class="seg-${slot}"></i><b>${name}</b> ${fmtPct(pct(v, m.revenue))}</li>`).join("");
-  const tail = loss
-    ? `<li><i class="seg-short"></i><b>Shortfall</b> ${fmtPct(pct(Math.abs(net), m.revenue))}</li>`
-    : `<li><i class="seg-rest"></i><b>Profit</b> ${fmtPct(pct(net, m.revenue))}</li>`;
-
-  return `
-    <div class="barwrap">
-      <div class="bar">${segs.join("")}</div>
-      ${marker}
-      <div class="tip" id="tip"></div>
-    </div>
-    <ul class="key">${key}${tail}</ul>`;
-}
-
-/* ---------- net profit across every month on file ---------- */
-function trend(months, activeNum) {
-  const nets = months.map(m => m.netProfit);
-  const top  = Math.max(0, ...nets);
-  const bot  = Math.min(0, ...nets);
-  const span = (top - bot) || 1;
-  const H    = 112; 
-  const zero = (top / span) * H;
-
-  const cols = months.map(m => {
-    const n = m.netProfit, on = m.monthNum === activeNum, neg = n < 0;
-    const h = (Math.abs(n) / span) * H;
-    const label = on
-      ? `<div class="val" style="${neg ? `top:${zero + h + 4}px` : `top:${zero - h - 20}px`}">${money0(n)}</div>`
-      : "";
-    return `<div class="col${on ? " on" : ""}${neg ? " neg" : ""}">
-      <div class="above" style="height:${zero}px">
-        ${neg ? "" : `<div class="mark" style="height:${h}px"></div>`}
-      </div>
-      <div class="below" style="height:${H - zero}px">
-        ${neg ? `<div class="mark" style="height:${h}px"></div>` : ""}
-      </div>
-      ${label}
-      <button type="button" class="hit" data-month="${m.monthNum}"
-              aria-label="${m.month}, net ${money0(n)}"></button>
-    </div>`;
-  }).join("");
-
-  const labels = months.map(m =>
-    `<div class="${m.monthNum === activeNum ? "on" : ""}" data-month="${m.monthNum}"
-     >${m.month}</div>`).join("");
-
-  return `<div class="trend-scroll">
-            <div class="trend">${cols}<div class="zero" style="top:${zero}px"></div></div>
-            <div class="trend-labels">${labels}</div>
-          </div>`;
-}
-
-/* Shown only when non-zero, so an uncategorised cost is never silently folded
-   into a bucket total without appearing anywhere. */
-function otherRow(amount, revenue) {
-  return amount ? row("Other (uncategorised)", amount, revenue, "indent-row") : "";
-}
-
-/* Revenue beside total expenses, month by month. Two bars on one scale - the
-   gap between them IS the profit, which is what a reader is looking for. Each
-   month's net is labelled above its pair and the dollar figures sit under the
-   month name, so the numbers are readable without hovering. */
-function pairChart(months, activeNum) {
-  const H = 150;
-  const top = Math.max(1, ...months.map(m => Math.max(m.revenue, m.totalExpenses)));
-
-  const bars = months.map(m => {
-    const loss = m.netProfit < 0;
-    const rh = (m.revenue / top) * H;
-    const eh = (m.totalExpenses / top) * H;
-    return `<div class="pair">
-      <div class="net${loss ? " loss" : ""}">${money0(m.netProfit)}</div>
-      <button type="button" class="bar2 bar-rev" style="height:${rh}px"
-              data-month="${m.monthNum}"
-              aria-label="${m.month} revenue ${money0(m.revenue)}"></button>
-      <button type="button" class="bar2 bar-exp" style="height:${eh}px"
-              data-month="${m.monthNum}"
-              aria-label="${m.month} total expenses ${money0(m.totalExpenses)}"></button>
-    </div>`;
-  }).join("");
-
-  const names = months.map(m =>
-    `<div class="${m.monthNum === activeNum ? "on" : ""}" data-month="${m.monthNum}">${m.month}</div>`).join("");
-  const vals = months.map(m =>
-    `<div>${money0(m.revenue)} &middot; ${money0(m.totalExpenses)}</div>`).join("");
-
-  return `<div class="pair-scroll">
-            <div class="pairs">${bars}</div>
-            <div class="pair-labels">${names}</div>
-            <div class="pair-vals">${vals}</div>
-          </div>
-          <ul class="key">
-            <li><i class="bar-rev"></i><b>Revenue</b></li>
-            <li><i class="bar-exp"></i><b>Total expenses</b></li>
-            <li><b>Figure above each pair:</b> net profit</li>
-          </ul>`;
-}
-
-function row(label, amount, revenue, cls = "") {
-  return `<tr class="${cls}">
-    <th scope="row">${label}</th>
-    <td class="amt">${money(amount)}</td>
-    <td class="share">${revenue ? fmtPct(pct(amount, revenue)) : "—"}</td>
-  </tr>`;
-}
-
-/* Change against the previous month on file. Capitalio leads every stat with
-   one; it is the first thing an owner wants and we already have the figures. */
-function deltaVsPrev(m) {
-  const i = data.months.findIndex(x => x.monthNum === m.monthNum);
-  if (i <= 0) return "";
-  const prev = data.months[i - 1].netProfit;
-  if (!prev) return "";
-  const pct = ((m.netProfit - prev) / Math.abs(prev)) * 100;
-  const up = pct >= 0;
-  return `<span class="delta${up ? "" : " down"}">${up ? "\u2191" : "\u2193"} ${fmtPct(Math.abs(pct))}
-          <span>vs ${data.months[i - 1].month}</span></span>`;
-}
-
-/* ---- period scoping ----
-   "This month" is the selected month; "quarter" is it plus the two before;
-   "year to date" is everything up to and including it. Scopes the pulse strip
-   and the priorities list - the charts always show every month on file. */
-let period = "month";
-const PERIODS = [["month","This month"],["quarter","This quarter"],["ytd","Year to date"]];
-
-function periodSlice(m, which) {
-  const i = data.months.findIndex(x => x.monthNum === m.monthNum);
-  if (i < 0) return [m];
-  if (which === "quarter") return data.months.slice(Math.max(0, i - 2), i + 1);
-  if (which === "ytd")     return data.months.slice(0, i + 1);
-  return [data.months[i]];
-}
-
-/* Totals over a run of months. Margins are computed from the summed figures,
-   never averaged - averaging ratios silently weights a small month equally. */
-function aggregate(ms) {
-  const sum = k => ms.reduce((t, x) => t + x[k], 0);
-  const revenue = sum("revenue"), total = sum("totalExpenses"), budget = sum("budget");
-  return {
-    months: ms.length, revenue, total, budget,
-    net: sum("netProfit"),
-    margin: revenue ? (sum("netProfit") / revenue) * 100 : 0,
-    budgetPct: budget ? (total / budget) * 100 : 0
-  };
-}
-
-/* The run of equal length immediately before this one, for the delta. */
-function previousSlice(m, which) {
-  const cur = periodSlice(m, which);
-  const first = data.months.findIndex(x => x.monthNum === cur[0].monthNum);
-  const start = Math.max(0, first - cur.length);
-  return first === 0 ? [] : data.months.slice(start, first);
-}
-
-function chg(now, before, kind) {
-  if (before === undefined || before === null || !isFinite(before) || before === 0) return "";
-  const diff = kind === "pts" ? now - before : ((now - before) / Math.abs(before)) * 100;
-  const up = diff >= 0;
-  const txt = kind === "pts" ? Math.abs(diff).toFixed(1) + " pts" : fmtPct(Math.abs(diff));
-  return `<p class="chg${up ? "" : " down"}">${up ? "\u2191" : "\u2193"} ${txt} <span>vs previous</span></p>`;
-}
-
-/* Four headline numbers for the chosen period, each against the run before it. */
-function pulse(m) {
-  const now = aggregate(periodSlice(m, period));
-  const prevMs = previousSlice(m, period);
-  const was = prevMs.length ? aggregate(prevMs) : null;
-
-  const stat = (label, value, change) =>
-    `<div class="stat"><p class="lab">${label}</p><p class="num">${value}</p>${change}</div>`;
-
-  return `<div class="pulse">
-    ${stat("Revenue", money0(now.revenue), was ? chg(now.revenue, was.revenue) : "")}
-    ${stat("Net margin", fmtPct(now.margin), was ? chg(now.margin, was.margin, "pts") : "")}
-    ${stat("Total costs", money0(now.total), was ? chg(now.total, was.total) : "")}
-    ${stat("Budget used", now.budget ? fmtPct(now.budgetPct) : "\u2014",
-           was && was.budget ? chg(now.budgetPct, was.budgetPct, "pts") : "")}
-  </div>`;
-}
-
-/* ---- priorities ----
-   Observations read straight off the figures. No model involved and nothing
-   leaves the machine: these are arithmetic facts about the months on file,
-   ranked so the ones that cost money come first. */
-function priorities(m) {
-  const ms = periodSlice(m, period);
-  const all = data.months;
-  const out = [];
-
-  const losses = ms.filter(x => x.netProfit < 0);
-  if (losses.length) {
-    out.push(["urgent", `<strong>${losses.length} month${losses.length > 1 ? "s" : ""} at a loss</strong>
-      — ${losses.map(x => x.month).join(", ")}. <em>Costs exceeded revenue.</em>`]);
+  function setFrame(index){
+    el.textContent = frames[index].word;
+    exampleEl.style.opacity = "0";
+    setTimeout(function(){
+      exampleEl.textContent = frames[index].example;
+      exampleEl.style.opacity = "1";
+    }, 160);
   }
 
-  const over = ms.filter(x => x.budget && x.budgetPercent > 100);
-  if (over.length) {
-    out.push(["urgent", `<strong>Budget exceeded in ${over.length} of ${ms.length}</strong>
-      — ${over.map(x => x.month).join(", ")}. <em>Worst: ${fmtPct(Math.max(...over.map(x => x.budgetPercent)))} of budget.</em>`]);
-  }
+  setFrame(0);
 
-  // A line item far above its own history is the clearest "look at this" signal.
-  const lines = [["maintenance","Maintenance"],["hardware","Hardware"],["utilities","Utilities"]];
-  for (const [key, label] of lines) {
-    const hist = all.map(x => x[key]).filter(v => v > 0);
-    if (hist.length < 3) continue;
-    const avg = hist.reduce((a, b) => a + b, 0) / hist.length;
-    const spike = ms.find(x => x[key] > avg * 2.5);
-    if (spike) {
-      out.push(["watch", `<strong>${label} spiked in ${spike.month}</strong>
-        — ${money0(spike[key])} against a ${money0(avg)} average. <em>${(spike[key] / avg).toFixed(1)}x normal.</em>`]);
-    }
-  }
-
-  // Costs outrunning revenue is the thing an owner most wants flagged early.
-  if (ms.length >= 2) {
-    const a = ms[0], b = ms[ms.length - 1];
-    if (a.revenue && b.revenue) {
-      const revChg = ((b.revenue - a.revenue) / a.revenue) * 100;
-      const costChg = ((b.totalExpenses - a.totalExpenses) / a.totalExpenses) * 100;
-      if (costChg > revChg + 5) {
-        // Both can be falling and the margin still compress - say which it is
-        // rather than claiming costs rose when the figures show them dropping.
-        const head = costChg >= 0 && revChg < costChg ? "Costs rising faster than revenue"
-                   : costChg < 0 ? "Revenue falling faster than costs"
-                   : "Costs outpacing revenue";
-        out.push(["watch", `<strong>${head}</strong>
-          — costs ${costChg >= 0 ? "up" : "down"} ${fmtPct(Math.abs(costChg))} while revenue
-          ${revChg >= 0 ? "up" : "down"} ${fmtPct(Math.abs(revChg))} across ${a.month}\u2013${b.month}.
-          <em>Margin is being squeezed either way.</em>`]);
-      }
-    }
-    const marginDrop = (a.revenue ? a.netProfit / a.revenue : 0) - (b.revenue ? b.netProfit / b.revenue : 0);
-    if (marginDrop > 0.03) {
-      out.push(["watch", `<strong>Net margin down ${(marginDrop * 100).toFixed(1)} pts</strong>
-        — ${a.month} to ${b.month}. <em>Same revenue is keeping less.</em>`]);
-    }
-  }
-
-  if (!out.length) {
-    return `<p class="none">Nothing demanding attention this period — no losses, nothing over budget,
-            no line item far above its own average.</p>`;
-  }
-  return `<ul class="prio">${out.map(([tag, html]) =>
-    `<li><span class="tag ${tag}">${tag === "urgent" ? "Urgent" : "Watch"}</span><p>${html}</p></li>`).join("")}</ul>`;
-}
-
-function draw(m) {
-  const rev  = m.revenue;
-  const net  = m.netProfit;
-  const loss = net < 0;
-  const over = m.totalExpenses - m.budget;
-  const used = m.budgetPercent;
-
-  document.getElementById("sheet").innerHTML = `
-    ${pulse(m)}
-    <div class="grid">
-      <section class="card wide">
-        <div class="badge">✦</div>
-        <h2>What to do next</h2>
-        <p class="sub">Claude reads your monthly totals and says where to look</p>
-        <div class="brief-head">
-          <p class="brief-note" id="brief-note">Your figures stay here until you ask.
-            Pressing this sends the monthly totals shown above — no line items, no names.</p>
-          <button type="button" class="btn primary" id="brief-go">Get briefing</button>
-        </div>
-        <div class="brief" id="brief"></div>
-      </section>
-
-      <section class="card wide">
-        <div class="badge">⚑</div>
-        <h2>Today's priorities</h2>
-        <p class="sub">Read straight off your figures &middot; nothing sent anywhere</p>
-        ${priorities(m)}
-      </section>
-
-      <section class="card wide hero"><div class="badge">◉</div>
-        <p class="eyebrow">${cap(m.month)} &middot; net result</p>
-        <p class="figure${loss ? " loss" : ""}">${money(net)}${deltaVsPrev(m)}</p>
-        <p class="note">
-          ${fmtPct(pct(net, rev))} of ${money(rev)} in revenue.
-          ${loss
-            ? `Costs ran past revenue by ${money(Math.abs(net))}.`
-            : `Kept ${money(net)} after every cost.`}
-        </p>
-      </section>
-
-      <section class="card wide">
-        <div class="badge">◔</div>
-        <h2>Where revenue goes</h2>
-        <p class="sub">Every cost bucket as a share of ${money(rev)} in revenue</p>
-        ${allocation(m)}
-      </section>
-
-      <section class="card">
-        <div class="badge">▤</div>
-        <h2>Against budget</h2>
-        <p class="sub">Total costs measured against the month's budget</p>
-        <div class="gaugeline">
-          <span>Budget <strong>${money(m.budget)}</strong></span>
-          <span><strong class="${used > 100 ? "neg" : ""}">${fmtPct(used)} used</strong></span>
-        </div>
-        <div class="gauge">
-          <div class="gauge-fill${used > 100 ? " over" : ""}" style="width:${Math.min(used, 100)}%"></div>
-          ${used > 100 ? '<div class="gauge-mark" style="left:100%"></div>' : ""}
-        </div>
-        <div class="gauge-foot">
-          <span>${money(m.totalExpenses)} spent</span>
-          <span>${over > 0 ? money(over) + " over" : money(-over) + " left"}</span>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="badge">▲</div>
-        <h2>Net profit by month</h2>
-        <p class="sub">Every month on file &middot; ${cap(m.month)} highlighted</p>
-        ${trend(data.months, m.monthNum)}
-      </section>
-
-      <section class="card wide">
-        <div class="badge">▦</div>
-        <h2>Revenue vs expenses</h2>
-        <p class="sub">Every month on file &middot; the gap between the bars is that month's profit</p>
-        ${pairChart(data.months, m.monthNum)}
-      </section>
-
-      <section class="card wide">
-        <div class="badge">☰</div>
-        <h2>Financial Report</h2>
-        <p class="sub">Every line is the amount of dollars and the percent of the revenue</p>
-        <table>
-          <thead>
-            <tr><th scope="col">Line</th><th scope="col">Amount</th><th scope="col">Of revenue</th></tr>
-          </thead>
-          <tbody>
-            ${row("Revenue", rev, rev, "group")}
-
-            ${row("Direct expenses", m.directExpenses, rev, "group")}
-            ${row("Cost of goods sold", m.cogs, rev, "indent-row")}
-            ${row("Labor", m.labor, rev, "indent-row")}
-            ${otherRow(m.otherDirect, rev)}
-
-            ${row("Operating expenses", m.operatingExpenses, rev, "group")}
-            ${row("Hardware", m.hardware, rev, "indent-row")}
-            ${otherRow(m.otherOperating, rev)}
-
-            ${row("Variable overhead", m.variableOverhead, rev, "group")}
-            ${row("Utilities", m.utilities, rev, "indent-row")}
-            ${row("Maintenance", m.maintenance, rev, "indent-row")}
-            ${otherRow(m.otherVariable, rev)}
-
-            ${row("Fixed overhead", m.fixedOverhead, rev, "group")}
-            ${otherRow(m.otherFixed, rev)}
-
-            ${row("Total expenses", m.totalExpenses, rev, "total")}
-            <tr class="total">
-              <th scope="row">Net profit</th>
-              <td class="amt ${loss ? "neg" : ""}">${money(net)}</td>
-              <td class="share ${loss ? "neg" : ""}">${fmtPct(pct(net, rev))}</td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-    </div>`;
-
-  document.querySelectorAll(".indent-row th").forEach(th => th.classList.add("indent"));
-  wireBriefing(m);
-  wireTooltip();
-  centreActiveMonth();
-}
-
-/* With enough months the bar row scrolls; keep the selected one in view. */
-function centreActiveMonth() {
-  const box = document.querySelector(".trend-scroll");
-  const col = document.querySelector(".trend .col.on");
-  if (!box || !col) return;
-  if (box.scrollWidth <= box.clientWidth) return;        // nothing to scroll
-  box.scrollLeft = col.offsetLeft - (box.clientWidth - col.offsetWidth) / 2;
-}
-
-/* ---- briefing ----
-   The one place figures leave the browser, and only when asked. Scoped to the
-   period on screen so the reader can see exactly what is being sent. */
-function wireBriefing(m) {
-  const btn = document.getElementById("brief-go");
-  const out = document.getElementById("brief");
-  if (!btn || !out) return;
-
-  btn.addEventListener("click", async () => {
-    const ms = periodSlice(m, period);
-    btn.disabled = true;
-    btn.textContent = "Reading\u2026";
-    out.innerHTML = "";
-
-    try {
-      const res = await fetch("/api/briefing", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        // Only the totals already on screen - rebuilt field by field so nothing
-        // else on the month object can travel along by accident.
-        body: JSON.stringify({months: ms.map(x => ({
-          month: x.month, revenue: x.revenue,
-          directExpenses: x.directExpenses, operatingExpenses: x.operatingExpenses,
-          variableOverhead: x.variableOverhead, fixedOverhead: x.fixedOverhead,
-          totalExpenses: x.totalExpenses, netProfit: x.netProfit, budget: x.budget
-        }))})
+  function rotate(){
+    var next = (i + 1) % frames.length;
+    el.style.transition = "transform .45s cubic-bezier(.22,1,.36,1), opacity .3s ease";
+    el.style.transform = "translateY(-100%)";
+    el.style.opacity = "0";
+    setTimeout(function(){
+      i = next;
+      setFrame(i);
+      el.style.transition = "none";
+      el.style.transform = "translateY(100%)";
+      requestAnimationFrame(function(){
+        requestAnimationFrame(function(){
+          el.style.transition = "transform .45s cubic-bezier(.22,1,.36,1), opacity .3s ease";
+          el.style.transform = "translateY(0)";
+          el.style.opacity = "1";
+        });
       });
-      if (!res.ok) throw new Error("the briefing service returned " + res.status);
-
-      const {opportunities = [], risks = [], actions = []} = await res.json();
-      const block = (cls, title, items) => items.length
-        ? `<h3>${title}</h3><ul class="${cls}">${items.map(i => `<li>${esc(i)}</li>`).join("")}</ul>`
-        : "";
-
-      const html = block("up", "Opportunities", opportunities)
-                 + block("risk", "Risks", risks)
-                 + block("act", "Do next", actions);
-      out.innerHTML = html || `<p class="brief-note">Nothing stood out in these months.</p>`;
-      btn.textContent = "Refresh briefing";
-    } catch (err) {
-      out.innerHTML = `<p class="brief-note">Could not get a briefing \u2014 ${esc(err.message)}.
-        Your figures were not stored.</p>`;
-      btn.textContent = "Try again";
-    } finally {
-      btn.disabled = false;
-    }
-  }, {once: false});
-}
-
-/* Model output is text, not markup - render it as text. */
-const esc = s => String(s).replace(/[&<>"]/g, c =>
-  ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
-
-/* Hover/focus readout on the allocation bar. The same numbers live in the
-   legend and the ledger below, so the tooltip only ever enhances. */
-function wireTooltip() {
-  const wrap = document.querySelector(".barwrap");
-  const tip  = document.getElementById("tip");
-  if (!wrap || !tip) return;
-
-  const show = seg => {
-    const box = seg.getBoundingClientRect();
-    const ref = wrap.getBoundingClientRect();
-    tip.innerHTML = `<b>${seg.dataset.name}</b> &middot; ${seg.dataset.amt}<br>${seg.dataset.share} of revenue`;
-    tip.style.left = (box.left - ref.left + box.width / 2) + "px";
-    tip.style.top  = "-8px";
-    tip.classList.add("on");
-  };
-  const hide = () => tip.classList.remove("on");
-
-  wrap.querySelectorAll(".seg").forEach(seg => {
-    seg.addEventListener("mouseenter", () => show(seg));
-    seg.addEventListener("focus", () => show(seg));
-    seg.addEventListener("mouseleave", hide);
-    seg.addEventListener("blur", hide);
-  });
-}
-
-function build() {
-  const list = document.getElementById("months");
-  list.innerHTML = data.months.map(m =>
-    `<li><button type="button" data-num="${m.monthNum}">${m.month}</button></li>`).join("");
-
-  list.addEventListener("click", e => {
-    const btn = e.target.closest("button");
-    if (btn) select(Number(btn.dataset.num));
-  });
-
-  document.getElementById("stamp").textContent =
-    data.generated ? "Generated " + data.generated : "";
-  const foot = document.getElementById("footer");
-  foot.textContent = sourceNote;
-  foot.classList.remove("notice");
-
-  select(data.months[0].monthNum);
-}
-
-function select(num) {
-  active = data.months.find(m => m.monthNum === num);
-  document.querySelectorAll(".filters button").forEach(b =>
-    b.setAttribute("aria-current", Number(b.dataset.num) === num));
-  draw(active);
-}
-
-
-/* ================= CSV loading =================
-   The browser does the same arithmetic CFODashboard.java does, so a CSV
-   dropped here never has to make a round trip through the Java app.
-   CSV only for now - PDFs and statements are a separate job.
-   Nothing is uploaded: files are read locally and never leave the page. */
-
-/* Character-scanning parser: handles quoted fields, embedded commas,
-   doubled "" escapes, and both \n and \r\n line endings. */
-function parseCsvGrid(text) {
-  const rows = [];
-  let row = [], field = "", quoted = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (quoted) {
-      if (c === '"') {
-        if (text[i + 1] === '"') { field += '"'; i++; }   // "" -> literal quote
-        else quoted = false;
-      } else field += c;
-    } else if (c === '"') {
-      quoted = true;
-    } else if (c === ",") {
-      row.push(field); field = "";
-    } else if (c === "\n" || c === "\r") {
-      if (c === "\r" && text[i + 1] === "\n") i++;
-      row.push(field); field = "";
-      if (row.some(v => v.trim() !== "")) rows.push(row);
-      row = [];
-    } else field += c;
-  }
-  row.push(field);
-  if (row.some(v => v.trim() !== "")) rows.push(row);
-
-  return rows;
-}
-
-/* Kept for callers that want headers and rows in one go. */
-function parseCsv(text) {
-  return toTable(parseCsvGrid(text));
-}
-
-/* Grid of cells -> {headers, rows}. Shared by the CSV and xlsx readers so both
-   get the same canonical header handling. */
-function toTable(grid) {
-  const headers = headerRow(grid);
-  return {headers, rows: buildRows(grid, headers)};
-}
-
-/* ---- orientation ----
-   A sheet exported for people often runs line items DOWN the first column with
-   periods across the top - the transpose of what a CSV does. Guessing from the
-   data beats asking: whichever axis lands on more canonical field names is the
-   header axis. Entirely local, no request. */
-
-function canonicalHits(cells) {
-  return cells.filter(c => CANONICAL.includes(canonical(c))).length;
-}
-
-function transpose(grid) {
-  const width = grid.reduce((w, r) => Math.max(w, r.length), 0);
-  return Array.from({length: width}, (_, c) => grid.map(r => r[c] === undefined ? "" : r[c]));
-}
-
-/** Returns the grid with headers across the top, flipping it if they ran down. */
-function orient(grid) {
-  if (!grid.length) return grid;
-  const firstRow = grid[0];
-  const firstCol = grid.map(r => r[0] === undefined ? "" : r[0]);
-  return canonicalHits(firstCol) > canonicalHits(firstRow) ? transpose(grid) : grid;
-}
-
-/* Excel stores dates as days since 1899-12-30. A transposed sheet puts those
-   serials in the period column, where a bare "46204" means nothing to a reader. */
-function excelDate(v) {
-  const n = Number(v);
-  if (!Number.isFinite(n) || n < 20000 || n > 80000) return null;
-  const d = new Date(Date.UTC(1899, 11, 30) + n * 86400000);
-  return {month: d.toLocaleString("en-US", {month: "long", timeZone: "UTC"}).toLowerCase(),
-          monthNum: d.getUTCMonth() + 1};
-}
-
-/* What each column means. Local and synchronous - no network. */
-function headerRow(grid) {
-  if (!grid.length) return [];
-  return grid[0].map(canonical);
-}
-
-/* Build the row objects against a FINAL header list. Headers arrive as an
-   argument rather than being computed here, which is what lets a caller
-   correct them before the keys get baked into every row. */
-function buildRows(grid, headers) {
-  return grid.slice(1).map(r => {
-    const o = {};
-    headers.forEach((h, i) => o[h] = String(r[i] === undefined ? "" : r[i]).trim());
-    return o;
-  });
-}
-
-/* ================= xlsx reading =================
-   An .xlsx is a zip of XML. The browser can already unzip (DecompressionStream)
-   and parse XML (DOMParser), so we read the two parts we need directly rather
-   than pulling in a spreadsheet library. No dependency, no CDN, and the file
-   still never leaves the machine. */
-
-async function inflate(bytes, method) {
-  if (method === 0) return bytes;                       // stored, not compressed
-  const stream = new Blob([bytes]).stream()
-    .pipeThrough(new DecompressionStream("deflate-raw"));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
-}
-
-/* Walk the zip central directory -> {entryName: bytes} */
-async function unzip(buf) {
-  const dv = new DataView(buf), bytes = new Uint8Array(buf);
-
-  let eocd = -1;                                        // end-of-central-directory
-  for (let i = bytes.length - 22; i >= 0 && i > bytes.length - 65558; i--) {
-    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
-  }
-  if (eocd < 0) throw new Error("not a zip archive");
-
-  const count = dv.getUint16(eocd + 10, true);
-  let p = dv.getUint32(eocd + 16, true);
-  const files = {};
-
-  for (let n = 0; n < count; n++) {
-    if (dv.getUint32(p, true) !== 0x02014b50) break;
-    const method   = dv.getUint16(p + 10, true);
-    const compLen  = dv.getUint32(p + 20, true);
-    const nameLen  = dv.getUint16(p + 28, true);
-    const extraLen = dv.getUint16(p + 30, true);
-    const cmtLen   = dv.getUint16(p + 32, true);
-    const localOff = dv.getUint32(p + 42, true);
-    const name = new TextDecoder().decode(bytes.subarray(p + 46, p + 46 + nameLen));
-
-    // the local header repeats name/extra at its own lengths before the data
-    const lnLen = dv.getUint16(localOff + 26, true);
-    const leLen = dv.getUint16(localOff + 28, true);
-    const start = localOff + 30 + lnLen + leLen;
-    files[name] = await inflate(bytes.subarray(start, start + compLen), method);
-
-    p += 46 + nameLen + extraLen + cmtLen;
-  }
-  return files;
-}
-
-/* "BC12" -> 54. xlsx omits empty cells, so the column comes from the ref. */
-function colIndex(ref) {
-  let n = 0;
-  for (const ch of ref) {
-    const c = ch.charCodeAt(0);
-    if (c < 65 || c > 90) break;
-    n = n * 26 + (c - 64);
-  }
-  return n - 1;
-}
-
-async function readXlsx(buf) {
-  const files = await unzip(buf);
-  const dec = new TextDecoder();
-  const xml = name => new DOMParser().parseFromString(dec.decode(files[name]), "application/xml");
-
-  let shared = [];
-  if (files["xl/sharedStrings.xml"]) {                  // one <si> may hold several runs
-    shared = [...xml("xl/sharedStrings.xml").getElementsByTagName("si")]
-      .map(si => [...si.getElementsByTagName("t")].map(t => t.textContent).join(""));
+    }, 420);
   }
 
-  const sheet = Object.keys(files)
-    .filter(n => /^xl\/worksheets\/sheet\d+\.xml$/.test(n))
-    .sort()[0];
-  if (!sheet) throw new Error("no worksheet inside the workbook");
-
-  const rows = [];
-  for (const row of [...xml(sheet).getElementsByTagName("row")]) {
-    const cells = [];
-    for (const c of [...row.getElementsByTagName("c")]) {
-      const i = colIndex(c.getAttribute("r") || "");
-      const t = c.getAttribute("t");
-      let v;
-      if (t === "inlineStr") {
-        v = [...c.getElementsByTagName("t")].map(x => x.textContent).join("");
-      } else {
-        const vEl = c.getElementsByTagName("v")[0];
-        const raw = vEl ? vEl.textContent : "";
-        v = t === "s" ? (shared[Number(raw)] || "") : raw;
-      }
-      while (cells.length < i) cells.push("");          // pad the gaps xlsx leaves out
-      cells[i] = v;
-    }
-    if (cells.some(x => String(x).trim() !== "")) rows.push(cells);
-  }
-  return rows;
-}
-
-/* ---- header matching ----
-   Headers arrive spelled however the author felt like spelling them. These
-   three steps fold the common variations onto our canonical names, so the
-   lookups below can stay simple. All of it runs locally - no network. */
-
-/* Case, punctuation and spacing collapse: "Credit_Card-Fees " -> "credit card fees" */
-const normalise = s =>
-  String(s == null ? "" : s).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-
-/* Each file carries only its own fields. Checking a file against the union of
-   both would mark the other file's fields as missing on every upload - which
-   both wastes a request and invites a wrong answer, since asking where
-   "revenue" lives in an expenses sheet has no right answer. */
-const DASHBOARD_FIELDS = ["month", "month num", "revenue", "budget"];
-const EXPENSE_FIELDS = [
-  "month num", "cogs", "packaging", "rent", "utilities", "maintenance",
-  "hardware", "insurance", "marketing", "credit card fees",
-  "business license", "telephone", "employee meals", "tax", "labor"
-];
-const CANONICAL = [...new Set([...DASHBOARD_FIELDS, ...EXPENSE_FIELDS])];
-
-/* Different words for the same line. Keys are already normalised. */
-const SYNONYMS = {
-  "cost of goods": "cogs", "cost of goods sold": "cogs", "food cost": "cogs",
-  "salaries": "labor", "salaries wages": "labor", "wages": "labor",
-  "payroll": "labor", "staff costs": "labor",
-  "premises": "rent", "rent expense": "rent", "occupancy": "rent",
-  "computer and hardware": "hardware", "computer hardware": "hardware",
-  "equipment": "hardware",
-  "telephone internet": "telephone", "phone": "telephone",
-  "business license and permits": "business license",
-  "licenses and permits": "business license", "permits": "business license",
-  "insurance expenses": "insurance", "insurance expense": "insurance",
-  "marketing expense": "marketing", "advertising": "marketing",
-  "packaging supplies": "packaging",
-  "maintenance and repairs": "maintenance", "repairs": "maintenance",
-  "taxes": "tax", "payroll taxes": "tax",
-  "income": "revenue", "sales": "revenue", "total revenue": "revenue",
-  "month number": "month num", "month no": "month num", "period": "month num"
-};
-
-/* normalise -> exact synonym -> exact canonical -> longest whole-word prefix.
-   The prefix step is what rescues labels carrying a parenthetical, e.g.
-   "Utilities (gas, electricity, water)" -> "utilities". It requires a space
-   after the match so "monthly revenue" can never collapse to "month". */
-function canonical(header) {
-  const n = normalise(header);
-  if (SYNONYMS[n]) return SYNONYMS[n];
-  if (CANONICAL.includes(n)) return n;
-
-  let best = null;
-  for (const key of Object.keys(SYNONYMS).concat(CANONICAL)) {
-    if (n.startsWith(key + " ") && (!best || key.length > best.length)) best = key;
-  }
-  return best ? (SYNONYMS[best] || best) : n;
-}
-
-/* ---- server-side header mapping ----
-   Everything above is local and free. This is the one step that leaves the
-   machine, and only header TEXT goes - never a row of figures. It runs only
-   when the local pass left something unresolved. */
-
-const BUCKET_NAMES = ["direct", "operating", "variable", "fixed"];
-
-/**
- * Given the locally-canonicalised headers, fill in what is still unknown.
- * Returns the corrected header list plus {headerKey: bucket} for columns that
- * matched no field but are real costs.
- */
-async function resolveHeaders(headers) {
-  // Which file is this? Decided from what already matched locally. When even
-  // that is unclear we fall back to the union and let the model sort it out.
-  const kind = classify(headers);
-  const expected = kind === "dashboard" ? DASHBOARD_FIELDS
-                 : kind === "expenses"  ? EXPENSE_FIELDS
-                 : CANONICAL;
-
-  const placed   = new Set(headers.filter(h => expected.includes(h)));
-  const unplaced = expected.filter(f => !placed.has(f));
-  const unclaimed = headers
-    .map((h, i) => ({h, i}))
-    .filter(({h}) => !CANONICAL.includes(h));
-
-  // Every field placed and every column spoken for - nothing to ask.
-  if (!unplaced.length && !unclaimed.length) return {headers, leftovers: {}};
-
-  const res = await fetch("/api/map-columns", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    // Say which columns are still free. Without it the model happily buckets
-    // columns we already matched, and their money would be counted twice.
-    body: JSON.stringify({headers, fields: unplaced, unclaimed: unclaimed.map(u => u.h)})
-  });
-  if (!res.ok) throw new Error("mapping service returned " + res.status);
-
-  const {mapping = {}, other = {}} = await res.json();
-  const fixed = headers.slice();
-
-  // names -> positions: the model answers in header text, arrays index by number
-  for (const [field, header] of Object.entries(mapping)) {
-    const i = fixed.indexOf(header);
-    if (i >= 0 && !CANONICAL.includes(fixed[i])) fixed[i] = field;
-  }
-
-  const leftovers = {};
-  for (const [header, bucket] of Object.entries(other)) {
-    const i = fixed.indexOf(header);
-    if (i >= 0 && !CANONICAL.includes(fixed[i]) && BUCKET_NAMES.includes(bucket)) {
-      leftovers[fixed[i]] = bucket;
-    }
-  }
-  return {headers: fixed, leftovers};
-}
-
-const NUM = v => {
-  const n = Number(String(v).replace(/[$,\s]/g, ""));
-  return Number.isFinite(n) ? n : 0;
-};
-const round2 = n => Math.round(n * 100) / 100;
-
-/* The four buckets, column for column as CFODashboard.java defines them. */
-const BUCKETS = {
-  direct:    ["cogs", "labor", "employee meals", "tax"],
-  operating: ["packaging", "credit card fees", "marketing", "hardware"],
-  variable:  ["utilities", "maintenance"],
-  fixed:     ["rent", "insurance", "business license", "telephone"]
-};
-const sumOf = (r, keys) => keys.reduce((t, k) => t + NUM(r[k]), 0);
-
-/* Which of the two files is this? Decided by header, not by filename. */
-const classify = h =>
-  h.includes("revenue") ? "dashboard" :
-  h.includes("cogs")    ? "expenses"  : null;
-
-/* One sheet carrying revenue AND costs - no second file to join against.
-   Each row is a month; the two-file path below joins on "month num" instead. */
-const isCombined = headers => headers.includes("revenue") && headers.includes("cogs");
-
-function monthsFromOne(table) {
-  // A transposed sheet's period column often has a blank header, holding either
-  // an Excel date serial or a label like "Sept 2026".
-  const periodKey = table.headers.find(h => h === "" || h === "month") ?? "";
-  return monthsFrom(table.rows.map((r, i) => {
-    const raw = String(r[periodKey] ?? "").trim();
-    const d = excelDate(raw);
-    return {
-      month:    d ? d.month    : (raw.toLowerCase() || ("period " + (i + 1))),
-      monthNum: d ? d.monthNum : (NUM(r["month num"]) || i + 1),
-      row: r
-    };
-  }), table.leftovers || {});
-}
-
-/* The arithmetic, shared by the one-file and two-file paths. Each entry is a
-   month with every figure already on one row object. */
-function monthsFrom(entries, leftovers) {
-  const lo = leftovers || {};
-
-  const months = entries.map(({month, monthNum, row}) => {
-    const revenue = NUM(row.revenue), budget = NUM(row.budget);
-
-    // Costs with no named column still belong to a bucket - dropping them would
-    // understate total expenses and break revenue - expenses = net profit.
-    const other = b => Object.keys(lo).reduce(
-      (t, k) => t + (lo[k] === b ? NUM(row[k]) : 0), 0);
-    const otherDirect    = other("direct");
-    const otherOperating = other("operating");
-    const otherVariable  = other("variable");
-    const otherFixed     = other("fixed");
-
-    const directExpenses    = sumOf(row, BUCKETS.direct)    + otherDirect;
-    const operatingExpenses = sumOf(row, BUCKETS.operating) + otherOperating;
-    const variableOverhead  = sumOf(row, BUCKETS.variable)  + otherVariable;
-    const fixedOverhead     = sumOf(row, BUCKETS.fixed)     + otherFixed;
-    const totalExpenses = directExpenses + operatingExpenses + variableOverhead + fixedOverhead;
-    const grossProfit   = revenue - directExpenses;
-    const netProfit     = grossProfit - operatingExpenses - variableOverhead - fixedOverhead;
-
-    return {
-      month: String(month).toLowerCase(), monthNum, revenue,
-      cogs: NUM(row.cogs), labor: NUM(row.labor), utilities: NUM(row.utilities),
-      maintenance: NUM(row.maintenance), hardware: NUM(row.hardware),
-      directExpenses, operatingExpenses, variableOverhead, fixedOverhead,
-      otherDirect, otherOperating, otherVariable, otherFixed,
-      totalExpenses, grossProfit, netProfit,
-      budget, budgetPercent: budget ? round2(totalExpenses / budget * 100) : 0
-    };
-  });
-
-  months.sort((a, b) => a.monthNum - b.monthNum);
-  return {months, skipped: []};
-}
-
-/* Two files joined on "month num": revenue and budget from one, costs from the
-   other, merged onto a single row so monthsFrom sees the same shape either way. */
-function monthsFromCsv(dash, exp) {
-  const byNum = new Map(exp.rows.map(r => [NUM(r["month num"]), r]));
-  const entries = [], skipped = [];
-
-  dash.rows.forEach(d => {
-    const n = NUM(d["month num"]);
-    const e = byNum.get(n);
-    if (!e) { skipped.push(d.month || ("month " + n)); return; }
-    entries.push({
-      month: d.month || ("month " + n),
-      monthNum: n,
-      row: Object.assign({}, e, {revenue: d.revenue, budget: d.budget})
-    });
-  });
-
-  const out = monthsFrom(entries, exp.leftovers);
-  return {months: out.months, skipped};
-}
-
-/* ---- wiring ---- */
-let published = null;                 // whatever data.json gave us, kept for Reset
-const held = {dashboard: null, expenses: null, combined: null};  // files picked so far
-
-const els = {};
-function say(main, detail, bad) {
-  els.source.textContent = main;
-  els.status.textContent = detail;
-  els.status.className = bad ? "bad" : "";
-}
-
-async function handleFiles(list) {
-  const files = [...list];
-  if (!files.length) return;
-
-  const readable = f => /\.(csv|xlsx)$/i.test(f.name);
-  const rejected = files.filter(f => !readable(f));
-  const usable   = files.filter(readable);
-
-  if (!usable.length) {
-    const xls = rejected.some(f => /\.xls$/i.test(f.name));
-    return say("Not read", rejected.map(f => f.name).join(", ") +
-      (xls ? " — .xls is the older Excel format; re-save it as .xlsx or CSV."
-           : " — CSV and .xlsx are the formats read right now."), true);
-  }
-
-  const unknown = [], unreadable = [];
-  for (const f of usable) {
-    let parsed;
-    try {
-      const grid = orient(/\.xlsx$/i.test(f.name)
-        ? await readXlsx(await f.arrayBuffer())
-        : parseCsvGrid(await f.text()));
-
-      // headers first, so anything unresolved can be corrected BEFORE the row
-      // objects are keyed off them - once built, the keys are baked in
-      let headers = headerRow(grid), leftovers = {};
-      try {
-        ({headers, leftovers} = await resolveHeaders(headers));
-      } catch (mapErr) {
-        // the local pass still stands; only the unresolved columns are lost
-        console.warn("column mapping unavailable:", mapErr.message);
-      }
-      parsed = {headers, rows: buildRows(grid, headers), leftovers};
-    }
-    // a file we could not open at all is a different problem from one whose
-    // columns we did not recognise - don't give column advice for a broken file
-    catch (err) { unreadable.push(f.name + " (" + err.message + ")"); continue; }
-
-    // A sheet carrying revenue AND costs stands alone; the two-file shapes
-    // still have to be paired up as before.
-    const kind = isCombined(parsed.headers) ? "combined" : classify(parsed.headers);
-    if (kind) held[kind] = Object.assign(parsed, {fileName: f.name});
-    else unknown.push(f.name);
-  }
-
-  if (unreadable.length) {
-    return say("Could not open", unreadable.join(", "), true);
-  }
-  if (unknown.length) {
-    return say("Unrecognized columns", unknown.join(", ") +
-      " — need a revenue column (dashboard) or a cogs column (expenses).", true);
-  }
-  // One sheet with revenue and costs together needs no partner file.
-  let months, skipped = [], from;
-  if (held.combined) {
-    ({months} = monthsFromOne(held.combined));
-    from = held.combined.fileName;
-  } else {
-    if (!held.dashboard) return say("Need one more file", "Got the expenses file. Still need the one with month, revenue and budget — or a single sheet containing both.", true);
-    if (!held.expenses)  return say("Need one more file", "Got the dashboard file. Still need the one with the expense columns — or a single sheet containing both.", true);
-    ({months, skipped} = monthsFromCsv(held.dashboard, held.expenses));
-    from = held.dashboard.fileName + " + " + held.expenses.fileName;
-  }
-
-  if (!months.length) {
-    return say("Nothing to show", "No month in this data could be read.", true);
-  }
-
-  const note = skipped.length ? " · skipped " + skipped.join(", ") + " (no expenses row)" : "";
-  sourceNote = "Calculated in your browser from " + from + ". Nothing was uploaded.";
-  render({generated: null, months});
-  say("Your figures", months.length + " month" + (months.length > 1 ? "s" : "") +
-      " from " + from + note, false);
-  els.reset.hidden = !published;
-}
-
-function wireLoader() {
-  els.source = document.getElementById("source");
-  els.status = document.getElementById("status");
-  els.reset  = document.getElementById("reset");
-  const loader = document.getElementById("loader");
-  const input  = document.getElementById("file");
-
-  // #sheet is never replaced, only refilled, so one listener covers every redraw
-  document.getElementById("sheet").addEventListener("click", e => {
-    const hit = e.target.closest("[data-month]");
-    if (hit) select(Number(hit.dataset.month));
-  });
-
-  // Period pills: re-render the current month under the new scope.
-  const periodsEl = document.getElementById("periods");
-  periodsEl.innerHTML = PERIODS.map(([k, label]) =>
-    `<li><button type="button" data-period="${k}"
-       aria-current="${k === period}">${label}</button></li>`).join("");
-  periodsEl.addEventListener("click", e => {
-    const b = e.target.closest("[data-period]");
-    if (!b) return;
-    period = b.dataset.period;
-    periodsEl.querySelectorAll("button").forEach(x =>
-      x.setAttribute("aria-current", x.dataset.period === period));
-    if (active) draw(active);
-  });
-
-  document.getElementById("pick").addEventListener("click", () => input.click());
-  input.addEventListener("change", e => { handleFiles(e.target.files); input.value = ""; });
-
-  els.reset.addEventListener("click", () => {
-    held.dashboard = held.expenses = held.combined = null;
-    sourceNote = PUBLISHED_NOTE;
-    render(published);
-    say("Published figures", "Read from data.json", false);
-    els.reset.hidden = true;
-  });
-
-  // Drop anywhere on the page. preventDefault on dragover is what stops the
-  // browser from just navigating to the dropped file.
-  let depth = 0;
-  document.addEventListener("dragenter", e => { e.preventDefault(); depth++; loader.classList.add("over"); });
-  document.addEventListener("dragover",  e => e.preventDefault());
-  document.addEventListener("dragleave", e => { e.preventDefault(); if (--depth <= 0) loader.classList.remove("over"); });
-  document.addEventListener("drop", e => {
-    e.preventDefault(); depth = 0; loader.classList.remove("over");
-    handleFiles(e.dataTransfer.files);
-  });
-}
-
-/* Single entry point for the data. Anything that can produce the same shape
-   as data.json can call render() - that is where a future upload would hand
-   its parsed result in. */
-function render(json) {
-  data = json;
-  build();
-}
-
-wireLoader();
-
-fetch("data.json")
-  .then(r => r.ok ? r.json() : Promise.reject(r.status))
-  .then(json => { published = json; render(json); })
-  .catch(() => {
-    sourceNote = "";
-    render(FALLBACK);
-    const f = document.getElementById("footer");
-    f.innerHTML = 'Showing sample figures. <code>data.json</code> could not be loaded — ' +
-      'serve this folder over http (<code>python3 -m http.server</code>) ' +
-      'or place data.json alongside this file.';
-    f.classList.add("notice");
-    say("Sample figures", "data.json could not be read \u2014 load your CSVs above", true);
-  });
+  setInterval(rotate, 2800);
+})();
 </script>
 </body>
 </html>

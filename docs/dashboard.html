@@ -107,6 +107,23 @@
   .btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
   .loader-text .bad{color:var(--critical)}
 
+  /* ---- busy state ----
+     A file that parses instantly and one that waits on a network round trip
+     look identical without this, and a still screen reads as a broken one. */
+  .spin{
+    display:inline-block;width:12px;height:12px;vertical-align:-1px;
+    margin-right:7px;border-radius:50%;
+    border:2px solid var(--line);border-top-color:var(--accent);
+    animation:spin .7s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){
+    .spin{animation-duration:2.4s}
+  }
+  .loader.busy{border-color:var(--accent)}
+  .btn[disabled]{opacity:.55;cursor:default}
+  .btn[disabled]:hover{border-color:var(--line)}
+
   /* ---- period selector ---- */
   .periods{display:flex;gap:4px;margin:0 0 14px;padding:0;list-style:none}
   .periods button{
@@ -1337,7 +1354,9 @@ const BUCKET_NAMES = ["direct", "operating", "variable", "fixed"];
  * Returns the corrected header list plus {headerKey: bucket} for columns that
  * matched no field but are real costs.
  */
-async function resolveHeaders(headers) {
+/* What the local pass could not settle. One definition, so the progress label
+   and the request itself can never disagree about whether a call will happen. */
+function openQuestions(headers) {
   // Which file is this? Decided from what already matched locally. When even
   // that is unclear we fall back to the union and let the model sort it out.
   const kind = classify(headers);
@@ -1345,11 +1364,21 @@ async function resolveHeaders(headers) {
                  : kind === "expenses"  ? EXPENSE_FIELDS
                  : CANONICAL;
 
-  const placed   = new Set(headers.filter(h => expected.includes(h)));
-  const unplaced = expected.filter(f => !placed.has(f));
-  const unclaimed = headers
-    .map((h, i) => ({h, i}))
-    .filter(({h}) => !CANONICAL.includes(h));
+  const placed = new Set(headers.filter(h => expected.includes(h)));
+  return {
+    unplaced: expected.filter(f => !placed.has(f)),
+    unclaimed: headers.map((h, i) => ({h, i})).filter(({h}) => !CANONICAL.includes(h))
+  };
+}
+
+/** True when resolveHeaders will actually reach the network. */
+function needsMapping(headers) {
+  const {unplaced, unclaimed} = openQuestions(headers);
+  return unplaced.length > 0 || unclaimed.length > 0;
+}
+
+async function resolveHeaders(headers) {
+  const {unplaced, unclaimed} = openQuestions(headers);
 
   // Every field placed and every column spoken for - nothing to ask.
   if (!unplaced.length && !unclaimed.length) return {headers, leftovers: {}};
@@ -1487,7 +1516,25 @@ let published = null;                 // whatever data.json gave us, kept for Re
 const held = {dashboard: null, expenses: null, combined: null};  // files picked so far
 
 const els = {};
+/* Progress, not just outcome. Each stage names the file so a two-file upload
+   shows which one is being worked on. */
+function busy(main, detail) {
+  els.source.textContent = main;
+  els.status.innerHTML = '<span class="spin"></span>' + esc(detail);
+  els.status.className = "";
+  document.getElementById("loader").classList.add("busy");
+  const pick = document.getElementById("pick");
+  if (pick) { pick.disabled = true; pick.textContent = "Working\u2026"; }
+}
+
+function done() {
+  document.getElementById("loader").classList.remove("busy");
+  const pick = document.getElementById("pick");
+  if (pick) { pick.disabled = false; pick.textContent = "Choose files"; }
+}
+
 function say(main, detail, bad) {
+  done();
   els.source.textContent = main;
   els.status.textContent = detail;
   els.status.className = bad ? "bad" : "";
@@ -1509,9 +1556,15 @@ async function handleFiles(list) {
   }
 
   const unknown = [], unreadable = [];
-  for (const f of usable) {
+  for (const [n, f] of usable.entries()) {
+    const of = usable.length > 1 ? ` (${n + 1} of ${usable.length})` : "";
     let parsed;
     try {
+      busy("Reading", f.name + of);
+      // Let the browser paint the busy state before a large xlsx blocks the
+      // thread - without this the spinner never appears on the slow case.
+      await new Promise(r => setTimeout(r, 0));
+
       const grid = orient(/\.xlsx$/i.test(f.name)
         ? await readXlsx(await f.arrayBuffer())
         : parseCsvGrid(await f.text()));
@@ -1520,6 +1573,8 @@ async function handleFiles(list) {
       // objects are keyed off them - once built, the keys are baked in
       let headers = headerRow(grid), leftovers = {};
       try {
+        // Only this step can wait on the network, so only it gets its own label.
+        if (needsMapping(headers)) busy("Matching columns", "asking about " + f.name + of);
         ({headers, leftovers} = await resolveHeaders(headers));
       } catch (mapErr) {
         // the local pass still stands; only the unresolved columns are lost

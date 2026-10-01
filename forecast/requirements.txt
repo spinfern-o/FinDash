@@ -1,0 +1,5 @@
+chronos-forecasting>=1.5.0
+torch>=2.2
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6

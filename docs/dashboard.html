@@ -152,6 +152,25 @@
   .pulse .chg span{font-weight:400;color:var(--ink-3)}
   @media (max-width:760px){ .pulse{grid-template-columns:repeat(2,1fr)} }
 
+  /* ---- forecast fan ---- */
+  .fan svg{width:100%;height:150px;display:block;overflow:visible}
+  .fan-band{fill:var(--s2);opacity:.16}
+  .fan-hist{fill:none;stroke:var(--accent);stroke-width:2;vector-effect:non-scaling-stroke;
+            stroke-linejoin:round}
+  .fan-mid{fill:none;stroke:var(--s2);stroke-width:2;stroke-dasharray:5 4;
+           vector-effect:non-scaling-stroke;stroke-linejoin:round}
+  .fan-zero{stroke:var(--line);stroke-width:1;vector-effect:non-scaling-stroke}
+  .fan-labels{display:flex;margin-top:8px}
+  .fan-labels span{
+    flex:1;text-align:center;font-size:11px;color:var(--ink-3);
+    text-transform:capitalize;white-space:nowrap;
+  }
+  .fan-labels .fut{color:var(--s2);font-weight:600}
+  .fan .key i.fan-sw-hist{background:var(--accent)}
+  .fan .key i.fan-sw-mid{background:var(--s2)}
+  .fan .key i.fan-sw-band{background:var(--s2);opacity:.3}
+  .fan .brief-note{margin-top:10px}
+
   /* ---- budget estimator ---- */
   .est-pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
   .est-pair > div{
@@ -845,6 +864,96 @@ function estimator(m) {
   </div>`;
 }
 
+/* ---- forecast ----
+   Two paths to the same shape. Locally we fit a least-squares line through net
+   profit and put a prediction interval around it - free, instant, private, and
+   at a dozen points about as good as anything. Chronos-Bolt is the upgrade: it
+   returns p10/p50/p90 directly, which is the same three numbers from a model
+   trained on far more series than this business has months. */
+
+let forecastData = null;   // {low[], predicted[], high[], model}
+
+/** Least-squares line through y, extended `h` steps, with a t-ish band. */
+function trendForecast(y, h) {
+  const n = y.length;
+  if (n < 3) return null;
+
+  const xs = y.map((_, i) => i);
+  const mx = xs.reduce((a, b) => a + b, 0) / n;
+  const my = y.reduce((a, b) => a + b, 0) / n;
+  let sxy = 0, sxx = 0;
+  for (let i = 0; i < n; i++) { sxy += (xs[i] - mx) * (y[i] - my); sxx += (xs[i] - mx) ** 2; }
+  const slope = sxx ? sxy / sxx : 0;
+  const intercept = my - slope * mx;
+
+  // Residual spread sets the band width, so volatile months widen it honestly
+  // rather than the band being a fixed decoration.
+  const resid = y.map((v, i) => v - (intercept + slope * i));
+  const sse = resid.reduce((a, r) => a + r * r, 0);
+  const se = Math.sqrt(sse / Math.max(1, n - 2));
+
+  const low = [], predicted = [], high = [];
+  for (let k = 1; k <= h; k++) {
+    const x = n - 1 + k;
+    const fit = intercept + slope * x;
+    // Widen with distance: predicting three months out is not as safe as one.
+    const spread = 1.96 * se * Math.sqrt(1 + 1 / n + ((x - mx) ** 2) / (sxx || 1));
+    low.push(fit - spread); predicted.push(fit); high.push(fit + spread);
+  }
+  return {low, predicted, high, model: "local trend"};
+}
+
+/* The fan: history as bars, the forecast as a shaded cone beside it. */
+function fanChart(months) {
+  const net = months.map(m => m.netProfit);
+  const f = forecastData || trendForecast(net, 3);
+  if (!f) return `<p class="none">Needs at least three months to project from.</p>`;
+
+  const all = [...net, ...f.low, ...f.high];
+  const top = Math.max(...all), bot = Math.min(...all, 0);
+  const span = (top - bot) || 1;
+  const H = 150;
+  const y = v => H - ((v - bot) / span) * H;      // value -> px from the top
+
+  const cols = months.length + f.predicted.length;
+  const step = 100 / cols;
+  const at = i => (i + 0.5) * step;
+
+  const histPts = net.map((v, i) => `${at(i)},${y(v)}`).join(" ");
+  const fi = i => months.length + i;
+  const midPts = [`${at(months.length - 1)},${y(net[net.length - 1])}`,
+                  ...f.predicted.map((v, i) => `${at(fi(i))},${y(v)}`)].join(" ");
+  const band = [`${at(months.length - 1)},${y(net[net.length - 1])}`,
+                ...f.high.map((v, i) => `${at(fi(i))},${y(v)}`),
+                ...f.low.map((v, i) => `${at(fi(i))},${y(v)}`).reverse(),
+                `${at(months.length - 1)},${y(net[net.length - 1])}`].join(" ");
+
+  const zero = y(0);
+  const labels = [...months.map(m => m.month.slice(0, 3)),
+                  ...f.predicted.map((_, i) => "+" + (i + 1))];
+
+  return `<div class="fan">
+    <svg viewBox="0 0 100 ${H}" preserveAspectRatio="none" role="img"
+         aria-label="Net profit history and ${f.predicted.length}-month projection">
+      ${bot < 0 ? `<line x1="0" y1="${zero}" x2="100" y2="${zero}" class="fan-zero"/>` : ""}
+      <polygon points="${band}" class="fan-band"/>
+      <polyline points="${histPts}" class="fan-hist"/>
+      <polyline points="${midPts}" class="fan-mid"/>
+    </svg>
+    <div class="fan-labels">${labels.map((l, i) =>
+      `<span class="${i >= months.length ? "fut" : ""}">${l}</span>`).join("")}</div>
+    <ul class="key">
+      <li><i class="fan-sw-hist"></i><b>Actual</b></li>
+      <li><i class="fan-sw-mid"></i><b>Projected</b> ${money0(f.predicted[0])} next month</li>
+      <li><i class="fan-sw-band"></i><b>Range</b> ${money0(f.low[0])} to ${money0(f.high[0])}</li>
+    </ul>
+    <p class="brief-note">Source: ${esc(f.model)}.
+      ${f.model === "local trend"
+        ? "A straight line through your months with a 95% band \u2014 computed here, nothing sent."
+        : "Quantile forecast from a model trained on millions of series."}</p>
+  </div>`;
+}
+
 function draw(m) {
   const rev  = m.revenue;
   const net  = m.netProfit;
@@ -865,6 +974,19 @@ function draw(m) {
           <button type="button" class="btn primary" id="brief-go">Get briefing</button>
         </div>
         <div class="brief" id="brief"></div>
+      </section>
+
+      <section class="card wide">
+        <div class="badge">↗</div>
+        <h2>Where this is heading</h2>
+        <p class="sub">Net profit so far, and the next three months projected</p>
+        ${fanChart(data.months)}
+        <div class="brief-head">
+          <p class="brief-note" id="fc-note">Chronos-Bolt is a forecasting model trained on
+            millions of series. Pressing this sends the net profit numbers only — no
+            months, no line items, no budget.</p>
+          <button type="button" class="btn" id="fc-go">Use Chronos</button>
+        </div>
       </section>
 
       <section class="card wide">
@@ -972,6 +1094,7 @@ function draw(m) {
 
   document.querySelectorAll(".indent-row th").forEach(th => th.classList.add("indent"));
   wireBriefing(m);
+  wireForecast();
   wireTooltip();
   centreActiveMonth();
 }
@@ -1032,6 +1155,42 @@ function wireBriefing(m) {
       btn.disabled = false;
     }
   }, {once: false});
+}
+
+/* Swap the local trend for Chronos when asked. Falls back silently to the
+   local line if the service is not configured - the chart already works. */
+function wireForecast() {
+  const btn = document.getElementById("fc-go");
+  const note = document.getElementById("fc-note");
+  if (!btn) return;
+
+  btn.addEventListener("click", async () => {
+    const series = data.months.map(x => x.netProfit);
+    btn.disabled = true;
+    btn.textContent = "Forecasting\u2026";
+    try {
+      const res = await fetch("/api/forecast", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({series, horizon: 3})
+      });
+      // A missing service answers with an HTML 404 page, not JSON - saying
+      // "unexpected token <" helps nobody.
+      let body;
+      try { body = await res.json(); }
+      catch { throw new Error("no forecast service is deployed yet"); }
+      if (!res.ok) throw new Error(body.hint || body.error || "returned " + res.status);
+
+      forecastData = {low: body.low, predicted: body.predicted,
+                      high: body.high, model: body.model};
+      draw(active);                       // redraw with the model's numbers
+    } catch (err) {
+      note.textContent = "Chronos unavailable (" + err.message +
+        "). Showing the local trend line instead.";
+      btn.disabled = false;
+      btn.textContent = "Try again";
+    }
+  });
 }
 
 /* Model output is text, not markup - render it as text. */

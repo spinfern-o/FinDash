@@ -3,11 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="favicon.png">
 <title>FinDash &middot; Everyone can manage finances</title>
 <script>
   window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
 </script>
-<meta name="description" content="Revenue, costs, and budget read straight off your own CSVs — one clear monthly dashboard, built for non-tech, international, and everyday teams.">
+<meta name="description" content="Revenue, costs, and budget read straight off your own CSVs: one clear monthly dashboard, built for non-tech, international, and everyday teams.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,7 +18,7 @@
     var saved = localStorage.getItem("findash-theme");
     var theme = saved || (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
     if(theme === "light") document.documentElement.setAttribute("data-theme","light");
-  }catch(e){}
+  }catch(e){ /* localStorage/matchMedia unavailable (privacy mode, old browser); default theme stands */ }
 })();
 </script>
 <style>
@@ -273,11 +274,11 @@
         <span class="line-2">Built for <span class="rotator-wrap"><em class="rotator" id="rotator">non&#8209;tech</em></span></span>
       </h1>
       <p class="lede">
-        Revenue, costs, and budget — read straight off your own CSVs. No spreadsheets to
-        rebuild, no numbers to recheck by hand, and your file is never uploaded — it is read and
+        Revenue, costs, and budget, read straight off your own CSVs. No spreadsheets to
+        rebuild, no numbers to recheck by hand, and your file is never uploaded. It is read and
         totalled in your own browser.
       </p>
-      <p class="example-line"><span class="example-tag">Example</span><span id="example-text">No formulas, no pivot tables — just open the file and read the month.</span></p>
+      <p class="example-line"><span class="example-tag">Example</span><span id="example-text">No formulas, no pivot tables, just open the file and read the month.</span></p>
       <div class="cta-row">
         <a class="cta" href="dashboard.html">
           Open dashboard
@@ -320,7 +321,7 @@
         <div>
           <span class="tag">Prediction example</span>
           <h3>See what's coming, not just what happened</h3>
-          <p>FinDash reads the trend in your own CSV and projects the next three months — no spreadsheets, no extra setup.</p>
+          <p>FinDash reads the trend in your own CSV and projects the next three months, with no spreadsheets and no extra setup.</p>
         </div>
         <div class="forecast-legend">
           <span><span class="legend-dot"></span> Actual (from your file)</span>
@@ -392,10 +393,10 @@
     var isLight = document.documentElement.getAttribute("data-theme") === "light";
     if(isLight){
       document.documentElement.removeAttribute("data-theme");
-      try{ localStorage.setItem("findash-theme","dark"); }catch(e){}
+      try{ localStorage.setItem("findash-theme","dark"); }catch(e){ /* storage blocked; theme still applies for this session */ }
     }else{
       document.documentElement.setAttribute("data-theme","light");
-      try{ localStorage.setItem("findash-theme","light"); }catch(e){}
+      try{ localStorage.setItem("findash-theme","light"); }catch(e){ /* storage blocked; theme still applies for this session */ }
     }
   });
 })();
@@ -403,10 +404,10 @@
 <script>
 (function(){
   var frames = [
-    { word: "non\u2011tech",      example: "No formulas, no pivot tables — just open the file and read the month." },
+    { word: "non\u2011tech",      example: "No formulas, no pivot tables, just open the file and read the month." },
     { word: "international",  example: "Reads the currency symbols and number formats your books use." },
     { word: "freelancers",    example: "One invoice export in, one month of clarity out." },
-    { word: "small teams",    example: "No logins, no onboarding call — open the file, see the numbers." },
+    { word: "small teams",    example: "No logins, no onboarding call, just open the file and see the numbers." },
     { word: "founders",       example: "Watch burn and runway without hiring a finance person." },
     { word: "anyone",         example: "If you can open a CSV, you can read this dashboard." }
   ];

@@ -1029,6 +1029,8 @@ let forecastData = null;   // {low[], predicted[], high[], model}
 /** Least-squares line through y, extended `h` steps, with a t-ish band. */
 function trendForecast(y, h) {
   const n = y.length;
+  // Below six months a straight line is an illustration, not something to plan
+  // against, so it gets labelled as one. Below three there is no line to fit.
   if (n < 3) return null;
 
   const xs = y.map((_, i) => i);
@@ -1053,7 +1055,7 @@ function trendForecast(y, h) {
     const spread = 1.96 * se * Math.sqrt(1 + 1 / n + ((x - mx) ** 2) / (sxx || 1));
     low.push(fit - spread); predicted.push(fit); high.push(fit + spread);
   }
-  return {low, predicted, high, model: "local trend"};
+  return {low, predicted, high, model: "local trend", thin: n < 6, points: n};
 }
 
 /* The fan: history as bars, the forecast as a shaded cone beside it. */
@@ -1113,11 +1115,15 @@ function fanChart(months) {
       <li><i class="fan-sw-hist"></i><b>Actual</b></li>
       <li><i class="fan-sw-mid"></i><b>Projected</b> ${money0(f.predicted[0])} next month</li>
       <li><i class="fan-sw-band"></i><b>Range</b> ${money0(f.low[0])} to ${money0(f.high[0])}</li>
+      ${f.thin ? '<li><b style="color:var(--critical)">Thin history</b></li>' : ""}
     </ul>
     <p class="brief-note">Source: ${esc(f.model)}.
       ${f.model === "local trend"
-        ? "A straight line through your months with a 95% band \u2014 computed here, nothing sent."
-        : "Quantile forecast from a model trained on millions of series."}</p>
+        ? "A straight line through your months, with a range taken from how much past " +
+          "months varied \u2014 computed here, nothing sent. An illustrative range, not a " +
+          "calibrated prediction interval."
+        : "Quantile forecast from a model trained on millions of series."}
+      ${f.thin ? `<b>Only ${f.points} months of history \u2014 treat this as a sketch.</b>` : ""}</p>
   </div>`;
 }
 
@@ -1842,6 +1848,20 @@ function monthsFrom(entries, leftovers) {
   });
 
   months.sort((a, b) => a.monthNum - b.monthNum);
+
+  // BE-073: the two identities the whole dashboard rests on. If a future change
+  // to the buckets or the catch-alls breaks one, say so loudly here rather than
+  // letting a plausible wrong total reach the screen.
+  for (const m of months) {
+    const parts = m.directExpenses + m.operatingExpenses + m.variableOverhead + m.fixedOverhead;
+    if (Math.abs(parts - m.totalExpenses) > 0.005) {
+      console.error("reconciliation failed: buckets do not sum to total expenses", m.month, parts, m.totalExpenses);
+    }
+    if (Math.abs((m.revenue - m.totalExpenses) - m.netProfit) > 0.005) {
+      console.error("reconciliation failed: revenue - expenses != net profit", m.month);
+    }
+  }
+
   return {months, skipped: []};
 }
 

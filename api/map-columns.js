@@ -40,9 +40,9 @@ function originAllowed(req) {
   return ALLOWED_HOSTS.some((h) => origin.includes(h));
 }
 
-const isCleanList = (v, max) =>
+const isCleanList = (v, max, min = 1) =>
   Array.isArray(v) &&
-  v.length > 0 &&
+  v.length >= min &&
   v.length <= max &&
   v.every((s) => typeof s === "string" && s.length <= MAX_LABEL);
 
@@ -59,14 +59,23 @@ export default async function handler(req, res) {
   if (!isCleanList(headers, MAX_HEADERS)) {
     return res.status(400).json({ error: `headers must be 1-${MAX_HEADERS} strings` });
   }
-  if (!isCleanList(fields, MAX_FIELDS)) {
-    return res.status(400).json({ error: `fields must be 1-${MAX_FIELDS} strings` });
+  // fields may legitimately be empty: every canonical field can already be
+  // placed locally while unknown cost columns still need bucketing. Rejecting
+  // that case made the caller drop those columns, understating expenses.
+  if (!isCleanList(fields, MAX_FIELDS, 0)) {
+    return res.status(400).json({ error: `fields must be 0-${MAX_FIELDS} strings` });
   }
   // Which headers are still up for grabs. Without this the model is asked to
   // bucket columns the caller has already matched, and answers for all of them.
-  const open = Array.isArray(unclaimed)
+  // There must be SOMETHING to ask about - either an unplaced field or an
+  // unclaimed column. Neither on its own is required.
+  const unclaimedHeaders = Array.isArray(unclaimed)
     ? unclaimed.filter(h => typeof h === "string" && headers.includes(h))
     : [];
+
+  if (!fields.length && !unclaimedHeaders.length) {
+    return res.status(400).json({ error: "nothing to map: send unplaced fields or unclaimed headers" });
+  }
 
   const prompt = `You are mapping spreadsheet column headers to canonical accounting fields.
 
@@ -81,7 +90,7 @@ Reply with JSON only - no prose, no code fences - shaped like:
 "mapping": one key per canonical field listed above, whose value is the header
 text it corresponds to, or null if no header fits.
 
-Columns still unspoken for: ${open.length ? open.join(", ") : "(none)"}
+Columns still unspoken for: ${unclaimedHeaders.length ? unclaimedHeaders.join(", ") : "(none)"}
 
 "other": for each of those unspoken-for columns that is a real cost - and ONLY
 those - which of these four buckets it behaves like: direct (traceable to a unit or job),
@@ -106,15 +115,15 @@ Copy header text exactly as given.`;
       .join("");
 
     // Be forgiving about fences or stray prose around the object.
-    const open = text.indexOf("{");
-    const close = text.lastIndexOf("}");
-    if (open < 0 || close <= open) {
+    const jsonStart = text.indexOf("{");
+    const jsonEnd = text.lastIndexOf("}");
+    if (jsonStart < 0 || jsonEnd <= jsonStart) {
       return res.status(502).json({ error: "model did not return JSON" });
     }
 
     let mapping;
     try {
-      mapping = JSON.parse(text.slice(open, close + 1));
+      mapping = JSON.parse(text.slice(jsonStart, jsonEnd + 1));
     } catch {
       return res.status(502).json({ error: "model returned malformed JSON" });
     }
@@ -139,7 +148,7 @@ Copy header text exactly as given.`;
       // When the caller said what is unclaimed, honour it: a column it has
       // already matched must never come back as a leftover, or its money is
       // counted twice - once in its named field and once in a bucket.
-      if (open.length && !open.includes(header)) continue;
+      if (unclaimedHeaders.length && !unclaimedHeaders.includes(header)) continue;
       if (BUCKETS.includes(bucket)) other[header] = bucket;
     }
 

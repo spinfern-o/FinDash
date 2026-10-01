@@ -778,12 +778,17 @@ async function readXlsx(buf) {
 const normalise = s =>
   String(s == null ? "" : s).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
-const CANONICAL = [
-  "month", "month num", "revenue", "budget",
-  "cogs", "packaging", "rent", "utilities", "maintenance", "hardware",
-  "insurance", "marketing", "credit card fees", "business license",
-  "telephone", "employee meals", "tax", "labor"
+/* Each file carries only its own fields. Checking a file against the union of
+   both would mark the other file's fields as missing on every upload - which
+   both wastes a request and invites a wrong answer, since asking where
+   "revenue" lives in an expenses sheet has no right answer. */
+const DASHBOARD_FIELDS = ["month", "month num", "revenue", "budget"];
+const EXPENSE_FIELDS = [
+  "month num", "cogs", "packaging", "rent", "utilities", "maintenance",
+  "hardware", "insurance", "marketing", "credit card fees",
+  "business license", "telephone", "employee meals", "tax", "labor"
 ];
+const CANONICAL = [...new Set([...DASHBOARD_FIELDS, ...EXPENSE_FIELDS])];
 
 /* Different words for the same line. Keys are already normalised. */
 const SYNONYMS = {
@@ -834,8 +839,15 @@ const BUCKET_NAMES = ["direct", "operating", "variable", "fixed"];
  * matched no field but are real costs.
  */
 async function resolveHeaders(headers) {
-  const placed   = new Set(headers.filter(h => CANONICAL.includes(h)));
-  const unplaced = CANONICAL.filter(f => !placed.has(f));
+  // Which file is this? Decided from what already matched locally. When even
+  // that is unclear we fall back to the union and let the model sort it out.
+  const kind = classify(headers);
+  const expected = kind === "dashboard" ? DASHBOARD_FIELDS
+                 : kind === "expenses"  ? EXPENSE_FIELDS
+                 : CANONICAL;
+
+  const placed   = new Set(headers.filter(h => expected.includes(h)));
+  const unplaced = expected.filter(f => !placed.has(f));
   const unclaimed = headers
     .map((h, i) => ({h, i}))
     .filter(({h}) => !CANONICAL.includes(h));

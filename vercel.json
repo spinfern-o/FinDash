@@ -12,6 +12,9 @@
     },
     "api/forecast.js": {
       "maxDuration": 60
+    },
+    "api/read-document.js": {
+      "maxDuration": 60
     }
   },
   "headers": [

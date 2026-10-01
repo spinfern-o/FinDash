@@ -329,14 +329,32 @@ Rows a report derives from the others (`Total costs`, `Gross profit`, `Net incom
 `Budget used`, ...) are recognised and set aside, so they are never counted twice. That
 is also what lets the dashboard's **Export to Excel** file be dropped back on the page.
 
-Files are read locally and never uploaded anywhere. Excel (.xlsx) and CSV are the only
-formats read — PDFs and bank statements are not supported. After a file loads, the
-computed months (not the file) are kept in the browser's `localStorage` so the figures
-are there on the next visit; **Forget my data** removes them along with any saved
-advice and returns to `data.json`. Three things can leave the browser, each documented
-on the help page: monthly totals when **Get advice** is pressed, header names when a
-column is not recognised, and net-profit figures if a forecast model is configured and
-its button is pressed.
+Spreadsheets are read locally and never uploaded anywhere. Excel (.xlsx), CSV and photos
+are read — PDFs and bank statements are not supported. After a file loads, the computed
+months (not the file) are kept in the browser's `localStorage` so the figures are there
+on the next visit; **Forget my data** removes them along with any saved invoices and
+advice and returns to `data.json`. Four things can leave the browser, each documented on
+the help page: a photo when one is added, monthly totals when **Get advice** is pressed,
+header names when a column is not recognised, and net-profit figures if a forecast model
+is configured and its button is pressed.
+
+### Photos of invoices and receipts
+
+A JPEG, PNG or WebP of a supplier invoice, bill or receipt can be dropped on the dashboard
+like a file. The browser shrinks it (2576 px on the long edge, under 3 MB) and posts it to
+`api/read-document.js`, which asks Claude Opus 5.5 for a structured reading: supplier,
+number, date, and every charged line with its quantity, unit price, amount and one of the
+fourteen cost lines. Structured outputs fix the shape; the endpoint then re-checks the
+arithmetic itself (each line's quantity x price, and the lines against the printed total).
+A reading that fails gets one second look, at higher effort, with the failures spelled
+out. The owner then sees every line, can change any line's category and the month, and
+nothing is added until they press **Add**.
+
+Confirmed invoices are stored separately from the spreadsheet's months and added on top
+of their month, so each can be removed again and a new spreadsheet does not drop them. A
+receipt for money taken in adds to revenue. The photo itself is not kept anywhere. Photo
+reading is offered only when `ANTHROPIC_API_KEY` is set (`/api/capabilities` reports
+`photos`).
 
 Costs that don't fit an existing column should be added to the bucket that matches
 their behavior, not appended arbitrarily — the point of the structure is that the four
@@ -362,5 +380,6 @@ docs/index.html     Landing page
 docs/dashboard.html Web dashboard
 docs/help.html      Help: getting data in, glossary, privacy
 docs/glossary.js    Plain-language definitions shared by the dashboard and help page
+api/                Vercel functions: column mapping, advice, photo reading, forecast proxy, capabilities
 bin/                Compiled classes (git-ignored)
 ```

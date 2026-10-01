@@ -174,6 +174,29 @@
        <a href="#glossary">cost groups below</a> say what belongs where.</p>
     <p class="note">The older two-file layout (one file with month, month num, revenue and budget, and one with
        the expense columns) still works: add both files together.</p>
+
+    <h3 id="photos">From a photo of an invoice or receipt</h3>
+    <p>For costs, you can skip typing: take a photo of a supplier invoice, a bill or a receipt, and add it to the
+       dashboard the same way as a file. A screenshot of an emailed invoice works too.</p>
+    <ul>
+      <li><b>Take a clear photo.</b> The whole page, flat, in good light, with every amount in the frame.</li>
+      <li><b>Claude reads it.</b> Each charged line is read, given in English (invoices in two languages are
+          fine), and put in the cost line it belongs to: food and ingredients go to Cost of goods sold, takeout
+          containers and bags to Packaging, and so on. Handwritten notes are not counted as charges, and free
+          items are counted at zero.</li>
+      <li><b>The arithmetic is checked.</b> Each line's quantity times price must match its amount, and the
+          lines must add up to the printed total. If they don't, the photo is read a second time with the
+          mistakes pointed out. An amount that was cut off or too faded to read is worked out from quantity
+          times price and marked so you can check it.</li>
+      <li><b>You check it before anything is added.</b> You see every line, can change the cost line any of
+          them goes to, and choose the month (the invoice's own date by default). Nothing is added until you
+          press <b>Add</b>.</li>
+      <li><b>It adds to that month.</b> The invoice's costs are added on top of the month's figures, so only add
+          invoices your monthly file doesn't already count. A receipt for money you took in, such as a till
+          report, adds to revenue. Every invoice you add is listed under the import box, with a
+          <b>Remove</b> button.</li>
+    </ul>
+    <p class="note">PDF invoices can't be read yet: open the PDF and take a screenshot of it instead.</p>
   </section>
 
   <section id="problems">
@@ -190,6 +213,15 @@
       <dd>You added half of the older two-file layout. Add the other file, or switch to the one-file template.</dd>
       <dt>The months are in the wrong order or show the wrong year</dt>
       <dd>Add a Year column. Without one, every month is assumed to be in the current year.</dd>
+      <dt>"Photos can't be read here"</dt>
+      <dd>Reading photos needs this site's AI service, and the copy of FinDash you're using doesn't have it set
+          up. Use the template instead.</dd>
+      <dt>"This browser can't open that kind of photo"</dt>
+      <dd>iPhones often save photos as HEIC, which some browsers can't open. Take a screenshot of the photo, or
+          change your camera setting to "Most Compatible", and add that instead.</dd>
+      <dt>"The lines add up to … but the printed total is …"</dt>
+      <dd>Even after a second look, the reading doesn't match the invoice's total. Check the lines marked in
+          red against your paper copy. Retaking the photo flatter and in better light usually fixes it.</dd>
       <dt>A figure is 100 times too big or too small</dt>
       <dd>Write amounts in full. 1,250.00 and 1.250,00 are both read correctly, but a short "1,25" could mean
           either 1.25 or 125, so it is read as 125.</dd>
@@ -205,10 +237,12 @@
 
   <section id="privacy">
     <h2>How we handle your data</h2>
-    <p><b>Your file stays on your computer.</b> It is opened and added up by your own browser. It is never
+    <p><b>Your spreadsheet stays on your computer.</b> It is opened and added up by your own browser. It is never
        uploaded, and FinDash has no accounts and no database of anyone's figures.</p>
-    <p>Three things can leave your computer, and only these:</p>
+    <p>Four things can leave your computer, and only these:</p>
     <ul>
+      <li><b>When you add a photo:</b> the photo is sent to Claude, Anthropic's AI model, to be read. FinDash
+          does not store it; only the lines you confirm are kept, in this browser.</li>
       <li><b>When you press Get advice:</b> each month's totals (revenue, the four cost groups, net profit
           and budget) are sent to Claude, Anthropic's AI model, which writes the advice. No line items, no
           names, not your file. FinDash does not store them.</li>
@@ -218,8 +252,9 @@
       <li><b>If a forecasting model is offered:</b> once you have six months on file, a button may appear
           under the forecast. Pressing it sends the net profit figure for each month, nothing else.</li>
     </ul>
-    <p><b>Saved in this browser:</b> after you add a file, the worked-out monthly figures (not the file
-       itself) and your latest advice are kept in this browser on this device, so they are there next time.
+    <p><b>Saved in this browser:</b> after you add a file or a photo, the worked-out monthly figures, the
+       invoice lines you confirmed and your latest advice (not the files or photos themselves) are kept in this
+       browser on this device, so they are there next time.
        They are never sent anywhere. Press <b>Forget my data</b> on the dashboard to remove them. On a shared
        computer, do that before you leave.</p>
   </section>
@@ -236,8 +271,8 @@
 
   <section id="contact">
     <h2>Contact</h2>
-    <p>Found a problem, or have a question this page doesn't answer?
-       <a href="https://github.com/spinfern-o/FinDash/issues">Tell us on GitHub</a>. Please don't include your
+    <p>Found a problem, or have a question this page doesn't answer? Email
+       <a href="mailto:larrywzh59@gmail.com?subject=FinDash">larrywzh59@gmail.com</a>. Please don't include your
        figures.</p>
   </section>
 

@@ -338,6 +338,27 @@ public class CFODashboard {
                 out.println("      \"cogs\": " + num(m.expenses.COGS()) + ",");
                 out.println("      \"labor\": " + num(m.expenses.labor()) + ",");
                 out.println();
+                // Every line item, keyed by its CSV header, so the web ledger can
+                // itemise each bucket in full. The five keys above stay for
+                // anything already reading them.
+                Expenses e = m.expenses;
+                out.println("      \"lines\": {");
+                out.println("        \"cogs\": " + num(e.COGS()) + ",");
+                out.println("        \"labor\": " + num(e.labor()) + ",");
+                out.println("        \"employee meals\": " + num(e.employeeMeals()) + ",");
+                out.println("        \"tax\": " + num(e.tax()) + ",");
+                out.println("        \"packaging\": " + num(e.packaging()) + ",");
+                out.println("        \"credit card fees\": " + num(e.creditCardFees()) + ",");
+                out.println("        \"marketing\": " + num(e.marketing()) + ",");
+                out.println("        \"hardware\": " + num(e.hardware()) + ",");
+                out.println("        \"utilities\": " + num(e.utilities()) + ",");
+                out.println("        \"maintenance\": " + num(e.maintenance()) + ",");
+                out.println("        \"rent\": " + num(e.rent()) + ",");
+                out.println("        \"insurance\": " + num(e.insurance()) + ",");
+                out.println("        \"business license\": " + num(e.businessLicense()) + ",");
+                out.println("        \"telephone\": " + num(e.telephone()));
+                out.println("      },");
+                out.println();
                 out.println("      \"grossProfit\": " + num(m.grossProfit()) + ",");
                 out.println("      \"netProfit\": " + num(m.netProfit()) + ",");
                 out.println();

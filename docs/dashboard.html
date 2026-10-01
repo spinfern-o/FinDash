@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" type="image/png" href="favicon.png">
-<title>FinDash &middot; Financial Overview</title>
+<title>FinDash &middot; Dashboard</title>
 <script>
   window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
 </script>
@@ -31,13 +31,16 @@
     --ink:#f5f5f5;
     --ink-2:#b3b3b3;
     --ink-3:#8c8c8c;
-    --accent:#ef4444;
-    --accent-ink:#ffffff;
+    /* Brand colour for buttons, selection and focus. Deliberately neither red
+       nor green: in a finance tool those mean loss and profit, so a red
+       "Choose file" button or a red-bordered card reads as a problem. */
+    --accent:#8b93f8;
+    --accent-ink:#0b0b14;
     --positive:#94dc00;
 
     /* categorical slots - validated dark, surface #191919 */
-    --s1:#3ddc84;   /* direct expenses    */
-    --s2:#5b9dff;   /* operating expenses */
+    --s1:#3ddc84;   /* direct costs       */
+    --s2:#5b9dff;   /* operating costs    */
     --s3:#ff9b4d;   /* variable overhead  */
     --s4:#b794f6;   /* fixed overhead     */
     --rest:#94dc00; /* profit remainder   */
@@ -56,8 +59,8 @@
     --line-soft:rgba(10,10,10,0.06);
     --ink:#0a0a0a;
     --ink-2:#4b4b50;
-    --ink-3:#86868c;
-    --accent:#e11d2e;
+    --ink-3:#6e6e74;
+    --accent:#4f46e5;
     --accent-ink:#ffffff;
     --positive:#1f9d2e;
     --critical:#d6333b;
@@ -86,21 +89,20 @@
   }
 
   main{max-width:1060px;margin:0 auto}
+  a{color:inherit}
 
   /* ---- masthead ---- */
   .masthead{
-    display:flex;flex-wrap:wrap;align-items:baseline;
-    justify-content:space-between;gap:10px 16px;margin-bottom:26px;
+    display:flex;flex-wrap:wrap;align-items:center;
+    justify-content:space-between;gap:10px 16px;margin-bottom:22px;
   }
-  .masthead-left{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
-  .wordmark{font-size:16px;font-weight:700;letter-spacing:-0.01em;margin:0}
-  .home-link{
+  .masthead-left{display:flex;align-items:baseline;gap:18px;flex-wrap:wrap}
+  .wordmark{font-size:16px;font-weight:700;letter-spacing:-0.01em;margin:0;text-decoration:none;color:var(--ink)}
+  .nav-link{
     font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;
     text-transform:uppercase;color:var(--ink-3);text-decoration:none;
-    display:inline-flex;align-items:center;gap:6px;
   }
-  .home-link:hover{color:var(--accent)}
-  .stamp{font-size:13px;color:var(--ink-3)}
+  .nav-link:hover{color:var(--ink)}
   .masthead-right{display:flex;align-items:center;gap:12px}
   .theme-toggle{
     display:inline-flex;align-items:center;justify-content:center;
@@ -114,37 +116,44 @@
   html:not([data-theme="light"]) .theme-toggle svg.icon-sun{display:block}
   html[data-theme="light"] .theme-toggle svg.icon-moon{display:block}
 
-  /* ---- filter row: scopes every card below it ---- */
-  .filters{
-    display:flex;flex-wrap:wrap;gap:6px;
-    margin:0 0 20px;padding:0;list-style:none;
-  }
-  .filters button{
-    font:inherit;font-size:14px;font-weight:500;
-    color:var(--ink-2);background:var(--card);
-    border:1px solid var(--line);border-radius:999px;
-    padding:7px 16px;cursor:pointer;text-transform:capitalize;
-    transition:background .12s,color .12s,border-color .12s;
-  }
-  .filters button:hover{border-color:var(--ink-3);color:var(--ink)}
-  .filters button[aria-current="true"]{
-    background:var(--accent);border-color:var(--accent);color:var(--accent-ink);
-  }
-  .filters button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
-
-  /* ---- csv loader ---- */
+  /* ---- import box ---- */
   .loader{
     background:var(--card);border:1px solid var(--line);
-    border-radius:14px;padding:18px;margin-bottom:16px;
+    border-radius:14px;padding:18px 20px;margin-bottom:22px;
     display:flex;flex-direction:column;gap:14px;
   }
-  .loader-head{min-width:0;font-size:13px;color:var(--ink-3)}
-  .loader-head strong{display:block;font-size:14px;font-weight:600;color:var(--ink)}
-  .loader-text .bad{color:var(--critical)}
+  .loader-top{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px}
+  .loader-head{min-width:0;flex:1 1 320px;font-size:13px;color:var(--ink-2)}
+  .loader-head strong{display:block;font-size:15px;font-weight:700;color:var(--ink)}
+  .loader-head .bad{color:var(--critical)}
+  .privacy-line{margin:6px 0 0;font-size:12px;color:var(--ink-3)}
+  .privacy-line a{color:var(--ink-2)}
+
+  .steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .steps li{
+    display:flex;gap:10px;align-items:flex-start;min-width:0;
+    background:var(--card-2);border:1px solid var(--line-soft);border-radius:10px;padding:12px 14px;
+  }
+  .step-n{
+    flex:none;width:22px;height:22px;border-radius:50%;margin-top:1px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:700;background:var(--accent);color:var(--accent-ink);
+  }
+  .step-title{display:block;font-size:13px;color:var(--ink)}
+  .steps p{margin:3px 0 0;font-size:12px;color:var(--ink-3)}
+  .step-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+  .howto{margin-top:8px;font-size:12px;color:var(--ink-2)}
+  .howto summary{cursor:pointer;color:var(--ink);font-weight:600}
+  .howto summary:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:4px}
+  .howto h4{margin:10px 0 3px;font-size:12px;color:var(--ink)}
+  .howto ol{margin:0;padding-left:18px}
+  .howto li{display:list-item;background:none;border:0;padding:1px 0}
+  .howto p{margin:8px 0 0}
+  @media (max-width:860px){ .steps{grid-template-columns:1fr} }
 
   .dropzone{
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
-    text-align:center;padding:30px 20px;border:1.5px dashed var(--line);border-radius:12px;
+    text-align:center;padding:22px 20px;border:1.5px dashed var(--line);border-radius:12px;
     cursor:pointer;background:var(--card-2);
     transition:border-color .12s,background .12s,box-shadow .12s;
   }
@@ -159,7 +168,60 @@
   .dropzone-title{margin:0;font-size:14px;font-weight:600;color:var(--ink)}
   .dropzone-sub{margin:0;font-size:12px;color:var(--ink-3)}
 
-  .loader-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  /* Once the reader's own figures are showing, the import box shrinks to one
+     line: the steps were for getting here, and a full-height drop zone above
+     every visit pushes the numbers off the first screen. */
+  .loader.compact .steps,.loader.compact .dropzone{display:none}
+
+  .loader-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+  /* ---- checking a photo's reading ---- */
+  .review{border:1px solid var(--accent);border-radius:12px;padding:16px;background:var(--card-2)}
+  .review-top{display:flex;gap:14px;align-items:flex-start;margin-bottom:12px}
+  .review-thumb{flex:none;width:72px;max-height:110px;object-fit:cover;object-position:top;
+                border-radius:6px;border:1px solid var(--line);background:#fff}
+  .review-kicker{margin:0;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+  .review h3{margin:2px 0 0;font-size:16px;font-weight:700;color:var(--ink)}
+  .review-meta{margin:2px 0 0;font-size:12px;color:var(--ink-3)}
+  .review-check{margin:8px 0 0;font-size:13px;font-weight:600}
+  .review-check.ok{color:var(--positive)}
+  .review-check.warn{color:var(--ink-2);font-weight:500}
+  .review-check.bad{color:var(--critical)}
+  .review-lines th,.review-lines td{font-size:13px;padding:7px 0;vertical-align:top}
+  .review-lines td:nth-child(2){padding-left:10px;width:12em}
+  .review-lines tr.flag th{color:var(--critical)}
+  .review-lines tfoot th,.review-lines tfoot td{font-weight:600;border-top:1px solid var(--line);border-bottom:0}
+  .review-orig{display:block;font-size:11px;color:var(--ink-3);font-weight:400}
+  .review-flag{display:block;font-size:11px;font-weight:600;color:var(--critical)}
+  .review-flag.soft{color:var(--ink-3);font-weight:500}
+  .select.small{font-size:12px;padding:4px 6px;border-radius:7px;max-width:100%}
+  .review-sum{margin:10px 0 0;font-size:13px;color:var(--ink-2)}
+  .review-sum b{color:var(--ink);font-weight:600}
+  .review-notes{margin:8px 0 0;padding-left:18px;font-size:12px;color:var(--ink-3)}
+  .review-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin-top:12px}
+  .review-actions .btn.primary{margin-left:auto}
+  .review-dup{font-size:12px;font-weight:600;color:var(--critical)}
+  .review-foot{margin:10px 0 0;font-size:11px;color:var(--ink-3)}
+  .inv-list{font-size:12px;color:var(--ink-2)}
+  .inv-list summary{cursor:pointer;font-weight:600;color:var(--ink)}
+  .inv-list ul{list-style:none;margin:8px 0 0;padding:0}
+  .inv-list li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line-soft)}
+  .inv-list li:last-child{border-bottom:0}
+  /* On a phone each line stacks: what it is, then where it goes and how much,
+     so the amount is never pushed off the side by the picker. */
+  @media (max-width:560px){
+    .review-lines thead{display:none}
+    .review-lines tr{display:grid;grid-template-columns:1fr auto;align-items:center;gap:6px 10px;
+                     padding:9px 0;border-bottom:1px solid var(--line-soft)}
+    .review-lines th,.review-lines td{border:0;padding:0}
+    .review-lines th{grid-column:1/-1}
+    .review-lines td:nth-child(2){width:auto;padding-left:0;justify-self:start}
+    .review-lines tfoot tr{border-top:1px solid var(--line);border-bottom:0}
+    .review-lines tfoot th,.review-lines tfoot td{border-top:0}
+    .review-lines tfoot th{grid-column:1}
+    .review-lines tfoot td:nth-child(2){display:none}
+    .review-actions .btn.primary{margin-left:0;width:100%}
+  }
   .btn{
     font:inherit;font-size:13px;font-weight:500;
     border:1px solid var(--line);background:var(--card);color:var(--ink);
@@ -169,13 +231,8 @@
   .btn:hover{border-color:var(--ink-3)}
   .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
   .btn.primary:hover{filter:brightness(1.08)}
+  .btn.small{font-size:12px;padding:6px 10px;border-radius:8px}
   .btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
-  .loader-text .bad{color:var(--critical)}
-  .privacy-note{
-    font-size:11px;line-height:1.5;color:var(--ink-3);
-    margin:6px 0 0;max-width:64ch;
-  }
-  .privacy-note b{color:var(--ink-2);font-weight:600}
 
   /* ---- busy state ----
      A file that parses instantly and one that waits on a network round trip
@@ -194,26 +251,61 @@
   .btn[disabled]{opacity:.55;cursor:default}
   .btn[disabled]:hover{border-color:var(--line)}
 
-  /* ---- period selector ---- */
-  .periods{display:flex;gap:4px;margin:0 0 14px;padding:0;list-style:none}
-  .periods button{
-    font:inherit;font-size:12px;font-weight:500;color:var(--ink-3);
-    background:none;border:1px solid transparent;border-radius:7px;
-    padding:5px 10px;cursor:pointer;
+  /* ---- toolbar: what period every "period" card below covers ---- */
+  .toolbar{
+    display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+    gap:12px 20px;margin:0 0 12px;
   }
-  .periods button:hover{color:var(--ink)}
-  .periods button[aria-current="true"]{
-    color:var(--ink);background:var(--card);border-color:var(--line);
+  .tool{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
+  .tool-label{font-size:12px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em}
+  .seg-ctl{
+    display:inline-flex;gap:2px;padding:3px;margin:0;list-style:none;
+    background:var(--card);border:1px solid var(--line);border-radius:10px;
   }
-  .periods button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .seg-ctl button{
+    font:inherit;font-size:13px;font-weight:600;color:var(--ink-2);
+    background:none;border:0;border-radius:7px;padding:7px 14px;cursor:pointer;
+  }
+  .seg-ctl button:hover{color:var(--ink)}
+  .seg-ctl button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+  .seg-ctl button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .select{
+    font:inherit;font-size:13px;color:var(--ink);background:var(--card);
+    border:1px solid var(--line);border-radius:10px;padding:7px 10px;cursor:pointer;
+  }
+  .select:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .check{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-2);cursor:pointer}
+  .check input{accent-color:var(--accent);width:15px;height:15px;margin:0}
 
-  /* ---- business pulse ---- */
+  .filters{
+    display:flex;flex-wrap:wrap;gap:6px;
+    margin:0;padding:0;list-style:none;
+  }
+  .filters button{
+    font:inherit;font-size:13px;font-weight:500;
+    color:var(--ink-2);background:var(--card);
+    border:1px solid var(--line);border-radius:999px;
+    padding:6px 14px;cursor:pointer;text-transform:capitalize;
+    transition:background .12s,color .12s,border-color .12s;
+  }
+  .filters button:hover{border-color:var(--ink-3);color:var(--ink)}
+  .filters button.in-range{border-color:var(--accent);color:var(--ink)}
+  .filters button[aria-pressed="true"]{
+    background:var(--accent);border-color:var(--accent);color:var(--accent-ink);
+  }
+  .filters button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+  .showing{margin:18px 0 14px}
+  .showing h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-0.02em}
+  .showing p{margin:2px 0 0;font-size:13px;color:var(--ink-3)}
+  .print-only{display:none}
+
+  /* ---- headline numbers ---- */
   .pulse{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
   .pulse .stat{
     background:var(--card);border:1px solid var(--line);
     border-radius:var(--radius);padding:14px 16px;min-width:0;
   }
-  .pulse .stat:first-child{border-color:var(--accent)}
   .pulse .lab{font-size:12px;color:var(--ink-3);margin:0 0 6px;white-space:nowrap;
               overflow:hidden;text-overflow:ellipsis}
   .pulse .num{font-size:22px;font-weight:700;letter-spacing:-0.02em;margin:0;color:var(--ink)}
@@ -221,6 +313,30 @@
   .pulse .chg.down{color:var(--critical)}
   .pulse .chg span{font-weight:400;color:var(--ink-3)}
   @media (max-width:760px){ .pulse{grid-template-columns:repeat(2,1fr)} }
+
+  /* ---- plain-language "?" explanations ----
+     The visible circle is 16px; the button around it is 24px so it is still a
+     comfortable tap target. Negative margins keep it from stretching the line. */
+  .help{
+    display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;
+    width:24px;height:24px;margin:-5px -3px -5px 0;padding:0;
+    background:none;border:0;cursor:help;color:var(--ink-3);
+  }
+  .help::before{
+    content:"?";display:flex;align-items:center;justify-content:center;
+    width:15px;height:15px;border-radius:50%;border:1px solid currentColor;
+    font:600 10px/1 Inter,ui-sans-serif,system-ui,sans-serif;
+  }
+  .help:hover,.help[aria-expanded="true"]{color:var(--ink)}
+  .help:focus-visible{outline:2px solid var(--ink);outline-offset:-2px;border-radius:50%}
+  .help-pop{
+    position:fixed;z-index:30;max-width:min(300px,calc(100vw - 16px));
+    background:var(--ink);color:var(--ground);border-radius:8px;
+    padding:8px 11px;font-size:12px;line-height:1.45;font-weight:400;
+    text-transform:none;letter-spacing:0;white-space:normal;text-align:left;
+    box-shadow:0 6px 24px rgba(0,0,0,.25);pointer-events:none;
+  }
+  .help-pop b{display:block;font-weight:700;margin-bottom:2px}
 
   /* ---- forecast fan ---- */
   .fan svg{width:100%;height:150px;display:block;overflow:visible}
@@ -240,14 +356,18 @@
   .fan .key i.fan-sw-mid{background:var(--s2)}
   .fan .key i.fan-sw-band{background:var(--s2);opacity:.3}
   .fan .brief-note{margin-top:10px}
+  .fc-msg{margin:12px 0 0;font-size:13px;color:var(--ink-2)}
+  .fc-msg b{color:var(--ink)}
 
   /* ---- shared y-axis scale ----
      Every bar/line chart needs a reference value for its top and bottom, or a
      reader has no way to judge "is that bar big" without hovering each one.
-     Absolutely positioned against the chart's own plot area so the ticks line
-     up with the pixel math (y()/top/bot) already computed for the bars. */
+     The scale sits in a 48px left gutter INSIDE each chart's own box. The fan
+     used to offset it by -48px from a box that already had the gutter as
+     padding, and the grouped bars had no positioned box at all, so their
+     labels were placed against the card and hung off its left edge. */
   .fan{padding-left:48px;position:relative}
-  .fan .axis-y{left:-48px}
+  .fan .axis-y{left:0}
   .trend-scroll{padding-left:48px}
   .trend .axis-y{left:-48px}
   .pair-scroll{padding-left:48px}
@@ -275,7 +395,7 @@
   .est table{margin-top:0}
   @media (max-width:560px){ .est-pair{grid-template-columns:1fr} }
 
-  /* ---- priorities ---- */
+  /* ---- what needs attention ---- */
   .prio{list-style:none;margin:0;padding:0}
   .prio li{
     display:flex;gap:10px;align-items:flex-start;
@@ -288,15 +408,16 @@
     background:var(--line-soft);color:var(--ink-2);
   }
   .prio .tag.urgent{background:var(--critical);color:#fff}
-  .prio .tag.watch{background:var(--s3);color:var(--accent-ink)}
+  .prio .tag.watch{background:var(--s3);color:#1a1205}
   .prio p{margin:0;color:var(--ink)}
   .prio p em{font-style:normal;color:var(--ink-3)}
-  .prio .none{color:var(--ink-3);padding:10px 0}
+  .none{color:var(--ink-3);margin:0}
+  .prio .none{padding:10px 0}
 
   /* ---- briefing ---- */
   .brief-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px}
   .brief-head .btn{margin-left:auto}
-  .brief-note{font-size:12px;color:var(--ink-3);margin:0}
+  .brief-note{font-size:12px;color:var(--ink-3);margin:0;max-width:72ch}
   .brief h3{
     font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
     color:var(--ink-3);margin:16px 0 8px;
@@ -312,6 +433,7 @@
   .brief .up li::before{background:var(--positive)}
   .brief .risk li::before{background:var(--critical)}
   .brief .act li::before{background:var(--s2)}
+  .brief .stamp-note{margin-top:12px}
 
   /* ---- cards ---- */
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
@@ -325,26 +447,30 @@
   }
   .card.wide{grid-column:1/-1}
 
+  /* Title on the left, the period the card covers on the right. A card that
+     follows the period selector and one that always shows every month on file
+     look identical otherwise, and readers could not tell which was which. */
+  .card-head{
+    display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;
+    gap:6px 12px;margin-bottom:16px;
+  }
+  .card-head > div{min-width:0;flex:1 1 220px}
   .card h2{
     font-size:15px;font-weight:700;letter-spacing:-0.01em;
     margin:0;color:var(--ink);
   }
-  .card .sub{font-size:12px;color:var(--ink-3);margin:3px 0 16px}
-
-  /* the rounded icon badge Capitalio puts in each card's top-right */
-  .badge{
-    position:absolute;top:16px;right:16px;
-    width:28px;height:28px;border-radius:8px;
-    background:var(--accent);color:var(--accent-ink);
-    display:flex;align-items:center;justify-content:center;
-    font-size:13px;line-height:1;
+  .card .sub{font-size:12px;color:var(--ink-3);margin:3px 0 0}
+  .scope{
+    flex:none;font-size:11px;font-weight:600;color:var(--ink-2);white-space:nowrap;
+    background:var(--card-2);border:1px solid var(--line);border-radius:999px;padding:3px 10px;
   }
 
-  /* ---- hero ---- */
-  .hero{padding:20px}
+  /* ---- did you make money ---- */
+  .hero{padding:20px 22px;margin-bottom:16px}
+  .hero .card-head{margin-bottom:8px}
   .eyebrow{
     font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.06em;
-    text-transform:uppercase;color:var(--ink-2);margin:0 0 8px;
+    text-transform:uppercase;color:var(--ink-2);margin:0;
   }
   .figure{
     font-size:clamp(30px,5vw,40px);
@@ -353,15 +479,15 @@
     margin:0;color:var(--ink);
     display:inline-flex;align-items:baseline;gap:10px;flex-wrap:wrap;
   }
-  .figure.loss{color:var(--ink)}
+  .figure.loss{color:var(--critical)}
   .delta{font-size:13px;font-weight:600;letter-spacing:0;color:var(--positive)}
   .delta.down{color:var(--critical)}
   .delta span{font-weight:400;color:var(--ink-3)}
-  .figure.loss{color:var(--critical)}
-  .note{font-size:14px;color:var(--ink-2);margin:12px 0 0;max-width:52ch}
+  .note{font-size:14px;color:var(--ink-2);margin:10px 0 0;max-width:62ch}
+  .note b{color:var(--ink)}
 
   /* ---- stacked allocation bar ---- */
-  .barwrap{position:relative}
+  .barwrap{position:relative;margin-top:22px}
   .bar{display:flex;gap:2px;height:38px}
   .bar .seg{
     border:none;padding:0;font:inherit;cursor:default;
@@ -419,11 +545,12 @@
   .gauge-fill.over{background:var(--critical)}
   .gauge-mark{position:absolute;top:-5px;bottom:-5px;width:2px;background:var(--ink)}
   .gauge-foot{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-3);margin-top:8px}
+  .gauge-note{font-size:12px;color:var(--ink-3);margin:10px 0 0}
 
   /* ---- monthly net bars ---- */
-  .trend-scroll{--colw:78px;overflow-x:auto;overflow-y:hidden;padding-top:24px}
+  .trend-scroll{--colw:66px;overflow-x:auto;overflow-y:hidden;padding-top:24px}
   .trend{
-    display:flex;align-items:flex-end;gap:14px;height:150px;position:relative;
+    display:flex;align-items:flex-end;gap:12px;height:150px;position:relative;
     min-width:max-content;
   }
   /* basis, not content, sets the column width - the bars carry no text and the
@@ -451,7 +578,7 @@
   .trend .col.on .mark{background:var(--positive)}
   .trend .col.on.neg .mark{background:var(--critical)}
   .trend .zero{position:absolute;left:0;right:0;height:1px;background:var(--line)}
-  .trend-labels{display:flex;gap:14px;margin-top:8px;min-width:max-content}
+  .trend-labels{display:flex;gap:12px;margin-top:8px;min-width:max-content}
   .trend-labels div{
     flex:1 0 var(--colw);min-width:0;white-space:nowrap;
     text-align:center;font-size:12px;color:var(--ink-3);
@@ -460,19 +587,19 @@
   .trend-labels div:hover{color:var(--ink)}
   .trend-labels div.on{color:var(--ink);font-weight:600}
   .trend .val{
-    position:absolute;left:0;right:0;text-align:center;
+    position:absolute;left:-6px;right:-6px;text-align:center;white-space:nowrap;
     font-size:12px;font-weight:600;color:var(--ink);
   }
 
-  /* ---- revenue vs expenses, grouped bars ---- */
-  .pair-scroll{--pairw:104px;overflow-x:auto;overflow-y:hidden;padding-top:26px}
-  .pairs{display:flex;gap:16px;height:150px;align-items:flex-end;min-width:max-content}
+  /* ---- revenue vs costs, grouped bars ---- */
+  .pair-scroll{--pairw:96px;overflow-x:auto;overflow-y:hidden;padding-top:26px}
+  .pairs{display:flex;gap:14px;height:150px;align-items:flex-end;min-width:max-content;position:relative}
   .pair{
     flex:1 0 var(--pairw);min-width:0;height:100%;position:relative;
     display:flex;align-items:flex-end;justify-content:center;gap:6px;
   }
   .pair .bar2{
-    width:34px;border:none;padding:0;cursor:pointer;border-radius:4px 4px 0 0;
+    width:30px;border:none;padding:0;cursor:pointer;border-radius:4px 4px 0 0;
     transition:filter .12s;
   }
   .pair .bar2:hover{filter:brightness(1.1)}
@@ -484,39 +611,43 @@
     font-size:12px;font-weight:600;color:var(--positive);white-space:nowrap;
   }
   .pair .net.loss{color:var(--critical)}
-  .pair-labels{display:flex;gap:16px;margin-top:8px;min-width:max-content}
+  .pair-labels{display:flex;gap:14px;margin-top:8px;min-width:max-content}
   .pair-labels div{
     flex:1 0 var(--pairw);min-width:0;text-align:center;font-size:12px;
     color:var(--ink-3);text-transform:capitalize;white-space:nowrap;cursor:pointer;
   }
   .pair-labels div.on{color:var(--ink);font-weight:600}
-  .pair-vals{display:flex;gap:16px;margin-top:2px;min-width:max-content}
+  .pair-vals{display:flex;gap:14px;margin-top:2px;min-width:max-content}
   .pair-vals div{
     flex:1 0 var(--pairw);min-width:0;text-align:center;font-size:11px;
     color:var(--ink-3);white-space:nowrap;font-variant-numeric:tabular-nums;
   }
 
-  /* ---- ledger table ---- */
+  /* ---- ledger table ----
+     Amounts are right-aligned, headers included, the way every accounting
+     report sets them, so units line up under units and a longer figure reads
+     as a bigger one at a glance. Tabular figures keep every digit the same
+     width for that to hold. */
+  .table-wrap{overflow-x:auto}
   table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
-  caption{text-align:left;font-size:13px;color:var(--ink-3);padding-bottom:14px}
   th,td{padding:9px 0;border-bottom:1px solid var(--line-soft);font-weight:400;text-align:right}
   th{text-align:left}                      /* row labels in the Line column */
-  /* Numeric columns are centred, header and values alike. Every cell in a
-     column is the same width, so centring puts each value on the same centre
-     line as its header. */
-  thead th:not(:first-child),
-  td.amt,
-  td.share{text-align:center}
+  thead th:not(:first-child){text-align:right;padding-left:12px}
   thead th{
     font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;
     color:var(--ink-3);border-bottom:1px solid var(--line);
   }
+  thead th{white-space:nowrap}
+  thead .help{text-transform:none}
+  thead .short{display:none}
   .group th,.group td{font-weight:600}
   .indent{padding-left:22px;color:var(--ink-2);font-weight:400}
   .total th,.total td{font-weight:600;border-top:1px solid var(--line);border-bottom:none}
   .neg{color:var(--critical)}
-  td.share{color:var(--ink-3);width:7.5em}
-  td.amt{width:10em}
+  td.share{color:var(--ink-3);width:8.5em;padding-left:12px}
+  td.amt{width:10em;padding-left:12px}
+  /* A narrow column broke "−$3,640" after the minus sign. */
+  td.amt,td.share,.num,.gaugeline strong{white-space:nowrap}
 
   .notice{
     margin-top:16px;padding:14px 16px;background:var(--card);
@@ -525,26 +656,76 @@
   }
   .notice code{font-size:12px}
 
-  footer{margin-top:22px;font-size:12px;color:var(--ink-3)}
+  footer{margin-top:22px;font-size:12px;color:var(--ink-3);display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:space-between}
+  footer nav{display:flex;gap:14px}
+  footer a{color:var(--ink-2)}
 
   @media (max-width:760px){
     .grid{grid-template-columns:1fr}
-    .card{padding:20px}
-    .hero{padding:24px 20px 22px}
+    .card{padding:18px 16px}
+    .hero{padding:20px 18px}
     th,td{font-size:14px}
     .indent{padding-left:14px}
+    .toolbar{align-items:flex-start;justify-content:flex-start}
+    /* Phones cannot drag a file onto a page; "Choose file" does the job, and
+       dropping still works anywhere on the page for a narrow desktop window. */
+    .dropzone{display:none}
+    .pair-scroll{--pairw:76px}
+    .pair .bar2{width:24px}
+    /* min-width:0 lets the figures wrap under each pair; max-content would
+       size the row to the unwrapped text and push it past the card. */
+    .pair-vals{min-width:0}
+    .pair-vals div{white-space:normal;line-height:1.35}
+    td.amt{width:auto;padding-left:8px}
+    td.share{width:5.5em;padding-left:8px}
+    .est th,.est td{font-size:13px}
+    thead .long{display:none}
+    thead .short{display:inline}
+  }
+  @media (max-width:560px){
+    .fan-labels .yr{display:none}
+  }
+
+  /* ---- print / save as PDF ----
+     One clean report: light colours whatever the screen theme, no controls,
+     cards kept whole across page breaks. */
+  @media print{
+    :root,:root[data-theme]{
+      color-scheme:light;
+      --ground:#ffffff;--card:#ffffff;--card-2:#f4f4f5;
+      --line:rgba(10,10,10,0.18);--line-soft:rgba(10,10,10,0.08);
+      --ink:#0a0a0a;--ink-2:#3f3f46;--ink-3:#52525b;
+      --accent:#4f46e5;--accent-ink:#ffffff;
+      --positive:#1f7a2e;--critical:#c42b33;
+      --s1:#1f9d53;--s2:#2f6fe0;--s3:#d97a1f;--s4:#8955d9;--rest:#1f9d2e;
+    }
+    @page{margin:14mm}
+    body{background:#fff;padding:0;font-size:12px;
+         -webkit-print-color-adjust:exact;print-color-adjust:exact}
+    main{max-width:none}
+    .loader,.toolbar,.months-row,.theme-toggle,.masthead nav,.no-print,.help,footer nav{display:none !important}
+    .print-only{display:block}
+    .card,.pulse .stat{break-inside:avoid;box-shadow:none}
+    .grid{gap:10px}
+    .card{padding:12px 14px}
+    .trend-scroll,.pair-scroll,.table-wrap{overflow:visible}
+    /* Advice that has not been asked for is an empty card on paper. */
+    .card:has(#brief:empty){display:none}
   }
 </style>
+<script src="glossary.js"></script>
 </head>
 <body>
 <main>
   <div class="masthead">
     <div class="masthead-left">
-      <p class="wordmark">Financial Overview</p>
-      <a class="home-link" href="/">&larr; Home</a>
+      <a class="wordmark" href="/">FinDash</a>
+      <nav class="masthead-nav">
+        <a class="nav-link" href="/">Home</a>
+        <a class="nav-link" href="/help">Help</a>
+      </nav>
     </div>
     <div class="masthead-right">
-      <span class="stamp" id="stamp"></span>
       <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle light and dark mode">
         <svg class="icon-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
         <svg class="icon-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
@@ -552,34 +733,121 @@
     </div>
   </div>
 
-  <div class="loader" id="loader">
-    <div class="loader-head">
-      <strong id="source">Demo data</strong>
-      <span id="status">Import a CSV or Excel file to build your financial overview. Read and totalled in your browser &mdash; the file is never uploaded.</span>
-      <p class="privacy-note">Three buttons below do send something, and only when pressed:
-        <b>Get briefing</b> sends the monthly totals, <b>Use Chronos</b> sends the net profit
-        figures, and column matching sends header names when a file uses unfamiliar ones.
-        Your file, its rows, and its line items are never sent.</p>
+  <section class="loader" id="loader" aria-label="Your data">
+    <div class="loader-top">
+      <div class="loader-head">
+        <strong id="source">Demo data</strong>
+        <span id="status">You are looking at sample figures. Add your own to see your business.</span>
+        <p class="privacy-line">Your spreadsheet stays on your computer.<span class="photo-only" hidden> A photo is
+          sent to Claude to be read.</span> Your figures only leave when you press <b>Get advice</b>.
+          <a href="/help#privacy">How we handle your data</a></p>
+      </div>
+      <div class="loader-actions">
+        <button type="button" class="btn" id="forget" hidden>Forget my data</button>
+        <button type="button" class="btn primary" id="pick">Choose file</button>
+      </div>
     </div>
-    <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload CSV or Excel file">
-      <input type="file" id="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple hidden>
+
+    <ol class="steps" id="steps">
+      <li>
+        <span class="step-n" aria-hidden="true">1</span>
+        <div>
+          <b class="step-title">Get the template</b>
+          <p>One row per month: revenue, budget and 14 cost lines. It comes filled in with the sample months so you can see the layout.</p>
+          <div class="step-actions">
+            <button type="button" class="btn small" id="tpl-xlsx">Download Excel template</button>
+            <button type="button" class="btn small" id="tpl-csv">Download CSV template</button>
+          </div>
+        </div>
+      </li>
+      <li>
+        <span class="step-n" aria-hidden="true">2</span>
+        <div>
+          <b class="step-title">Fill in your numbers</b>
+          <p>Replace the sample rows with your own monthly totals from QuickBooks, Xero or your own spreadsheet.<span
+            class="photo-only" hidden> For costs you can also add photos of supplier invoices and receipts.</span></p>
+          <details class="howto">
+            <summary>How to get your numbers</summary>
+            <h4>QuickBooks Online</h4>
+            <ol>
+              <li>Go to <b>Reports</b> and open <b>Profit and Loss</b>.</li>
+              <li>Pick the months you want and set <b>Display columns by</b> to <b>Months</b>.</li>
+              <li>Copy each month's income and cost totals into the matching template columns.</li>
+            </ol>
+            <h4>Xero</h4>
+            <ol>
+              <li>Open <b>Reports</b>, then <b>Profit and Loss</b>.</li>
+              <li>Choose your date range and compare by month.</li>
+              <li>Copy each month's totals into the template.</li>
+            </ol>
+            <h4>Your own spreadsheet</h4>
+            <ol>
+              <li>Put one month per row, using the template's column names.</li>
+              <li>Column order doesn't matter, and common names like Wages or Advertising are recognised.</li>
+            </ol>
+            <p><b>Budget</b> is the most you planned to spend that month, not a sales target. Leave it blank if you don't set one.
+              A cost that has no column of its own? Add it to the closest one; <a href="/help#glossary">what each cost group means</a>.</p>
+          </details>
+        </div>
+      </li>
+      <li>
+        <span class="step-n" aria-hidden="true">3</span>
+        <div>
+          <b class="step-title">Add the file</b>
+          <p>Press <b>Choose file</b> or drag it onto this page. Excel (.xlsx) or CSV<span class="photo-only" hidden>, or a photo of an invoice</span>. Your figures are saved in this browser, so you don't have to add them again.</p>
+        </div>
+      </li>
+    </ol>
+
+    <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Choose an Excel or CSV file">
+      <input type="file" id="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/*" multiple hidden>
       <span class="dropzone-icon" aria-hidden="true">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 .5 9H6"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>
       </span>
-      <p class="dropzone-title">Drag &amp; drop or click to browse</p>
-      <p class="dropzone-sub">CSV or XLSX &middot; processed locally, nothing uploaded</p>
+      <p class="dropzone-title">Drag your file here, or click to choose it</p>
+      <p class="dropzone-sub">Excel (.xlsx) or CSV &middot; one file with every month<span class="photo-only" hidden>
+        &middot; or a photo of an invoice or receipt</span></p>
     </div>
-    <div class="loader-actions">
-      <button type="button" class="btn" id="reset" hidden>Use demo data</button>
-      <button type="button" class="btn primary" id="pick">Choose CSV / Excel files</button>
+
+    <!-- What a photo was read as, for the owner to check before anything is added. -->
+    <section class="review" id="review" hidden aria-live="polite" aria-label="Check what was read from your photo"></section>
+    <details class="inv-list" id="inv-list" hidden></details>
+  </section>
+
+  <div class="toolbar" id="toolbar">
+    <div class="tool">
+      <span class="tool-label" id="period-label">Show</span>
+      <div class="seg-ctl" id="periods" role="group" aria-labelledby="period-label"></div>
+    </div>
+    <div class="tool">
+      <label class="tool-label" for="currency">Currency</label>
+      <select class="select" id="currency"></select>
+      <label class="check"><input type="checkbox" id="exact"> Show cents</label>
+    </div>
+    <div class="tool">
+      <button type="button" class="btn" id="print">Print or save as PDF</button>
+      <button type="button" class="btn" id="export">Export to Excel</button>
     </div>
   </div>
+  <div class="tool months-row">
+    <span class="tool-label" id="month-label">Month</span>
+    <ul class="filters" id="months" aria-labelledby="month-label"></ul>
+  </div>
 
-  <ul class="filters" id="months"></ul>
-  <ul class="periods" id="periods"></ul>
+  <div class="showing">
+    <h1 id="showing"></h1>
+    <p id="showing-sub"></p>
+    <p class="print-only" id="print-meta"></p>
+  </div>
   <div id="sheet"></div>
 
-  <footer id="footer"></footer>
+  <footer>
+    <span id="footer"></span>
+    <nav>
+      <a href="/help">Help and glossary</a>
+      <a href="mailto:larrywzh59@gmail.com?subject=FinDash">Report a problem</a>
+    </nav>
+  </footer>
 </main>
 
 <script>
@@ -601,30 +869,85 @@
 <script>
 // fallback for loading the real .json data after it loads
 
+/* Line items in the order the expense buckets list them, so the sample below
+   stays readable. Same figures as data/expenses.csv. */
+const L = (cogs, labor, meals, tax, packaging, cards, marketing, hardware,
+           utilities, maintenance, rent, insurance, license, telephone) => ({
+  "cogs": cogs, "labor": labor, "employee meals": meals, "tax": tax,
+  "packaging": packaging, "credit card fees": cards, "marketing": marketing, "hardware": hardware,
+  "utilities": utilities, "maintenance": maintenance,
+  "rent": rent, "insurance": insurance, "business license": license, "telephone": telephone
+});
+
 const FALLBACK = {
   generated: "sample data",
   months: [
     {month:"july",monthNum:7,year:2026,revenue:72000,cogs:26000,labor:12000,utilities:2800,
      maintenance:950,hardware:0,directExpenses:45500,operatingExpenses:7750,
      variableOverhead:3750,fixedOverhead:7420,totalExpenses:64420,
-     grossProfit:26500,netProfit:7580,budget:66000,budgetPercent:97.61},
+     grossProfit:26500,netProfit:7580,budget:66000,budgetPercent:97.61,
+     lines:L(26000,12000,2500,5000, 3400,2150,2200,0, 2800,950, 6000,1100,0,320)},
     {month:"august",monthNum:8,year:2026,revenue:64000,cogs:21000,labor:9000,utilities:3100,
      maintenance:4200,hardware:0,directExpenses:37500,operatingExpenses:6160,
      variableOverhead:7300,fixedOverhead:7620,totalExpenses:58580,
-     grossProfit:26500,netProfit:5420,budget:57000,budgetPercent:102.77},
+     grossProfit:26500,netProfit:5420,budget:57000,budgetPercent:102.77,
+     lines:L(21000,9000,2000,5500, 2600,1760,1800,0, 3100,4200, 6200,1100,0,320)},
     {month:"september",monthNum:9,year:2026,revenue:33000,cogs:11000,labor:3500,utilities:1900,
      maintenance:310,hardware:2400,directExpenses:20200,operatingExpenses:5560,
      variableOverhead:2210,fixedOverhead:8670,totalExpenses:36640,
-     grossProfit:12800,netProfit:-3640,budget:34000,budgetPercent:107.76}
+     grossProfit:12800,netProfit:-3640,budget:34000,budgetPercent:107.76,
+     lines:L(11000,3500,500,5200, 1350,910,900,2400, 1900,310, 6000,1100,1250,320)}
   ]
 };
 
-const money = n => (n < 0 ? "−" : "") + "$" +
-  Math.abs(n).toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
-const money0 = n => (n < 0 ? "−" : "") + "$" +
-  Math.round(Math.abs(n)).toLocaleString("en-US");
+/* ---- display preferences ----
+   Per-browser conveniences only. Whole units by default: owners read whole
+   dollars, and cents on a $64,420 cost line are noise. "Show cents" brings
+   them back everywhere at once. */
+const PREFS_KEY = "findash-prefs";
+const prefs = (() => {
+  try { return JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; }
+  catch { return {}; /* storage blocked or unreadable; defaults stand */ }
+})();
+let exact = prefs.exact === true;
+let currency = /^[A-Z]{3}$/.test(prefs.currency || "") ? prefs.currency : "USD";
+function savePrefs() {
+  try { localStorage.setItem(PREFS_KEY, JSON.stringify({exact, currency})); }
+  catch { /* storage blocked; the choice still holds for this visit */ }
+}
+
+/* Amounts are shown in whichever currency the reader picks. Only the symbol
+   changes - no conversion happens, the figures are the reader's own. */
+const CURRENCIES = [
+  ["USD", "US dollar"], ["CAD", "Canadian dollar"], ["AUD", "Australian dollar"],
+  ["NZD", "New Zealand dollar"], ["EUR", "Euro"], ["GBP", "British pound"],
+  ["CHF", "Swiss franc"], ["SEK", "Swedish krona"], ["INR", "Indian rupee"],
+  ["JPY", "Japanese yen"], ["SGD", "Singapore dollar"], ["ZAR", "South African rand"],
+  ["MXN", "Mexican peso"]
+];
+const NO_CENTS = ["JPY"];
+const formats = {};
+function fmt(dp) {
+  const k = currency + dp;
+  if (!formats[k]) {
+    const opts = {style: "currency", currency, minimumFractionDigits: dp, maximumFractionDigits: dp};
+    // narrowSymbol shows "$" rather than "CA$" for a Canadian reader, who
+    // knows which dollar they mean. Older engines reject it.
+    try { formats[k] = new Intl.NumberFormat("en-US", {...opts, currencyDisplay: "narrowSymbol"}); }
+    catch { formats[k] = new Intl.NumberFormat("en-US", opts); }
+  }
+  return formats[k];
+}
+function cur(n, dp) {
+  const r = dp ? Math.round(n * 100) / 100 : Math.round(n);
+  return (r < 0 ? "−" : "") + fmt(dp).format(Math.abs(r));
+}
+/* money0 is always whole: chart labels and headline numbers. money follows
+   the "Show cents" setting: sentences and the report. */
+const money0 = n => cur(n, 0);
+const money = n => cur(n, exact && !NO_CENTS.includes(currency) ? 2 : 0);
 const pct = (part, whole) => whole ? (part / whole) * 100 : 0;
-const fmtPct = n => (n < 0 ? "\u2212" : "") + Math.abs(n).toFixed(1) + "%";
+const fmtPct = n => (n < 0 ? "−" : "") + Math.abs(n).toFixed(1) + "%";
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 
 let data, active;
@@ -642,46 +965,144 @@ const fallbackYear = () => {
 const yearOf = m => m.year || fallbackYear();
 const monthLabel = m => `${cap(m.month)} ${yearOf(m)}`;
 const monthShort = m => `${m.month.slice(0, 3)} '${String(yearOf(m)).slice(2)}`;
-  const PUBLISHED_NOTE = "Showing demo data. Import your own CSV or Excel file above to see your numbers.";
-let sourceNote = PUBLISHED_NOTE;
+
+/* "September 2026" for one month, "Jul–Sep 2026" for a run, with both years
+   when the run crosses one. Every card's period label comes from here. */
+function rangeName(ms) {
+  if (!ms.length) return "";
+  if (ms.length === 1) return monthLabel(ms[0]);
+  const a = ms[0], b = ms[ms.length - 1];
+  const s = x => cap(x.month.slice(0, 3));
+  return yearOf(a) === yearOf(b)
+    ? `${s(a)}–${s(b)} ${yearOf(b)}`
+    : `${s(a)} ${yearOf(a)}–${s(b)} ${yearOf(b)}`;
+}
+/* The label for cards that always cover everything on file. */
+const allScope = () => data.months.length === 1
+  ? monthLabel(data.months[0])
+  : "All months · " + rangeName(data.months);
+
+const DEMO_NOTE = "Showing demo figures. Add your own file above to see your business.";
+let sourceNote = DEMO_NOTE;
+
+/* ---- "?" explanations ----
+   Definitions live in glossary.js so the help page uses the same words. If
+   that file fails to load, the buttons simply do not appear. */
+const GLOSSARY = window.FINDASH_GLOSSARY || {};
+function help(key) {
+  const g = GLOSSARY[key];
+  return g
+    ? `<button type="button" class="help" data-help="${key}" aria-expanded="false"
+         aria-label="What does ${g.term.toLowerCase()} mean?"></button>`
+    : "";
+}
+
+function wireHelp() {
+  const pop = document.createElement("div");
+  pop.className = "help-pop";
+  pop.setAttribute("role", "status");
+  pop.hidden = true;
+  document.body.appendChild(pop);
+  let pinned = null, current = null;
+
+  const place = btn => {
+    const r = btn.getBoundingClientRect();
+    const w = pop.offsetWidth, h = pop.offsetHeight;
+    const left = Math.max(8, Math.min(r.left + r.width / 2 - w / 2, innerWidth - w - 8));
+    const below = r.bottom + 6;
+    pop.style.left = left + "px";
+    pop.style.top = (below + h > innerHeight - 8 ? r.top - h - 6 : below) + "px";
+  };
+  const show = btn => {
+    const g = GLOSSARY[btn.dataset.help];
+    if (!g) return;
+    pop.innerHTML = `<b>${g.term}</b>${g.text}`;
+    pop.hidden = false;
+    current = btn;
+    place(btn);
+    btn.setAttribute("aria-expanded", "true");
+  };
+  const hide = () => {
+    pop.hidden = true;
+    pinned = current = null;
+    document.querySelectorAll('.help[aria-expanded="true"]')
+      .forEach(b => b.setAttribute("aria-expanded", "false"));
+  };
+
+  // Hover and keyboard focus preview; a click or tap pins it open, which is
+  // the only way a touch screen can read it.
+  document.addEventListener("mouseover", e => {
+    const b = e.target.closest(".help");
+    if (b && !pinned) show(b);
+  });
+  document.addEventListener("mouseout", e => {
+    if (e.target.closest(".help") && !pinned) hide();
+  });
+  document.addEventListener("focusin", e => {
+    const b = e.target.closest && e.target.closest(".help");
+    if (b && !pinned) show(b);
+  });
+  document.addEventListener("focusout", e => {
+    if (e.target.closest && e.target.closest(".help") && !pinned) hide();
+  });
+  document.addEventListener("click", e => {
+    const b = e.target.closest(".help");
+    if (!b) { if (pinned) hide(); return; }
+    if (pinned === b) { hide(); return; }
+    hide(); show(b); pinned = b;
+  });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hide(); });
+  // Follow the button while the page scrolls, and close once it is off screen.
+  // Closing on any scroll lost the explanation to the smallest nudge of a
+  // finger, and to the scroll a browser makes to bring a tapped button into view.
+  const follow = () => {
+    if (pop.hidden || !current) return;
+    const r = current.getBoundingClientRect();
+    if (!current.isConnected || r.bottom < 0 || r.top > innerHeight) hide();
+    else place(current);
+  };
+  addEventListener("scroll", follow, {passive: true});
+  addEventListener("resize", follow);
+}
 
 /* ---------- the allocation bar ---------- */
 /* Scaled to max(revenue, total costs) so a loss month cannot overflow the track.
    When costs outrun revenue, a marker shows where revenue ran out. */
-function allocation(m) {
-  const buckets = [
-    [1, "Direct",            m.directExpenses],
-    [2, "Operating",         m.operatingExpenses],
-    [3, "Variable overhead", m.variableOverhead],
-    [4, "Fixed overhead",    m.fixedOverhead]
-  ];
-  const net  = m.netProfit;
-  const loss = net < 0;
-  const span = Math.max(m.revenue, m.totalExpenses) || 1;
+const BUCKET_ROWS = [
+  [1, "Direct costs",      "directExpenses",    "direct"],
+  [2, "Operating costs",   "operatingExpenses", "operating"],
+  [3, "Variable overhead", "variableOverhead",  "variable"],
+  [4, "Fixed overhead",    "fixedOverhead",     "fixed"]
+];
 
-  const segs = buckets
-    .filter(([, , v]) => v > 0)
-    .map(([slot, name, v]) =>
-      `<button type="button" class="seg seg-${slot}" style="flex:0 0 ${pct(v, span)}%"
-         data-name="${name}" data-amt="${money(v)}" data-share="${fmtPct(pct(v, m.revenue))}"></button>`);
+function allocation(v) {
+  const net  = v.netProfit;
+  const loss = net < 0;
+  const span = Math.max(v.revenue, v.totalExpenses) || 1;
+
+  const segs = BUCKET_ROWS
+    .filter(([, , k]) => v[k] > 0)
+    .map(([slot, name, k]) =>
+      `<button type="button" class="seg seg-${slot}" style="flex:0 0 ${pct(v[k], span)}%"
+         data-name="${name}" data-amt="${money(v[k])}" data-share="${fmtPct(pct(v[k], v.revenue))}"></button>`);
 
   if (!loss && net > 0) {
     segs.push(`<button type="button" class="seg seg-rest" style="flex:0 0 ${pct(net, span)}%"
-      data-name="Profit" data-amt="${money(net)}" data-share="${fmtPct(pct(net, m.revenue))}"></button>`);
+      data-name="Profit" data-amt="${money(net)}" data-share="${fmtPct(pct(net, v.revenue))}"></button>`);
   }
 
   // On a loss month the costs run past the revenue line; the stretch beyond it
   // is the shortfall, marked under the track rather than stacked into it.
   const marker = loss
-    ? `<div class="revmark" style="left:${pct(m.revenue, span)}%"><span>Revenue</span></div>
-       <div class="shortspan" style="left:${pct(m.revenue, span)}%;right:0"></div>`
+    ? `<div class="revmark" style="left:${pct(v.revenue, span)}%"><span>Revenue</span></div>
+       <div class="shortspan" style="left:${pct(v.revenue, span)}%;right:0"></div>`
     : "";
 
-  const key = buckets.map(([slot, name, v]) =>
-    `<li><i class="seg-${slot}"></i><b>${name}</b> ${fmtPct(pct(v, m.revenue))}</li>`).join("");
+  const key = BUCKET_ROWS.map(([slot, name, k, term]) =>
+    `<li><i class="seg-${slot}"></i><b>${name}</b>${help(term)} ${fmtPct(pct(v[k], v.revenue))}</li>`).join("");
   const tail = loss
-    ? `<li><i class="seg-short"></i><b>Shortfall</b> ${fmtPct(pct(Math.abs(net), m.revenue))}</li>`
-    : `<li><i class="seg-rest"></i><b>Profit</b> ${fmtPct(pct(net, m.revenue))}</li>`;
+    ? `<li><i class="seg-short"></i><b>Shortfall</b>${help("shortfall")} ${fmtPct(pct(Math.abs(net), v.revenue))}</li>`
+    : `<li><i class="seg-rest"></i><b>Profit</b> ${fmtPct(pct(net, v.revenue))}</li>`;
 
   return `
     <div class="barwrap">
@@ -693,16 +1114,17 @@ function allocation(m) {
 }
 
 /* ---------- net profit across every month on file ---------- */
-function trend(months, activeNum) {
+/* Months in the selected period are coloured; the rest stay grey for context. */
+function trend(months, inPeriod) {
   const nets = months.map(m => m.netProfit);
   const top  = Math.max(0, ...nets);
   const bot  = Math.min(0, ...nets);
   const span = (top - bot) || 1;
-  const H    = 112; 
+  const H    = 112;
   const zero = (top / span) * H;
 
-  const cols = months.map(m => {
-    const n = m.netProfit, on = m.monthNum === activeNum, neg = n < 0;
+  const cols = months.map((m, i) => {
+    const n = m.netProfit, on = inPeriod.includes(m), neg = n < 0;
     const h = (Math.abs(n) / span) * H;
     const label = on
       ? `<div class="val" style="${neg ? `top:${zero + h + 4}px` : `top:${zero - h - 20}px`}">${money0(n)}</div>`
@@ -715,13 +1137,13 @@ function trend(months, activeNum) {
         ${neg ? `<div class="mark" style="height:${h}px"></div>` : ""}
       </div>
       ${label}
-      <button type="button" class="hit" data-month="${m.monthNum}"
-              aria-label="${m.month}, net ${money0(n)}"></button>
+      <button type="button" class="hit" data-idx="${i}"
+              aria-label="${monthLabel(m)}, net profit ${money0(n)}"></button>
     </div>`;
   }).join("");
 
-  const labels = months.map(m =>
-    `<div class="${m.monthNum === activeNum ? "on" : ""}" data-month="${m.monthNum}"
+  const labels = months.map((m, i) =>
+    `<div class="${inPeriod.includes(m) ? "on" : ""}" data-idx="${i}"
      >${monthShort(m)}</div>`).join("");
 
   return `<div class="trend-scroll">
@@ -730,7 +1152,7 @@ function trend(months, activeNum) {
               <div class="zero" style="top:${zero}px"></div>
               <div class="axis-y">
                 <span style="top:0">${money0(top)}</span>
-                ${bot < 0 ? `<span style="top:${zero}px">$0</span>` : ""}
+                ${bot < 0 ? `<span style="top:${zero}px">${money0(0)}</span>` : ""}
                 <span style="top:${H}px">${money0(bot)}</span>
               </div>
             </div>
@@ -741,7 +1163,7 @@ function trend(months, activeNum) {
 /* Shown only when non-zero, so an uncategorised cost is never silently folded
    into a bucket total without appearing anywhere. */
 function otherRow(amount, revenue) {
-  return amount ? row("Other (uncategorised)", amount, revenue, "indent-row") : "";
+  return amount ? row(`Other (uncategorised)${help("other")}`, amount, revenue, "indent-row") : "";
 }
 
 /* One bucket: its total, every line item under it that has a value, then
@@ -752,43 +1174,42 @@ function otherRow(amount, revenue) {
    July itemised 41,750 of 64,420 and the four bucket totals silently disagreed
    with the rows beneath them. Driving the rows off BUCKETS means a column can
    never again count toward a total without appearing somewhere, and the
-   trailing Other row absorbs the difference for data.json, whose writer only
-   emits five of the line items. */
-function bucketSection(m, key, label, total, rev) {
+   trailing Other row absorbs whatever a file could not name. */
+function bucketSection(v, key, label, total, rev) {
   const cols = BUCKETS[key];
-  const listed = cols.reduce((t, c) => t + lineVal(m, c), 0);
+  const listed = cols.reduce((t, c) => t + lineVal(v, c), 0);
   const rows = cols
-    .filter(c => lineVal(m, c))
-    .map(c => row(LINE_LABELS[c] || cap(c), lineVal(m, c), rev, "indent-row"))
+    .filter(c => lineVal(v, c))
+    .map(c => row(LINE_LABELS[c] || cap(c), lineVal(v, c), rev, "indent-row"))
     .join("");
-  return row(label, total, rev, "group") + rows + otherRow(round2(total - listed), rev);
+  return row(label + help(key), total, rev, "group") + rows + otherRow(round2(total - listed), rev);
 }
 
-/* Revenue beside total expenses, month by month. Two bars on one scale - the
+/* Revenue beside total costs, month by month. Two bars on one scale - the
    gap between them IS the profit, which is what a reader is looking for. Each
-   month's net is labelled above its pair and the dollar figures sit under the
-   month name, so the numbers are readable without hovering. */
-function pairChart(months, activeNum) {
+   month's net is labelled above its pair and the figures sit under the month
+   name, so the numbers are readable without hovering. */
+function pairChart(months, inPeriod) {
   const H = 150;
   const top = Math.max(1, ...months.map(m => Math.max(m.revenue, m.totalExpenses)));
 
-  const bars = months.map(m => {
+  const bars = months.map((m, i) => {
     const loss = m.netProfit < 0;
     const rh = (m.revenue / top) * H;
     const eh = (m.totalExpenses / top) * H;
     return `<div class="pair">
       <div class="net${loss ? " loss" : ""}">${money0(m.netProfit)}</div>
       <button type="button" class="bar2 bar-rev" style="height:${rh}px"
-              data-month="${m.monthNum}"
-              aria-label="${m.month} revenue ${money0(m.revenue)}"></button>
+              data-idx="${i}"
+              aria-label="${monthLabel(m)} revenue ${money0(m.revenue)}"></button>
       <button type="button" class="bar2 bar-exp" style="height:${eh}px"
-              data-month="${m.monthNum}"
-              aria-label="${m.month} total expenses ${money0(m.totalExpenses)}"></button>
+              data-idx="${i}"
+              aria-label="${monthLabel(m)} total costs ${money0(m.totalExpenses)}"></button>
     </div>`;
   }).join("");
 
-  const names = months.map(m =>
-    `<div class="${m.monthNum === activeNum ? "on" : ""}" data-month="${m.monthNum}">${monthShort(m)}</div>`).join("");
+  const names = months.map((m, i) =>
+    `<div class="${inPeriod.includes(m) ? "on" : ""}" data-idx="${i}">${monthShort(m)}</div>`).join("");
   const vals = months.map(m =>
     `<div>${money0(m.revenue)} &middot; ${money0(m.totalExpenses)}</div>`).join("");
 
@@ -797,7 +1218,7 @@ function pairChart(months, activeNum) {
               ${bars}
               <div class="axis-y">
                 <span style="top:0">${money0(top)}</span>
-                <span style="top:${H}px">$0</span>
+                <span style="top:${H}px">${money0(0)}</span>
               </div>
             </div>
             <div class="pair-labels">${names}</div>
@@ -805,47 +1226,37 @@ function pairChart(months, activeNum) {
           </div>
           <ul class="key">
             <li><i class="bar-rev"></i><b>Revenue</b></li>
-            <li><i class="bar-exp"></i><b>Total expenses</b></li>
+            <li><i class="bar-exp"></i><b>Total costs</b></li>
             <li><b>Figure above each pair:</b> net profit</li>
           </ul>`;
 }
 
 function row(label, amount, revenue, cls = "") {
   return `<tr class="${cls}">
-    <th scope="row">${label}</th>
+    <th scope="row"${cls === "indent-row" ? ' class="indent"' : ""}>${label}</th>
     <td class="amt">${money(amount)}</td>
     <td class="share">${revenue ? fmtPct(pct(amount, revenue)) : "—"}</td>
   </tr>`;
 }
 
-/* Change against the previous month on file. Capitalio leads every stat with
-   one; it is the first thing an owner wants and we already have the figures. */
-function deltaVsPrev(m) {
-  const i = data.months.findIndex(x => x.monthNum === m.monthNum);
-  if (i <= 0) return "";
-  const prev = data.months[i - 1].netProfit;
-  if (!prev) return "";
-  const pct = ((m.netProfit - prev) / Math.abs(prev)) * 100;
-  const up = pct >= 0;
-  return `<span class="delta${up ? "" : " down"}">${up ? "\u2191" : "\u2193"} ${fmtPct(Math.abs(pct))}
-          <span>vs ${data.months[i - 1].month}</span></span>`;
-}
-
 /* ---- period scoping ----
-   "This month" is the selected month. "This quarter" is the real calendar
-   quarter (Jan-Mar, Apr-Jun, Jul-Sep, Oct-Dec) that month falls in, not just
-   "the two rows before it" - a selected month that starts a quarter should
-   not pull in the tail of the previous one. "Year to date" is every month on
-   file in that same calendar year, through the selected month. Scopes the
-   pulse strip and the priorities list - the charts always show every month
-   on file. */
+   "Month" is the selected month. "Quarter" is the real calendar quarter
+   (Jan-Mar, Apr-Jun, Jul-Sep, Oct-Dec) that month falls in, not just "the two
+   rows before it" - a selected month that starts a quarter should not pull in
+   the tail of the previous one. "Year to date" is every month on file in that
+   same calendar year, through the selected month.
+
+   The period drives the cards that describe ONE stretch of time: the net
+   result, the headline numbers, budget, where revenue goes and the report.
+   Cards that compare months (the charts, what needs attention, the estimator,
+   the forecast and the advice) always use every month on file. Each card says
+   which it is. */
 let period = "month";
-const PERIODS = [["month","This month"],["quarter","This quarter"],["ytd","Year to date"]];
+const PERIODS = [["month", "Month"], ["quarter", "Quarter"], ["ytd", "Year to date"]];
 const quarterOf = n => Math.ceil(n / 3);
 
 function periodSlice(m, which) {
-  const i = data.months.findIndex(x => x.monthNum === m.monthNum);
-  if (i < 0) return [m];
+  if (data.months.indexOf(m) < 0) return [m];
   if (which === "quarter") {
     return data.months.filter(x =>
       yearOf(x) === yearOf(m) && quarterOf(x.monthNum) === quarterOf(m.monthNum));
@@ -853,99 +1264,168 @@ function periodSlice(m, which) {
   if (which === "ytd") {
     return data.months.filter(x => yearOf(x) === yearOf(m) && x.monthNum <= m.monthNum);
   }
-  return [data.months[i]];
+  return [m];
 }
 
-/* Totals over a run of months. Margins are computed from the summed figures,
-   never averaged - averaging ratios silently weights a small month equally. */
-function aggregate(ms) {
-  const sum = k => ms.reduce((t, x) => t + x[k], 0);
-  const revenue = sum("revenue"), total = sum("totalExpenses"), budget = sum("budget");
-  return {
-    months: ms.length, revenue, total, budget,
-    net: sum("netProfit"),
-    margin: revenue ? (sum("netProfit") / revenue) * 100 : 0,
-    budgetPct: budget ? (total / budget) * 100 : 0
-  };
-}
-
-/* The run of equal length immediately before this one, for the delta. */
+/* The run of equal length immediately before this one, for the deltas. None
+   when the file does not go back that far: ten months of year to date "up
+   $100,254" on the four months before them is a comparison of lengths, not
+   of performance. */
 function previousSlice(m, which) {
   const cur = periodSlice(m, which);
-  const first = data.months.findIndex(x => x.monthNum === cur[0].monthNum);
-  const start = Math.max(0, first - cur.length);
-  return first === 0 ? [] : data.months.slice(start, first);
+  const first = data.months.indexOf(cur[0]);
+  if (first < cur.length) return [];
+  return data.months.slice(first - cur.length, first);
+}
+
+/* A run of months folded into one month-shaped total, so every period card
+   can draw a quarter exactly the way it draws a month. Margins come from the
+   summed figures, never averaged - averaging ratios silently weights a small
+   month equally. */
+function periodView(ms) {
+  const sum = k => ms.reduce((t, x) => t + (Number(x[k]) || 0), 0);
+  const lines = {};
+  for (const cols of Object.values(BUCKETS)) {
+    for (const c of cols) lines[c] = ms.reduce((t, x) => t + lineVal(x, c), 0);
+  }
+  // Budget used compares spending only from months that HAVE a budget, so one
+  // month without a figure cannot push the whole quarter past 100%.
+  const budgeted = ms.filter(x => x.budget);
+  const v = {
+    months: ms, label: rangeName(ms), lines,
+    revenue: sum("revenue"),
+    directExpenses: sum("directExpenses"), operatingExpenses: sum("operatingExpenses"),
+    variableOverhead: sum("variableOverhead"), fixedOverhead: sum("fixedOverhead"),
+    totalExpenses: sum("totalExpenses"), netProfit: sum("netProfit"),
+    budget: sum("budget"),
+    budgetSpent: budgeted.reduce((t, x) => t + x.totalExpenses, 0),
+    budgetMonths: budgeted.length
+  };
+  v.margin = v.revenue ? (v.netProfit / v.revenue) * 100 : 0;
+  v.budgetPercent = v.budget ? (v.budgetSpent / v.budget) * 100 : 0;
+  return v;
 }
 
 /* lowerIsBetter separates direction from sentiment. The arrow always follows
    the number; the colour follows whether that is good news. Costs rising 9%
    used to render green, because every increase was treated as an improvement. */
-function chg(now, before, kind, lowerIsBetter) {
+function chg(now, before, kind, lowerIsBetter, vs) {
   if (before === undefined || before === null || !isFinite(before) || before === 0) return "";
   const diff = kind === "pts" ? now - before : ((now - before) / Math.abs(before)) * 100;
   const up = diff >= 0;
   const good = lowerIsBetter ? !up : up;
   const txt = kind === "pts" ? Math.abs(diff).toFixed(1) + " pts" : fmtPct(Math.abs(diff));
-  return `<p class="chg${good ? "" : " down"}">${up ? "\u2191" : "\u2193"} ${txt} <span>vs previous</span></p>`;
+  return `<p class="chg${good ? "" : " down"}">${up ? "↑" : "↓"} ${txt} <span>vs ${vs}</span></p>`;
+}
+
+/* ---- did you make money ----
+   The first thing on the page, because it is the first thing an owner asks.
+   The change is in currency, not percent: net profit swinging from +5,420 to
+   -3,640 is "-167%", which says nothing a reader can use. */
+function heroCard(v, pv) {
+  const net = v.netProfit, rev = v.revenue, loss = net < 0;
+  let delta = "";
+  if (pv) {
+    const d = Math.round(net - pv.netProfit);
+    delta = d === 0
+      ? `<span class="delta"><span>same as ${pv.label}</span></span>`
+      : `<span class="delta${d < 0 ? " down" : ""}">${d < 0 ? "↓" : "↑"} ${money0(Math.abs(d))}
+             <span>vs ${pv.label}</span></span>`;
+  }
+  const note = !rev && !v.totalExpenses ? "Nothing was recorded for this period."
+    : !rev ? `<b>Not known yet.</b> Costs are on file but no revenue is. Add your sales for this period to see
+              whether you made money.`
+    : loss ? `<b>No.</b> Costs ran past revenue by ${money(-net)}, which is
+              ${fmtPct(pct(-net, rev))} of the ${money(rev)} that came in.`
+    : net === 0 ? `<b>You broke even.</b> Costs matched the ${money(rev)} that came in.`
+    : `<b>Yes.</b> You kept ${money(net)} after every cost: ${fmtPct(pct(net, rev))}
+       of the ${money(rev)} that came in.`;
+  return `<section class="card hero">
+    <div class="card-head"><div><p class="eyebrow">Did you make money?</p></div>
+      <span class="scope">${v.label}</span></div>
+    <p class="figure${loss && rev ? " loss" : ""}">${money(net)}${delta}</p>
+    <p class="note">${note}</p>
+  </section>`;
 }
 
 /* Four headline numbers for the chosen period, each against the run before it. */
-function pulse(m) {
-  const now = aggregate(periodSlice(m, period));
-  const prevMs = previousSlice(m, period);
-  const was = prevMs.length ? aggregate(prevMs) : null;
-
+function pulse(v, was) {
   const stat = (label, value, change) =>
     `<div class="stat"><p class="lab">${label}</p><p class="num">${value}</p>${change}</div>`;
+  const vs = was ? was.label : "";
 
   return `<div class="pulse">
-    ${stat("Revenue", money0(now.revenue), was ? chg(now.revenue, was.revenue) : "")}
-    ${stat("Net margin", now.revenue ? fmtPct(now.margin) : "\u2014",
-           was && was.revenue && now.revenue ? chg(now.margin, was.margin, "pts") : "")}
-    ${stat("Total costs", money0(now.total), was ? chg(now.total, was.total, null, true) : "")}
-    ${stat("Budget used", now.budget ? fmtPct(now.budgetPct) : "\u2014",
-           was && was.budget ? chg(now.budgetPct, was.budgetPct, "pts", true) : "")}
+    ${stat("Revenue", money0(v.revenue), was ? chg(v.revenue, was.revenue, null, false, vs) : "")}
+    ${stat("Net margin" + help("netMargin"), v.revenue ? fmtPct(v.margin) : "—",
+           was && was.revenue && v.revenue ? chg(v.margin, was.margin, "pts", false, vs) : "")}
+    ${stat("Total costs" + help("totalCosts"), money0(v.totalExpenses),
+           was ? chg(v.totalExpenses, was.totalExpenses, null, true, vs) : "")}
+    ${stat("Budget used" + help("budgetUsed"), v.budget ? fmtPct(v.budgetPercent) : "—",
+           was && was.budget && v.budget ? chg(v.budgetPercent, was.budgetPercent, "pts", true, vs) : "")}
   </div>`;
 }
 
-/* ---- priorities ----
+/* ---- what needs attention ----
    Observations read straight off the figures. No model involved and nothing
    leaves the machine: these are arithmetic facts about the months on file,
-   ranked so the ones that cost money come first. */
-function priorities(m) {
-  const ms = periodSlice(m, period);
-  const all = data.months;
-  const out = [];
+   ranked so the ones that cost money come first.
 
-  const losses = ms.filter(x => x.netProfit < 0);
+   Always every month on file, whatever the period. Scoped to the selected
+   month this said "nothing demanding attention" on a profitable July while
+   August and September both ran over budget. A problem that includes the
+   latest month is urgent; an older one is worth watching. */
+function priorities(all) {
+  const out = [];
+  const latest = all[all.length - 1];
+  const names = xs => {
+    const n = xs.map(monthLabel);
+    return n.length > 4 ? n.slice(-4).join(", ") + ` and ${n.length - 4} earlier` : n.join(", ");
+  };
+
+  const losses = all.filter(x => x.netProfit < 0 && x.revenue > 0);
+  // Invoices can put costs into a month before its sales are on file. That is
+  // a gap in the figures, not a loss, and saying "loss" would alarm for nothing.
+  const unsold = all.filter(x => !x.revenue && x.totalExpenses > 0);
+  if (unsold.length) {
+    out.push(["watch", `<strong>No sales on file for ${names(unsold)}</strong>: costs are recorded but
+      revenue isn't yet. <em>Add your sales with the template to see the profit.</em>`]);
+  }
   if (losses.length) {
-    out.push(["urgent", `<strong>${losses.length} month${losses.length > 1 ? "s" : ""} at a loss</strong>
-      — ${losses.map(x => x.month).join(", ")}. <em>Costs exceeded revenue.</em>`]);
+    out.push([losses.includes(latest) ? "urgent" : "watch",
+      `<strong>${losses.length} month${losses.length > 1 ? "s" : ""} at a loss</strong>:
+       ${names(losses)}. <em>Costs were more than revenue.</em>`]);
   }
 
-  const over = ms.filter(x => x.budget && x.budgetPercent > 100);
+  const over = all.filter(x => x.budget && x.budgetPercent > 100);
   if (over.length) {
-    out.push(["urgent", `<strong>Budget exceeded in ${over.length} of ${ms.length}</strong>
-      — ${over.map(x => x.month).join(", ")}. <em>Worst: ${fmtPct(Math.max(...over.map(x => x.budgetPercent)))} of budget.</em>`]);
+    const worst = over.reduce((a, b) => b.budgetPercent > a.budgetPercent ? b : a);
+    out.push([over.includes(latest) ? "urgent" : "watch",
+      `<strong>Over budget in ${over.length} of ${all.length} month${all.length > 1 ? "s" : ""}</strong>:
+       ${names(over)}. <em>Worst: ${monthLabel(worst)}, ${money0(worst.totalExpenses - worst.budget)}
+       over (${fmtPct(worst.budgetPercent)} of budget).</em>`]);
   }
 
   // A line item far above its own history is the clearest "look at this" signal.
-  const lines = [["maintenance","Maintenance"],["hardware","Hardware"],["utilities","Utilities"]];
-  for (const [key, label] of lines) {
-    const hist = all.map(x => x[key]).filter(v => v > 0);
+  for (const key of Object.keys(LINE_LABELS)) {
+    const hist = all.map(x => lineVal(x, key)).filter(v => v > 0);
     if (hist.length < 3) continue;
     const avg = hist.reduce((a, b) => a + b, 0) / hist.length;
-    const spike = ms.find(x => x[key] > avg * 2.5);
-    if (spike) {
-      out.push(["watch", `<strong>${label} spiked in ${spike.month}</strong>
-        — ${money0(spike[key])} against a ${money0(avg)} average. <em>${(spike[key] / avg).toFixed(1)}x normal.</em>`]);
+    const spikes = all.filter(x => lineVal(x, key) > avg * 2.5);
+    if (spikes.length) {
+      const s = spikes[spikes.length - 1], val = lineVal(s, key);
+      out.push(["watch", `<strong>${LINE_LABELS[key]} jumped in ${monthLabel(s)}</strong>:
+        ${money0(val)} against a ${money0(avg)} average. <em>${(val / avg).toFixed(1)} times its usual level.</em>`]);
     }
   }
 
   // Costs outrunning revenue is the thing an owner most wants flagged early.
-  if (ms.length >= 2) {
-    const a = ms[0], b = ms[ms.length - 1];
-    if (a.revenue && b.revenue) {
+  // Measured over the latest three months, so a long file is judged on where
+  // it is now rather than where it started.
+  const recent = all.slice(-3);
+  if (recent.length >= 2) {
+    const a = recent[0], b = recent[recent.length - 1];
+    const span = `${yearOf(a) === yearOf(b) ? cap(a.month) : monthLabel(a)} to ${monthLabel(b)}`;
+    if (a.revenue && b.revenue && a.totalExpenses) {
       const revChg = ((b.revenue - a.revenue) / a.revenue) * 100;
       const costChg = ((b.totalExpenses - a.totalExpenses) / a.totalExpenses) * 100;
       if (costChg > revChg + 5) {
@@ -954,40 +1434,62 @@ function priorities(m) {
         const head = costChg >= 0 && revChg < costChg ? "Costs rising faster than revenue"
                    : costChg < 0 ? "Revenue falling faster than costs"
                    : "Costs outpacing revenue";
-        out.push(["watch", `<strong>${head}</strong>
-          — costs ${costChg >= 0 ? "up" : "down"} ${fmtPct(Math.abs(costChg))} while revenue
-          ${revChg >= 0 ? "up" : "down"} ${fmtPct(Math.abs(revChg))} across ${a.month}\u2013${b.month}.
-          <em>Margin is being squeezed either way.</em>`]);
+        out.push(["watch", `<strong>${head}</strong>: costs ${costChg >= 0 ? "up" : "down"}
+          ${fmtPct(Math.abs(costChg))} while revenue ${revChg >= 0 ? "rose" : "fell"}
+          ${fmtPct(Math.abs(revChg))}, ${span}. <em>Your margin is being squeezed.</em>`]);
       }
     }
     const marginDrop = (a.revenue ? a.netProfit / a.revenue : 0) - (b.revenue ? b.netProfit / b.revenue : 0);
     if (marginDrop > 0.03) {
-      out.push(["watch", `<strong>Net margin down ${(marginDrop * 100).toFixed(1)} pts</strong>
-        — ${a.month} to ${b.month}. <em>Same revenue is keeping less.</em>`]);
+      out.push(["watch", `<strong>Net margin down ${(marginDrop * 100).toFixed(1)} points</strong>${help("netMargin")}:
+        ${span}. <em>You are keeping less of every sale.</em>`]);
     }
   }
 
   if (!out.length) {
-    return `<p class="none">Nothing demanding attention this period — no losses, nothing over budget,
-            no line item far above its own average.</p>`;
+    return `<p class="none">Nothing needs attention across ${rangeName(all)}: no losses, nothing over
+            budget, no cost far above its usual level.</p>`;
   }
+  out.sort((x, y) => (x[0] === "urgent" ? 0 : 1) - (y[0] === "urgent" ? 0 : 1));
   return `<ul class="prio">${out.map(([tag, html]) =>
     `<li><span class="tag ${tag}">${tag === "urgent" ? "Urgent" : "Watch"}</span><p>${html}</p></li>`).join("")}</ul>`;
 }
 
+/* ---- against budget ---- */
+function budgetGauge(v) {
+  if (!v.budget) {
+    return `<p class="none">No budget on file for ${v.label}. Add a Budget column (the most you plan
+            to spend each month) to compare spending against a plan.</p>`;
+  }
+  const used = v.budgetPercent, over = v.budgetSpent - v.budget;
+  const partial = v.budgetMonths < v.months.length
+    ? `<p class="gauge-note">Only ${v.budgetMonths} of ${v.months.length} months have a budget,
+       so only those months are compared.</p>`
+    : "";
+  return `<div class="gaugeline">
+      <span>Budget <strong>${money(v.budget)}</strong></span>
+      <span><strong class="${used > 100 ? "neg" : ""}">${fmtPct(used)} used</strong></span>
+    </div>
+    <div class="gauge" role="img" aria-label="${fmtPct(used)} of budget used">
+      <div class="gauge-fill${used > 100 ? " over" : ""}" style="width:${Math.min(used, 150) / 150 * 100}%"></div>
+      <div class="gauge-mark" style="left:${100 / 150 * 100}%"></div>
+    </div>
+    <div class="gauge-foot">
+      <span>${money(v.budgetSpent)} spent</span>
+      <span>${over > 0 ? money(over) + " over" : money(-over) + " left"}</span>
+    </div>${partial}`;
+}
+
 /* ---- budget estimator ----
-   Built from the months on file, not a model. Two numbers rather than one,
+   Built from every month on file, not a model. Two numbers rather than one,
    because a single "suggested budget" hides the question that matters: do you
    want to cover a typical month, or a bad one? Fixed costs barely move and are
    safe to budget at their average; the lumpy buckets are where a month goes
-   wrong, so they are shown separately with their own worst case. */
-function estimator(m) {
-  const ms = periodSlice(m, period);
-  if (ms.length < 2) {
-    return `<p class="none">Needs at least two months to estimate from.
-            This period has ${ms.length}.</p>`;
-  }
+   wrong, so they are shown separately with their own worst case.
 
+   It used to follow the period selector, which meant the default "this month"
+   view showed a card that only said it needed two months. */
+function estimator(ms) {
   const mean = k => ms.reduce((t, x) => t + x[k], 0) / ms.length;
   const worst = k => Math.max(...ms.map(x => x[k]));
 
@@ -995,18 +1497,13 @@ function estimator(m) {
   const bad = worst("totalExpenses");
   const current = ms[ms.length - 1].budget;
 
-  const rows = [
-    ["Direct",            "directExpenses"],
-    ["Operating",         "operatingExpenses"],
-    ["Variable overhead", "variableOverhead"],
-    ["Fixed overhead",    "fixedOverhead"]
-  ].map(([label, key]) => {
+  const rows = BUCKET_ROWS.map(([, label, key, term]) => {
     const avg = mean(key), hi = worst(key);
     // A bucket whose worst month is close to its average is predictable; one
     // that swings is where the risk lives. Say which is which.
     const swing = avg ? ((hi - avg) / avg) * 100 : 0;
     return `<tr>
-      <th scope="row">${label}</th>
+      <th scope="row">${label}${help(term)}</th>
       <td class="amt">${money0(avg)}</td>
       <td class="amt">${money0(hi)}</td>
       <td class="share">${swing < 10 ? "steady" : "+" + fmtPct(swing)}</td>
@@ -1015,8 +1512,8 @@ function estimator(m) {
 
   const vsCurrent = current
     ? (typical > current
-        ? `<em>Your last budget of ${money0(current)} is ${money0(typical - current)} below a typical month.</em>`
-        : `<em>Your last budget of ${money0(current)} covers a typical month with ${money0(current - typical)} to spare.</em>`)
+        ? `<em>Your latest budget of ${money0(current)} is ${money0(typical - current)} below a typical month.</em>`
+        : `<em>Your latest budget of ${money0(current)} covers a typical month with ${money0(current - typical)} to spare.</em>`)
     : "<em>No budget on file to compare against.</em>";
 
   // Each candidate is only meaningful against what actually happened: a budget
@@ -1032,37 +1529,41 @@ function estimator(m) {
 
   return `<div class="est">
     <div class="est-pair">
-      <div><p class="lab">Typical month</p><p class="num">${money0(typical)}</p>
-           <p class="chg">mean of ${ms.length} &middot; ${coverLine(typical)}</p></div>
+      <div><p class="lab">Typical month${help("typical")}</p><p class="num">${money0(typical)}</p>
+           <p class="chg">average of ${ms.length} &middot; ${coverLine(typical)}</p></div>
       <div><p class="lab">Cover a bad month</p><p class="num">${money0(bad)}</p>
            <p class="chg">highest of ${ms.length} &middot; ${coverLine(bad)}</p></div>
     </div>
     <p class="est-note">${vsCurrent}</p>
-    <table>
+    <div class="table-wrap"><table>
       <thead><tr>
-        <th scope="col">Bucket</th><th scope="col">Average</th>
-        <th scope="col">Worst</th><th scope="col">Swing</th>
+        <th scope="col">Cost group</th><th scope="col">Average</th>
+        <th scope="col">Worst</th><th scope="col">Swing${help("swing")}</th>
       </tr></thead>
       <tbody>${rows}</tbody>
-    </table>
+    </table></div>
   </div>`;
 }
 
 /* ---- forecast ----
    Two paths to the same shape. Locally we fit a least-squares line through net
-   profit and put a prediction interval around it - free, instant, private, and
-   at a dozen points about as good as anything. Chronos-Bolt is the upgrade: it
-   returns p10/p50/p90 directly, which is the same three numbers from a model
-   trained on far more series than this business has months. */
+   profit and put a range around it - free, instant, private, and at a dozen
+   points about as good as anything. Chronos-Bolt is the upgrade: it returns
+   p10/p50/p90 directly, the same three numbers from a model trained on far
+   more series than this business has months.
 
-let forecastData = null;   // {low[], predicted[], high[], model}
+   Below six months there is no dollar figure at all. Three points put
+   "Projected -$8,100 next month" with a range down to -$18,180 on screen, a
+   frightening number with nothing behind it. The direction is still shown. */
+
+const MIN_FORECAST = 3;    // below this there is no line to fit; the card is hidden
+const FULL_FORECAST = 6;   // below this the line is shown but no amount is
+let forecastData = null;   // {low[], predicted[], high[], model} from the model service
 
 /** Least-squares line through y, extended `h` steps, with a t-ish band. */
 function trendForecast(y, h) {
   const n = y.length;
-  // Below six months a straight line is an illustration, not something to plan
-  // against, so it gets labelled as one. Below three there is no line to fit.
-  if (n < 3) return null;
+  if (n < MIN_FORECAST) return null;
 
   const xs = y.map((_, i) => i);
   const mx = xs.reduce((a, b) => a + b, 0) / n;
@@ -1086,17 +1587,19 @@ function trendForecast(y, h) {
     const spread = 1.96 * se * Math.sqrt(1 + 1 / n + ((x - mx) ** 2) / (sxx || 1));
     low.push(fit - spread); predicted.push(fit); high.push(fit + spread);
   }
-  return {low, predicted, high, model: "local trend", thin: n < 6, points: n};
+  return {low, predicted, high, slope, model: "local trend", thin: n < FULL_FORECAST, points: n};
 }
 
-/* The fan: history as bars, the forecast as a shaded cone beside it. */
+/* The fan: history as a line, the forecast as a shaded cone beside it. */
 function fanChart(months) {
   const net = months.map(m => m.netProfit);
-  const f = forecastData || trendForecast(net, 3);
-  if (!f) return `<p class="none">Needs at least three months to project from.</p>`;
+  const local = trendForecast(net, 3);
+  if (!local) return "";
+  const thin = local.thin;
+  const f = (!thin && forecastData) || local;
 
-  const all = [...net, ...f.low, ...f.high];
-  const top = Math.max(...all), bot = Math.min(...all, 0);
+  const all = thin ? [...net, ...f.predicted] : [...net, ...f.low, ...f.high];
+  const top = Math.max(...all, 0), bot = Math.min(...all, 0);
   const span = (top - bot) || 1;
   const H = 150;
   const y = v => H - ((v - bot) / span) * H;      // value -> px from the top
@@ -1123,173 +1626,174 @@ function fanChart(months) {
     const y2 = yearOf(last) + Math.floor((n - 1) / 12);
     const name = new Date(Date.UTC(2000, wrapped - 1, 1))
       .toLocaleString("en-US", {month: "short", timeZone: "UTC"});
-    return `${name} '${String(y2).slice(2)}`;
+    return `${name}<span class="yr"> '${String(y2).slice(2)}</span>`;
   };
-  const labels = [...months.map(m => monthShort(m)),
+  // The year drops on a phone, where six "Mmm 'yy" labels do not fit.
+  const labels = [...months.map(m => `${m.month.slice(0, 3)}<span class="yr"> '${String(yearOf(m)).slice(2)}</span>`),
                   ...f.predicted.map((_, i) => futureLabel(i + 1))];
+
+  // On a thin history the scale names only amounts that actually happened, so
+  // no projected dollar figure reaches the screen by way of the axis.
+  const hi = Math.max(...net), lo = Math.min(...net);
+  const ticks = thin
+    ? [[hi, y(hi)], ...(bot < 0 && hi > 0 ? [[0, zero]] : []), ...(lo < 0 ? [[lo, y(lo)]] : [])]
+    : [[top, 0], ...(bot < 0 ? [[0, zero]] : []), [bot, H]];
+
+  const flat = Math.abs(local.slope) < 0.02 * Math.max(...net.map(Math.abs), 1);
+  const direction = flat ? "roughly flat" : local.slope < 0 ? "falling" : "rising";
+
+  const key = thin
+    ? `<li><i class="fan-sw-hist"></i><b>Actual</b></li>
+       <li><i class="fan-sw-mid"></i><b>Direction</b>${help("trend")}</li>`
+    : `<li><i class="fan-sw-hist"></i><b>Actual</b></li>
+       <li><i class="fan-sw-mid"></i><b>Projected</b> ${money0(f.predicted[0])} next month</li>
+       <li><i class="fan-sw-band"></i><b>Range</b>${help("range")} ${money0(f.low[0])} to ${money0(f.high[0])}</li>`;
+
+  const how = thin
+    ? `<p class="fc-msg"><b>Add more months for a forecast.</b> With ${months.length} months on file this
+         shows the direction only: net profit has been ${direction}. A projected amount appears once you
+         have ${FULL_FORECAST} months.</p>`
+    : `<p class="brief-note">How this is worked out: ${f.model === "local trend"
+        ? "a straight line through your monthly net profit, carried three months forward. The shaded " +
+          "range shows how far past months strayed from that line, so treat it as a rough guide, not a " +
+          "promise. Worked out on this page; nothing is sent."
+        : "Chronos, a forecasting model that has learned common patterns from a large collection of " +
+          "real-world figures, projected your monthly net profit. The shaded range covers the middle 80% " +
+          "of its estimates."}</p>`;
 
   return `<div class="fan">
     <svg viewBox="0 0 100 ${H}" preserveAspectRatio="none" role="img"
-         aria-label="Net profit history and ${f.predicted.length}-month projection">
+         aria-label="Net profit history and ${f.predicted.length}-month ${thin ? "direction" : "projection"}">
       ${bot < 0 ? `<line x1="0" y1="${zero}" x2="100" y2="${zero}" class="fan-zero"/>` : ""}
-      <polygon points="${band}" class="fan-band"/>
+      ${thin ? "" : `<polygon points="${band}" class="fan-band"/>`}
       <polyline points="${histPts}" class="fan-hist"/>
       <polyline points="${midPts}" class="fan-mid"/>
     </svg>
     <div class="axis-y">
-      <span style="top:0">${money0(top)}</span>
-      ${bot < 0 ? `<span style="top:${zero}px">$0</span>` : ""}
-      <span style="top:${H}px">${money0(bot)}</span>
+      ${ticks.map(([v, px]) => `<span style="top:${px}px">${money0(v)}</span>`).join("")}
     </div>
     <div class="fan-labels">${labels.map((l, i) =>
       `<span class="${i >= months.length ? "fut" : ""}">${l}</span>`).join("")}</div>
-    <ul class="key">
-      <li><i class="fan-sw-hist"></i><b>Actual</b></li>
-      <li><i class="fan-sw-mid"></i><b>Projected</b> ${money0(f.predicted[0])} next month</li>
-      <li><i class="fan-sw-band"></i><b>Range</b> ${money0(f.low[0])} to ${money0(f.high[0])}</li>
-      ${f.thin ? '<li><b style="color:var(--critical)">Thin history</b></li>' : ""}
-    </ul>
-    <p class="brief-note">Source: ${esc(f.model)}.
-      ${f.model === "local trend"
-        ? "A straight line through your months, with a range taken from how much past " +
-          "months varied \u2014 computed here, nothing sent. An illustrative range, not a " +
-          "calibrated prediction interval."
-        : "Quantile forecast from a model trained on millions of series."}
-      ${f.thin ? `<b>Only ${f.points} months of history \u2014 treat this as a sketch.</b>` : ""}</p>
+    <ul class="key">${key}</ul>
+    ${how}
   </div>`;
 }
 
+const invoicesIn = ms => ms.reduce((t, x) => t + (x.invoiceCount || 0), 0);
+
+/* ---- cards ---- */
+function card(cls, title, sub, scope, body) {
+  return `<section class="card ${cls}">
+    <div class="card-head">
+      <div><h2>${title}</h2>${sub ? `<p class="sub">${sub}</p>` : ""}</div>
+      ${scope ? `<span class="scope">${scope}</span>` : ""}
+    </div>
+    ${body}
+  </section>`;
+}
+
+function report(v) {
+  const rev = v.revenue, net = v.netProfit, loss = net < 0;
+  return `<div class="table-wrap"><table>
+    <thead>
+      <tr><th scope="col">Line</th><th scope="col">Amount</th>
+          <th scope="col"><span class="long">% of revenue</span><span class="short">% of rev.</span>${help("ofRevenue")}</th></tr>
+    </thead>
+    <tbody>
+      ${row("Revenue" + help("revenue"), rev, rev, "group")}
+
+      ${bucketSection(v, "direct",    "Direct costs",      v.directExpenses,    rev)}
+      ${bucketSection(v, "operating", "Operating costs",   v.operatingExpenses, rev)}
+      ${bucketSection(v, "variable",  "Variable overhead", v.variableOverhead,  rev)}
+      ${bucketSection(v, "fixed",     "Fixed overhead",    v.fixedOverhead,     rev)}
+
+      ${row("Total costs" + help("totalCosts"), v.totalExpenses, rev, "total")}
+      <tr class="total">
+        <th scope="row">Net profit${help("netProfit")}</th>
+        <td class="amt ${loss ? "neg" : ""}">${money(net)}</td>
+        <td class="share ${loss ? "neg" : ""}">${rev ? fmtPct(pct(net, rev)) : "—"}</td>
+      </tr>
+    </tbody>
+  </table></div>`;
+}
+
+const MAX_BRIEF_MONTHS = 36;   // the briefing service's own limit
+
+function briefCard() {
+  const sent = data.months.slice(-MAX_BRIEF_MONTHS);
+  const name = rangeName(sent);
+  const scope = sent.length === data.months.length ? allScope() : `Latest ${sent.length} months`;
+  return card("wide", "What to do next", "Advice written by Claude from your monthly totals", scope,
+    `<div class="brief-head no-print">
+       <p class="brief-note" id="brief-note">Pressing this sends the monthly totals for ${name}: revenue,
+         the four cost groups, net profit and budget. No line items, no names, not your file.</p>
+       <button type="button" class="btn primary" id="brief-go">Get advice on ${name}</button>
+     </div>
+     <div class="brief" id="brief"></div>`);
+}
+
+function forecastCard() {
+  return card("wide", "Where this is heading", "Net profit so far, and the direction it is moving",
+    allScope(),
+    fanChart(data.months) +
+    `<div class="brief-head no-print">
+       <p class="brief-note" id="fc-note" hidden></p>
+       <button type="button" class="btn" id="fc-go" hidden>Use the forecasting model</button>
+     </div>`);
+}
+
+/* Order follows the questions an owner asks, in the order they ask them: did
+   I make money, what needs my attention, am I within budget, how is it
+   trending, show me the detail. The forecast and the advice come last; they
+   are the only cards that guess rather than report. */
 function draw(m) {
-  const rev  = m.revenue;
-  const net  = m.netProfit;
-  const loss = net < 0;
-  const over = m.totalExpenses - m.budget;
-  const used = m.budgetPercent;
+  const ms = periodSlice(m, period);
+  const v = periodView(ms);
+  const prevMs = previousSlice(m, period);
+  const pv = prevMs.length ? periodView(prevMs) : null;
+  const all = data.months;
+
+  document.getElementById("showing").innerHTML = v.label;
+  document.getElementById("showing-sub").innerHTML = period === "month"
+    ? `${all.length} month${all.length > 1 ? "s" : ""} on file`
+    : `${PERIODS.find(p => p[0] === period)[1]} through ${monthLabel(m)} · ${ms.length} month${ms.length > 1 ? "s" : ""}`;
+  document.getElementById("print-meta").textContent =
+    `FinDash report · printed ${new Date().toLocaleDateString("en-US", {day: "numeric", month: "long", year: "numeric"})}` +
+    ` · amounts in ${currency}`;
 
   document.getElementById("sheet").innerHTML = `
-    ${pulse(m)}
+    ${heroCard(v, pv)}
+    ${pulse(v, pv)}
     <div class="grid">
-      <section class="card wide">
-        <div class="badge">✦</div>
-        <h2>What to do next</h2>
-        <p class="sub">Claude reads your monthly totals and says where to look</p>
-        <div class="brief-head">
-          <p class="brief-note" id="brief-note">Your figures stay here until you ask.
-            Pressing this sends the monthly totals shown above — no line items, no names.</p>
-          <button type="button" class="btn primary" id="brief-go">Get briefing</button>
-        </div>
-        <div class="brief" id="brief"></div>
-      </section>
+      ${card("wide", "What needs attention",
+             "Losses, budget overruns and unusual costs, read straight off your figures. Nothing is sent anywhere.",
+             allScope(), priorities(all))}
 
-      <section class="card wide">
-        <div class="badge">↗</div>
-        <h2>Where this is heading</h2>
-        <p class="sub">Net profit so far, and the next three months projected</p>
-        ${fanChart(data.months)}
-        <div class="brief-head">
-          <p class="brief-note" id="fc-note">Chronos-Bolt is a forecasting model trained on
-            millions of series. Pressing this sends the net profit numbers only — no
-            months, no line items, no budget.</p>
-          <button type="button" class="btn" id="fc-go">Use Chronos</button>
-        </div>
-      </section>
+      ${card("", "Against budget", "Total costs against the spending budget you set" + help("budget"),
+             v.label, budgetGauge(v))}
+      ${card("", "Where revenue goes", `Each cost group as a share of ${money(v.revenue)} in revenue`,
+             v.label, allocation(v))}
 
-      <section class="card wide">
-        <div class="badge">◱</div>
-        <h2>Budget estimator</h2>
-        <p class="sub">What next month should be budgeted at, from the months on file</p>
-        ${estimator(m)}
-      </section>
+      ${card("", "Net profit by month", `Every month on file, with ${v.label} highlighted`,
+             allScope(), trend(all, ms))}
+      ${card("", "Revenue vs costs", "The gap between the bars is that month's profit",
+             allScope(), pairChart(all, ms))}
 
-      <section class="card wide">
-        <div class="badge">⚑</div>
-        <h2>Today's priorities</h2>
-        <p class="sub">Read straight off your figures &middot; nothing sent anywhere</p>
-        ${priorities(m)}
-      </section>
+      ${card("wide", "Financial report", "Every line in the period, in money and as a share of revenue" +
+             (invoicesIn(ms) ? ` &middot; includes ${invoicesIn(ms)} invoice${invoicesIn(ms) > 1 ? "s" : ""} added from photos` : ""),
+             v.label, report(v))}
 
-      <section class="card wide hero"><div class="badge">◉</div>
-        <p class="eyebrow">${monthLabel(m)} &middot; net result</p>
-        <p class="figure${loss ? " loss" : ""}">${money(net)}${deltaVsPrev(m)}</p>
-        <p class="note">
-          ${rev ? fmtPct(pct(net, rev)) + " of " + money(rev) + " in revenue."
-                : "No revenue recorded this month."}
-          ${loss
-            ? `Costs ran past revenue by ${money(Math.abs(net))}.`
-            : `Kept ${money(net)} after every cost.`}
-        </p>
-      </section>
+      ${all.length >= 2
+        ? card("wide", "Budget estimator", "What next month should be budgeted at, from the months on file",
+               `From ${all.length} months`, estimator(all))
+        : ""}
 
-      <section class="card wide">
-        <div class="badge">◔</div>
-        <h2>Where revenue goes</h2>
-        <p class="sub">Every cost bucket as a share of ${money(rev)} in revenue</p>
-        ${allocation(m)}
-      </section>
+      ${all.length >= MIN_FORECAST ? forecastCard() : ""}
 
-      <section class="card">
-        <div class="badge">▤</div>
-        <h2>Against budget</h2>
-        <p class="sub">Total costs measured against the month's budget</p>
-        ${m.budget
-          ? `<div class="gaugeline">
-               <span>Budget <strong>${money(m.budget)}</strong></span>
-               <span><strong class="${used > 100 ? "neg" : ""}">${fmtPct(used)} used</strong></span>
-             </div>
-             <div class="gauge">
-               <div class="gauge-fill${used > 100 ? " over" : ""}" style="width:${Math.min(used, 150) / 150 * 100}%"></div>
-               <div class="gauge-mark" style="left:${100 / 150 * 100}%"></div>
-             </div>
-             <div class="gauge-foot">
-               <span>${money(m.totalExpenses)} spent</span>
-               <span>${over > 0 ? money(over) + " over" : money(-over) + " left"}</span>
-             </div>`
-          : `<p class="none">No budget provided for ${cap(m.month)} &mdash; nothing to compare spending against.</p>`}
-      </section>
-
-      <section class="card">
-        <div class="badge">▲</div>
-        <h2>Net profit by month</h2>
-        <p class="sub">Every month on file &middot; ${monthLabel(m)} highlighted</p>
-        ${trend(data.months, m.monthNum)}
-      </section>
-
-      <section class="card wide">
-        <div class="badge">▦</div>
-        <h2>Revenue vs expenses</h2>
-        <p class="sub">Every month on file &middot; the gap between the bars is that month's profit</p>
-        ${pairChart(data.months, m.monthNum)}
-      </section>
-
-      <section class="card wide">
-        <div class="badge">☰</div>
-        <h2>Financial Report</h2>
-        <p class="sub">Every line is the amount of dollars and the percent of the revenue</p>
-        <table>
-          <thead>
-            <tr><th scope="col">Line</th><th scope="col">Amount</th><th scope="col">Of revenue</th></tr>
-          </thead>
-          <tbody>
-            ${row("Revenue", rev, rev, "group")}
-
-            ${bucketSection(m, "direct",    "Direct expenses",    m.directExpenses,    rev)}
-            ${bucketSection(m, "operating", "Operating expenses", m.operatingExpenses, rev)}
-            ${bucketSection(m, "variable",  "Variable overhead",  m.variableOverhead,  rev)}
-            ${bucketSection(m, "fixed",     "Fixed overhead",     m.fixedOverhead,     rev)}
-
-            ${row("Total expenses", m.totalExpenses, rev, "total")}
-            <tr class="total">
-              <th scope="row">Net profit</th>
-              <td class="amt ${loss ? "neg" : ""}">${money(net)}</td>
-              <td class="share ${loss ? "neg" : ""}">${fmtPct(pct(net, rev))}</td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
+      ${briefCard()}
     </div>`;
 
-  document.querySelectorAll(".indent-row th").forEach(th => th.classList.add("indent"));
-  wireBriefing(m);
+  wireBriefing();
   wireForecast();
   wireTooltip();
   centreActiveMonth();
@@ -1305,77 +1809,104 @@ function centreActiveMonth() {
 }
 
 /* ---- briefing ----
-   The one place figures leave the browser, and only when asked. Scoped to the
-   period on screen so the reader can see exactly what is being sent. */
-function wireBriefing(m) {
+   The one place figures leave the browser, and only when asked. It covers
+   every month on file (up to the service's limit) rather than the period on
+   screen: scoped to one month it missed the months that went wrong.
+
+   The answer is kept, keyed on exactly what was sent, so it is still there
+   after a redraw or the next visit. Each press is a paid request; nobody
+   should have to press again to see advice they already have. */
+const BRIEF_KEY = "findash-briefing";
+let briefCache = (() => {
+  try {
+    const c = JSON.parse(localStorage.getItem(BRIEF_KEY));
+    if (!c || typeof c.key !== "string" || !c.result) return null;
+    const list = v => Array.isArray(v) ? v.filter(x => typeof x === "string") : [];
+    return {key: c.key, at: c.at, result: {
+      opportunities: list(c.result.opportunities), risks: list(c.result.risks), actions: list(c.result.actions)}};
+  } catch { return null; /* nothing saved, or storage blocked */ }
+})();
+
+function briefPayload() {
+  return {
+    currency,
+    months: data.months.slice(-MAX_BRIEF_MONTHS).map(x => ({
+      // Only the totals already on screen - rebuilt field by field so nothing
+      // else on the month object can travel along by accident.
+      month: unesc(monthLabel(x)), revenue: x.revenue,
+      directExpenses: x.directExpenses, operatingExpenses: x.operatingExpenses,
+      variableOverhead: x.variableOverhead, fixedOverhead: x.fixedOverhead,
+      totalExpenses: x.totalExpenses, netProfit: x.netProfit, budget: x.budget
+    }))
+  };
+}
+
+function showBrief(out, result, at, name) {
+  const block = (cls, title, items) => items.length
+    ? `<h3>${title}</h3><ul class="${cls}">${items.map(i => `<li>${esc(i)}</li>`).join("")}</ul>`
+    : "";
+  const html = block("up", "Opportunities", result.opportunities)
+             + block("risk", "Risks", result.risks)
+             + block("act", "Do next", result.actions);
+  const when = at ? new Date(at).toLocaleDateString("en-US", {day: "numeric", month: "long", year: "numeric"}) : "";
+  out.innerHTML = (html || `<p class="brief-note">Nothing stood out in these months.</p>`) +
+    `<p class="brief-note stamp-note">Written ${when ? "on " + when + " " : ""}from your figures for ${name}.
+     Saved here, so you don't need to ask again.</p>`;
+}
+
+function wireBriefing() {
   const btn = document.getElementById("brief-go");
   const out = document.getElementById("brief");
   if (!btn || !out) return;
 
-  // Name the months that will be sent. The briefing is scoped to the selected
-  // period, and a reader who gets a one-month verdict while three are on file
-  // will reasonably read it as covering all three.
-  const note = document.getElementById("brief-note");
-  if (note) {
-    const names = periodSlice(m, period).map(x => cap(x.month));
-    note.textContent = (names.length === 1
-      ? `Sends ${names[0]} only, the period selected above.`
-      : `Sends ${names.length} months, ${names[0]} to ${names[names.length - 1]}.`)
-      + " Your figures stay here until you ask.";
+  const payload = briefPayload();
+  const key = JSON.stringify(payload);
+  const name = rangeName(data.months.slice(-MAX_BRIEF_MONTHS));
+
+  if (briefCache && briefCache.key === key) {
+    showBrief(out, briefCache.result, briefCache.at, name);
+    btn.textContent = "Ask again";
+    btn.classList.remove("primary");
   }
 
   btn.addEventListener("click", async () => {
-    const ms = periodSlice(m, period);
     btn.disabled = true;
-    btn.textContent = "Reading\u2026";
+    btn.textContent = "Reading…";
     out.innerHTML = "";
 
     try {
       const res = await fetch("/api/briefing", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        // Only the totals already on screen - rebuilt field by field so nothing
-        // else on the month object can travel along by accident.
-        body: JSON.stringify({months: ms.map(x => ({
-          month: x.month, revenue: x.revenue,
-          directExpenses: x.directExpenses, operatingExpenses: x.operatingExpenses,
-          variableOverhead: x.variableOverhead, fixedOverhead: x.fixedOverhead,
-          totalExpenses: x.totalExpenses, netProfit: x.netProfit, budget: x.budget
-        }))})
+        body: key
       });
-      if (!res.ok) throw new Error("the briefing service returned " + res.status);
+      if (!res.ok) throw new Error("the advice service returned " + res.status);
 
       const {opportunities = [], risks = [], actions = []} = await res.json();
-      const block = (cls, title, items) => items.length
-        ? `<h3>${title}</h3><ul class="${cls}">${items.map(i => `<li>${esc(i)}</li>`).join("")}</ul>`
-        : "";
-
-      const html = block("up", "Opportunities", opportunities)
-                 + block("risk", "Risks", risks)
-                 + block("act", "Do next", actions);
-      out.innerHTML = html || `<p class="brief-note">Nothing stood out in these months.</p>`;
-      btn.textContent = "Refresh briefing";
+      briefCache = {key, at: new Date().toISOString(), result: {opportunities, risks, actions}};
+      try { localStorage.setItem(BRIEF_KEY, JSON.stringify(briefCache)); }
+      catch { /* storage blocked; the advice still shows until the page is closed */ }
+      showBrief(out, briefCache.result, briefCache.at, name);
+      btn.textContent = "Ask again";
+      btn.classList.remove("primary");
     } catch (err) {
-      out.innerHTML = `<p class="brief-note">Could not get a briefing \u2014 ${esc(err.message)}.
+      out.innerHTML = `<p class="brief-note">Could not get advice: ${esc(err.message)}.
         Your figures were not stored.</p>`;
       btn.textContent = "Try again";
     } finally {
       btn.disabled = false;
     }
-  }, {once: false});
+  });
 }
 
 /* Swap the local trend for Chronos when asked. Falls back silently to the
    local line if the service is not configured - the chart already works. */
 let capabilities = null;   // {briefing, mapping, forecast} - fetched once
 
-/* Said in two places - the startup gate and a 503 at click time - so it lives
-   in one place. Never names FORECAST_URL: that is a log detail, not a reader's. */
-const NO_MODEL_NOTE = "A stronger forecasting model can be connected to this page; " +
-  "none is configured, so the trend above is computed locally.";
-
 /* Hide what is not deployed. Offering a button that always fails is worse than
-   not offering it, and the failure message leaked the env var name to visitors. */
+   not offering it, and the failure message leaked the env var name to visitors.
+   Nor is "a model could be connected" said to visitors: that is a note for
+   whoever runs the site, so it goes to the console. */
 async function loadCapabilities() {
   if (capabilities) return capabilities;
   try {
@@ -1389,17 +1920,23 @@ function wireForecast() {
   const btn = document.getElementById("fc-go");
   const note = document.getElementById("fc-note");
   if (!btn) return;
+  // A model cannot make three points trustworthy either; the button only
+  // appears once there is enough history for a projected amount.
+  if (data.months.length < FULL_FORECAST) return;
 
   loadCapabilities().then(c => {
-    if (c.forecast) return;
-    btn.hidden = true;
-    note.textContent = NO_MODEL_NOTE;
+    if (!c.forecast) { console.info("no forecast model configured; using the local trend"); return; }
+    if (forecastData) return;
+    btn.hidden = false;
+    note.hidden = false;
+    note.textContent = "A forecasting model is available. Pressing this sends only your monthly " +
+      "net profit figures: no month names, no line items, no budget.";
   });
 
   btn.addEventListener("click", async () => {
     const series = data.months.map(x => x.netProfit);
     btn.disabled = true;
-    btn.textContent = "Forecasting\u2026";
+    btn.textContent = "Forecasting…";
     try {
       const res = await fetch("/api/forecast", {
         method: "POST",
@@ -1416,7 +1953,7 @@ function wireForecast() {
       // reader through a button that will fail every time.
       if (res.status === 503) {
         btn.hidden = true;
-        note.textContent = NO_MODEL_NOTE;
+        note.hidden = true;
         console.warn("forecast model not available:", body.error || body.hint || "503");
         return;
       }
@@ -1430,7 +1967,7 @@ function wireForecast() {
       // screen. Readers get the consequence, the console gets the cause.
       console.warn("forecast unavailable:", err.message);
       note.textContent = "The forecasting service could not be reached. " +
-        "Showing the locally computed trend instead.";
+        "Showing the trend worked out on this page instead.";
       btn.disabled = false;
       btn.textContent = "Try again";
     }
@@ -1440,6 +1977,10 @@ function wireForecast() {
 /* Model output is text, not markup - render it as text. */
 const esc = s => String(s).replace(/[&<>"]/g, c =>
   ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+/* The reverse, for text that leaves the page (a request, a spreadsheet) and
+   must not carry entities that only mean something in HTML. */
+const unesc = s => String(s).replace(/&(amp|lt|gt|quot);/g, (_, e) =>
+  ({amp: "&", lt: "<", gt: ">", quot: '"'}[e]));
 
 /* Hover/focus readout on the allocation bar. The same numbers live in the
    legend and the ledger below, so the tooltip only ever enhances. */
@@ -1474,10 +2015,13 @@ function wireTooltip() {
 
 let monthClickWired = false;
 
+/* Months are addressed by their position in data.months, not by month number:
+   with more than a year on file there are two Julys, and looking one up by
+   monthNum always found the first. */
 function build() {
   const list = document.getElementById("months");
-  list.innerHTML = data.months.map(m =>
-    `<li><button type="button" data-num="${m.monthNum}">${monthLabel(m)}</button></li>`).join("");
+  list.innerHTML = data.months.map((m, i) =>
+    `<li><button type="button" data-idx="${i}">${monthLabel(m)}</button></li>`).join("");
 
   // build() runs again on every import, and innerHTML above replaces the
   // buttons but not the <ul> holding this listener - so re-registering stacked
@@ -1485,30 +2029,30 @@ function build() {
   if (!monthClickWired) {
     list.addEventListener("click", e => {
       const btn = e.target.closest("button");
-      if (btn) select(Number(btn.dataset.num));
+      if (btn) select(Number(btn.dataset.idx));
     });
     monthClickWired = true;
   }
 
-  document.getElementById("stamp").textContent =
-    data.generated ? "Generated " + data.generated : "";
   const foot = document.getElementById("footer");
   foot.textContent = sourceNote;
   foot.classList.remove("notice");
 
   // The latest month, not the oldest. A dashboard opens on the most recent
-  // period, and the briefing is scoped to whatever is selected - so opening on
-  // July meant the briefing never saw the August and September budget breaches.
-  select(data.months[data.months.length - 1].monthNum);
+  // period - opening on July hid the August and September budget breaches.
+  select(data.months.length - 1);
 }
 
-function select(num) {
-  active = data.months.find(m => m.monthNum === num);
-  document.querySelectorAll(".filters button").forEach(b =>
-    b.setAttribute("aria-current", Number(b.dataset.num) === num));
+function select(idx) {
+  active = data.months[idx] || data.months[data.months.length - 1];
+  const inPeriod = periodSlice(active, period);
+  document.querySelectorAll("#months button").forEach(b => {
+    const m = data.months[Number(b.dataset.idx)];
+    b.setAttribute("aria-pressed", m === active);
+    b.classList.toggle("in-range", m !== active && inPeriod.includes(m));
+  });
   draw(active);
 }
-
 
 /* ================= CSV loading =================
    The browser does the same arithmetic CFODashboard.java does, so a CSV
@@ -1600,6 +2144,22 @@ function excelDate(v) {
 function yearInText(raw) {
   const m = String(raw).match(/(19|20)\d{2}/);
   return m ? Number(m[0]) : null;
+}
+
+/* "July", "Jul 2026", "Sept", "2026-07", "07/2026" -> 7. Null when the cell
+   names no month, so the caller can fall back to a month-number column. */
+const MONTH_NAMES = ["january", "february", "march", "april", "may", "june", "july",
+                     "august", "september", "october", "november", "december"];
+function monthFromText(raw) {
+  const s = String(raw == null ? "" : raw).toLowerCase();
+  for (const w of s.match(/[a-z]+/g) || []) {
+    if (w.length < 3) continue;
+    const i = MONTH_NAMES.findIndex(name => name.startsWith(w) || (w.startsWith(name) && w.length <= name.length + 1));
+    if (i >= 0) return i + 1;
+  }
+  const iso = s.match(/\b(?:19|20)\d{2}[-/.](\d{1,2})\b/) || s.match(/\b(\d{1,2})[-/.](?:19|20)\d{2}\b/);
+  const n = iso ? Number(iso[1]) : 0;
+  return n >= 1 && n <= 12 ? n : null;
 }
 
 /* What each column means. Local and synchronous - no network. */
@@ -1741,12 +2301,18 @@ const EXPENSE_FIELDS = [
   "business license", "telephone", "employee meals", "tax", "labor"
 ];
 const CANONICAL = [...new Set([...DASHBOARD_FIELDS, ...EXPENSE_FIELDS, ...OPTIONAL_FIELDS])];
+/* One sheet holding everything, as the template does. No month number: the
+   month's name is enough, and the join it existed for has no second file. */
+const COMBINED_FIELDS = ["month", "revenue", "budget", ...EXPENSE_FIELDS.filter(f => f !== "month num")];
 
 /* Different words for the same line. Keys are already normalised. */
 const SYNONYMS = {
   "cost of goods": "cogs", "cost of goods sold": "cogs", "food cost": "cogs",
   "salaries": "labor", "salaries wages": "labor", "wages": "labor",
-  "payroll": "labor", "staff costs": "labor",
+  "payroll": "labor", "staff costs": "labor", "labour": "labor",
+  // Must be listed: without it the prefix step reads "payroll tax" as
+  // "payroll", and payroll tax lands in labor.
+  "payroll tax": "tax",
   "premises": "rent", "rent expense": "rent", "occupancy": "rent",
   "computer and hardware": "hardware", "computer hardware": "hardware",
   "equipment": "hardware",
@@ -1762,12 +2328,29 @@ const SYNONYMS = {
   "month number": "month num", "month no": "month num", "period": "month num"
 };
 
-/* normalise -> exact synonym -> exact canonical -> longest whole-word prefix.
-   The prefix step is what rescues labels carrying a parenthetical, e.g.
+/* Rows a report computes from the others: subtotals, totals, ratios. Our own
+   Excel export carries them, and so does any accounting package's Profit and
+   Loss. Counting one alongside its parts double-counts the money, so they are
+   recognised and set aside rather than matched, bucketed or sent anywhere.
+   Checked before the prefix step, which would otherwise read "Budget used"
+   as "budget". */
+const DERIVED = new Set([
+  "direct costs", "direct expenses", "operating costs", "operating expenses",
+  "variable overhead", "fixed overhead", "total costs", "total expenses",
+  "total cost of goods sold", "total income",
+  "gross profit", "gross margin", "net profit", "net income", "net margin",
+  "net operating income", "budget used", "of revenue"
+]);
+const DERIVED_MARK = "=";              // prefix on a header we set aside
+const isDerived = h => h.startsWith(DERIVED_MARK);
+
+/* normalise -> derived -> exact synonym -> exact canonical -> longest whole-word
+   prefix. The prefix step is what rescues labels carrying a parenthetical, e.g.
    "Utilities (gas, electricity, water)" -> "utilities". It requires a space
    after the match so "monthly revenue" can never collapse to "month". */
 function canonical(header) {
   const n = normalise(header);
+  if (DERIVED.has(n)) return DERIVED_MARK + n;
   if (SYNONYMS[n]) return SYNONYMS[n];
   if (CANONICAL.includes(n)) return n;
 
@@ -1796,14 +2379,24 @@ function openQuestions(headers) {
   // Which file is this? Decided from what already matched locally. When even
   // that is unclear we fall back to the union and let the model sort it out.
   const kind = classify(headers);
-  const expected = kind === "dashboard" ? DASHBOARD_FIELDS
+  const combined = isCombined(headers);
+  const expected = combined ? COMBINED_FIELDS
+                 : kind === "dashboard" ? DASHBOARD_FIELDS
                  : kind === "expenses"  ? EXPENSE_FIELDS
                  : CANONICAL;
 
   const placed = new Set(headers.filter(h => expected.includes(h)));
+  // A one-file sheet names its months by a Month column, a month number, or
+  // the blank-headed period column of a sideways sheet - any one will do.
+  // Treated as the two-file revenue sheet, it marked "month num" missing and
+  // sent every template upload to the mapping service for nothing.
+  if (combined && (headers.includes("month num") || headers.includes(""))) placed.add("month");
   return {
     unplaced: expected.filter(f => !placed.has(f)),
-    unclaimed: headers.map((h, i) => ({h, i})).filter(({h}) => !CANONICAL.includes(h))
+    // A blank header has no name to ask about (it is usually the period
+    // column of a sideways sheet), and a derived row is set aside on purpose.
+    unclaimed: headers.map((h, i) => ({h, i}))
+      .filter(({h}) => h !== "" && !isDerived(h) && !CANONICAL.includes(h))
   };
 }
 
@@ -1834,13 +2427,13 @@ async function resolveHeaders(headers) {
   // names -> positions: the model answers in header text, arrays index by number
   for (const [field, header] of Object.entries(mapping)) {
     const i = fixed.indexOf(header);
-    if (i >= 0 && !CANONICAL.includes(fixed[i])) fixed[i] = field;
+    if (i >= 0 && !CANONICAL.includes(fixed[i]) && !isDerived(fixed[i])) fixed[i] = field;
   }
 
   const leftovers = {};
   for (const [header, bucket] of Object.entries(other)) {
     const i = fixed.indexOf(header);
-    if (i >= 0 && !CANONICAL.includes(fixed[i]) && BUCKET_NAMES.includes(bucket)) {
+    if (i >= 0 && !CANONICAL.includes(fixed[i]) && !isDerived(fixed[i]) && BUCKET_NAMES.includes(bucket)) {
       leftovers[fixed[i]] = bucket;
     }
   }
@@ -1887,7 +2480,7 @@ const sumOf = (r, keys) => keys.reduce((t, k) => t + NUM(r[k]), 0);
    would reach the ledger as its raw CSV header. */
 const LINE_LABELS = {
   "cogs": "Cost of goods sold", "labor": "Labor",
-  "employee meals": "Employee meals", "tax": "Tax",
+  "employee meals": "Employee meals", "tax": "Payroll tax",
   "packaging": "Packaging", "credit card fees": "Credit card fees",
   "marketing": "Marketing", "hardware": "Hardware",
   "utilities": "Utilities", "maintenance": "Maintenance",
@@ -1912,12 +2505,20 @@ function monthsFromOne(table) {
   // A transposed sheet's period column often has a blank header, holding either
   // an Excel date serial or a label like "Sept 2026".
   const periodKey = table.headers.find(h => h === "" || h === "month") ?? "";
-  return monthsFrom(table.rows.map((r, i) => {
+  // A report's Total or Year-to-date column is a sum of the months beside it,
+  // not another month; reading it as one doubles every figure in the chart.
+  const rows = table.rows.filter(r =>
+    !/^(total|ytd|year to date)\b/.test(normalise(r[periodKey])));
+  return monthsFrom(rows.map((r, i) => {
     const raw = String(r[periodKey] ?? "").trim();
     const d = excelDate(raw);
+    // The template has a plain Month column ("July") and no month number.
+    // Without reading the name, every row became month 1, 2, 3 by position.
+    const named = d ? null : monthFromText(raw);
     return {
-      month:    d ? d.month    : (raw.toLowerCase() || ("period " + (i + 1))),
-      monthNum: d ? d.monthNum : (NUM(r["month num"]) || i + 1),
+      month:    d ? d.month    : named ? MONTH_NAMES[named - 1]
+                             : (raw.toLowerCase() || ("period " + (i + 1))),
+      monthNum: d ? d.monthNum : (NUM(r["month num"]) || named || i + 1),
       year:     d ? d.year     : (NUM(r.year) || yearInText(raw) || null),
       row: r
     };
@@ -2040,9 +2641,293 @@ function monthsFromCsv(dash, exp) {
   return {months: out.months, skipped};
 }
 
+/* ================= files out =================
+   Templates and the Excel export are built here, in the page, for the same
+   reason imports are read here: the figures never have to leave the machine.
+   An .xlsx is a zip of a few XML parts; the zip is written uncompressed
+   ("stored"), which every spreadsheet program reads and which needs no
+   compression library. */
+
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(bytes) {
+  let c = 0xFFFFFFFF;
+  for (const b of bytes) c = CRC_TABLE[(c ^ b) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+/* [{name, data: Uint8Array}] -> zip Blob, every entry stored. The layout is
+   the one unzip() above walks: local headers, central directory, end record. */
+function zipStored(files, type) {
+  const enc = new TextEncoder();
+  const parts = [], central = [];
+  let offset = 0;
+  const DOS_DATE = (0 << 9) | (1 << 5) | 1;           // 1980-01-01; no clock needed
+  for (const f of files) {
+    const name = enc.encode(f.name), data = f.data, crc = crc32(data);
+    const local = new DataView(new ArrayBuffer(30));
+    local.setUint32(0, 0x04034b50, true);
+    local.setUint16(4, 20, true);                     // version needed
+    local.setUint16(6, 0x0800, true);                 // names are UTF-8
+    local.setUint16(8, 0, true);                      // method: stored
+    local.setUint16(12, DOS_DATE, true);
+    local.setUint32(14, crc, true);
+    local.setUint32(18, data.length, true);
+    local.setUint32(22, data.length, true);
+    local.setUint16(26, name.length, true);
+    parts.push(new Uint8Array(local.buffer), name, data);
+
+    const dir = new DataView(new ArrayBuffer(46));
+    dir.setUint32(0, 0x02014b50, true);
+    dir.setUint16(4, 20, true);
+    dir.setUint16(6, 20, true);
+    dir.setUint16(8, 0x0800, true);
+    dir.setUint16(10, 0, true);
+    dir.setUint16(14, DOS_DATE, true);
+    dir.setUint32(16, crc, true);
+    dir.setUint32(20, data.length, true);
+    dir.setUint32(24, data.length, true);
+    dir.setUint16(28, name.length, true);
+    dir.setUint32(42, offset, true);
+    central.push(new Uint8Array(dir.buffer), name);
+    offset += 30 + name.length + data.length;
+  }
+  const size = central.reduce((t, p) => t + p.length, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true);
+  end.setUint16(8, files.length, true);
+  end.setUint16(10, files.length, true);
+  end.setUint32(12, size, true);
+  end.setUint32(16, offset, true);
+  return new Blob([...parts, ...central, new Uint8Array(end.buffer)], {type});
+}
+
+const XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+const OOXML = "http://schemas.openxmlformats.org";
+const xmlText = s => String(s)
+  .replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]))
+  .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "");
+const colName = i => {
+  let s = "";
+  for (i++; i; i = Math.floor((i - 1) / 26)) s = String.fromCharCode(65 + (i - 1) % 26) + s;
+  return s;
+};
+
+/* Cell styles, by index into cellXfs below. */
+const ST = {plain: 0, num: 1, bold: 2, boldNum: 3, pct: 4, indent: 5};
+const XLSX_STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="${OOXML}/spreadsheetml/2006/main">
+<numFmts count="1"><numFmt numFmtId="164" formatCode="0.0%"/></numFmts>
+<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>
+<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>
+<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="6">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="3" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="3" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/>
+<xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment indent="1"/></xf>
+</cellXfs>
+<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+</styleSheet>`;
+
+/* A cell is a string, a number, or {v, s}. Empty cells are left out, as
+   Excel itself writes them. freeze is [columns, rows] kept on screen. */
+function sheetXml({rows, widths = [], freeze}) {
+  let view = "";
+  if (freeze) {
+    const [x, y] = freeze;
+    view = `<sheetViews><sheetView workbookViewId="0"><pane${x ? ` xSplit="${x}"` : ""}${y ? ` ySplit="${y}"` : ""}
+      topLeftCell="${colName(x)}${y + 1}" activePane="${x && y ? "bottomRight" : y ? "bottomLeft" : "topRight"}"
+      state="frozen"/></sheetView></sheetViews>`;
+  }
+  const cols = widths.length
+    ? `<cols>${widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join("")}</cols>`
+    : "";
+  const body = rows.map((r, ri) => `<row r="${ri + 1}">${r.map((c, ci) => {
+    const cell = c !== null && typeof c === "object" ? c : {v: c};
+    if (cell.v === "" || cell.v === null || cell.v === undefined) return "";
+    const ref = colName(ci) + (ri + 1), s = cell.s ? ` s="${cell.s}"` : "";
+    return typeof cell.v === "number" && Number.isFinite(cell.v)
+      ? `<c r="${ref}"${s}><v>${cell.v}</v></c>`
+      : `<c r="${ref}"${s} t="inlineStr"><is><t xml:space="preserve">${xmlText(cell.v)}</t></is></c>`;
+  }).join("")}</row>`).join("");
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="${OOXML}/spreadsheetml/2006/main">${view}${cols}<sheetData>${body}</sheetData></worksheet>`;
+}
+
+/* [{name, rows, widths, freeze}] -> .xlsx Blob. The first sheet is the one
+   this page reads back on import, so it always holds the figures. */
+function xlsxBlob(sheets) {
+  const enc = new TextEncoder();
+  const head = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n`;
+  const ws = sheets.map((_, i) => i + 1);
+  const files = [
+    ["[Content_Types].xml", head +
+      `<Types xmlns="${OOXML}/package/2006/content-types">` +
+      `<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>` +
+      `<Default Extension="xml" ContentType="application/xml"/>` +
+      `<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>` +
+      `<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>` +
+      ws.map(n => `<Override PartName="/xl/worksheets/sheet${n}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("") +
+      `</Types>`],
+    ["_rels/.rels", head +
+      `<Relationships xmlns="${OOXML}/package/2006/relationships">` +
+      `<Relationship Id="rId1" Type="${OOXML}/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>` +
+      `</Relationships>`],
+    ["xl/workbook.xml", head +
+      `<workbook xmlns="${OOXML}/spreadsheetml/2006/main" xmlns:r="${OOXML}/officeDocument/2006/relationships"><sheets>` +
+      sheets.map((s, i) => `<sheet name="${xmlText(s.name.slice(0, 31))}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join("") +
+      `</sheets></workbook>`],
+    ["xl/_rels/workbook.xml.rels", head +
+      `<Relationships xmlns="${OOXML}/package/2006/relationships">` +
+      ws.map(n => `<Relationship Id="rId${n}" Type="${OOXML}/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${n}.xml"/>`).join("") +
+      `<Relationship Id="rId${sheets.length + 1}" Type="${OOXML}/officeDocument/2006/relationships/styles" Target="styles.xml"/>` +
+      `</Relationships>`],
+    ["xl/styles.xml", XLSX_STYLES],
+    ...sheets.map((s, i) => [`xl/worksheets/sheet${i + 1}.xml`, sheetXml(s)])
+  ];
+  return zipStored(files.map(([name, text]) => ({name, data: enc.encode(text)})), XLSX_TYPE);
+}
+
+function download(blob, name) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+}
+const slug = s => unesc(s).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+/* ---- the template ----
+   One sheet, one row per month, every column the importer needs and nothing
+   it doesn't. The headers are the plain names an owner would write; each one
+   is checked against canonical() so it lands on the right field. Filled with
+   the demo months so the layout explains itself. */
+const TEMPLATE = [
+  ["Month", null], ["Year", null], ["Revenue", "revenue"], ["Budget", "budget"],
+  ["Cost of goods sold", "cogs"], ["Labor", "labor"], ["Employee meals", "employee meals"],
+  ["Payroll tax", "tax"], ["Packaging", "packaging"], ["Credit card fees", "credit card fees"],
+  ["Marketing", "marketing"], ["Hardware", "hardware"], ["Utilities", "utilities"],
+  ["Maintenance", "maintenance"], ["Rent", "rent"], ["Insurance", "insurance"],
+  ["Business license", "business license"], ["Telephone", "telephone"]
+];
+
+function templateRows() {
+  const months = (published || FALLBACK).months;
+  return [
+    TEMPLATE.map(([h]) => h),
+    ...months.map(m => TEMPLATE.map(([h, k]) =>
+      h === "Month" ? cap(unesc(m.month))
+      : h === "Year" ? yearOf(m)
+      : k === "revenue" || k === "budget" ? m[k]
+      : lineVal(m, k)))
+  ];
+}
+
+const csvCell = v => { const s = String(v); return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+const toCsv = rows => rows.map(r => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
+
+function downloadTemplate(kind) {
+  const rows = templateRows();
+  if (kind === "csv") {
+    return download(new Blob([toCsv(rows)], {type: "text/csv"}), "findash-template.csv");
+  }
+  const [headers, ...body] = rows;
+  download(xlsxBlob([
+    {name: "Your figures", freeze: [0, 1],
+     widths: [12, 8, ...headers.slice(2).map(h => Math.max(11, h.length + 2))],
+     rows: [headers.map(h => ({v: h, s: ST.bold})),
+            ...body.map(r => r.map((v, i) => i < 2 ? v : {v, s: ST.num}))]},
+    {name: "How to fill this in", widths: [100], rows: [
+      [{v: "How to fill in the FinDash template", s: ST.bold}],
+      ["One row per month. Replace the sample rows with your own; add as many months as you have."],
+      ["Month: the month's name, e.g. July. Year: e.g. 2026."],
+      ["Revenue: everything that came in from sales that month."],
+      ["Budget: the most you planned to spend that month in total (a spending limit, not a sales target). Leave blank if you don't set one."],
+      ["Cost columns: copy each month's totals from your Profit and Loss in QuickBooks or Xero, or from your own records. Leave a cost at 0 if you don't have it."],
+      ["A cost with no column of its own? Add it to the closest one. The help page explains what each cost group covers."],
+      ["When you're done, save the file and drop it on the FinDash dashboard. It is read on your computer and never uploaded."]
+    ]}
+  ]), "findash-template.xlsx");
+}
+
+/* ---- Excel export ----
+   The full report, every line and every month side by side, with a Total
+   column for a run of months. Sheet one keeps the page's own row names, so
+   dropping the export back on the page reads it like any other file: the
+   subtotal and ratio rows are recognised as derived and set aside. */
+function exportWorkbook() {
+  const ms = data.months;
+  const many = ms.length > 1;
+  const sumOfAll = vals => many ? [vals.reduce((a, b) => a + b, 0)] : [];
+  const line = (label, get, s = ST.num, ls = ST.plain) => {
+    const vals = ms.map(get);
+    return [{v: label, s: ls}, ...[...vals, ...sumOfAll(vals)].map(v => ({v, s}))];
+  };
+  // A ratio's Total is worked out from the totals, never summed or averaged.
+  const ratio = (label, f) =>
+    [{v: label}, ...ms.map(m => ({v: f([m]), s: ST.pct})), ...(many ? [{v: f(ms), s: ST.pct}] : [])];
+
+  const rows = [
+    [{v: "", s: ST.bold}, ...ms.map(m => ({v: unesc(monthLabel(m)), s: ST.bold})),
+     ...(many ? [{v: "Total", s: ST.bold}] : [])],
+    line("Revenue", m => m.revenue, ST.boldNum, ST.bold)
+  ];
+  for (const [, label, key, bucket] of BUCKET_ROWS) {
+    rows.push(line(label, m => m[key], ST.boldNum, ST.bold));
+    for (const c of BUCKETS[bucket]) rows.push(line(LINE_LABELS[c], m => lineVal(m, c), ST.num, ST.indent));
+    const other = m => round2(m[key] - BUCKETS[bucket].reduce((t, c) => t + lineVal(m, c), 0));
+    if (ms.some(other)) rows.push(line("Other " + label.toLowerCase(), other, ST.num, ST.indent));
+  }
+  rows.push(line("Total costs", m => m.totalExpenses, ST.boldNum, ST.bold));
+  rows.push(line("Net profit", m => m.netProfit, ST.boldNum, ST.bold));
+  rows.push(line("Budget", m => m.budget));
+  rows.push(ratio("Budget used", xs => {
+    const b = xs.filter(x => x.budget), limit = b.reduce((t, x) => t + x.budget, 0);
+    return limit ? b.reduce((t, x) => t + x.totalExpenses, 0) / limit : "";
+  }));
+  rows.push(ratio("Net margin", xs => {
+    const r = xs.reduce((t, x) => t + x.revenue, 0);
+    return r ? xs.reduce((t, x) => t + x.netProfit, 0) / r : "";
+  }));
+
+  const today = new Date().toLocaleDateString("en-US", {day: "numeric", month: "long", year: "numeric"});
+  download(xlsxBlob([
+    {name: "Report", rows, freeze: [1, 1], widths: [26, ...ms.map(() => 15), ...(many ? [15] : [])]},
+    {name: "About", widths: [16, 70], rows: [
+      [{v: "FinDash monthly report", s: ST.bold}],
+      ["Months", unesc(rangeName(ms))],
+      ["Amounts in", currency],
+      ["Exported", today],
+      ["Source", inUserMode() ? sourcePhrase() : "FinDash demo data"],
+      ["Notes", "Each cost group's lines add up to its total. In the Total column, Budget used and Net margin are worked out from the totals."]
+    ]}
+  ]), `findash-report-${slug(rangeName(ms))}.xlsx`);
+}
+
 /* ---- wiring ---- */
-let published = null;                 // whatever data.json gave us, kept for Reset
+let published = null;                 // whatever data.json gave us: the demo
 const held = {dashboard: null, expenses: null, combined: null};  // files picked so far
+
+/* The owner's own figures come from two places: a spreadsheet (userBase, the
+   months it held) and invoices or receipts read from photos (userInvoices),
+   which add on top. They are kept apart so an invoice can be removed again,
+   and so a new spreadsheet replaces the file's months without losing them. */
+let userBase = null;                  // months from the owner's file; null on the demo
+let userInvoices = [];                // [{id, kind, supplier, number, date, year, monthNum, total, lines}]
+let userFrom = null;                  // the file(s) behind userBase
+const inUserMode = () => userBase !== null || userInvoices.length > 0;
 
 const els = {};
 /* Progress, not just outcome. Each stage names the file so a two-file upload
@@ -2053,13 +2938,13 @@ function busy(main, detail) {
   els.status.className = "";
   document.getElementById("loader").classList.add("busy");
   const pick = document.getElementById("pick");
-  if (pick) { pick.disabled = true; pick.textContent = "Working\u2026"; }
+  if (pick) { pick.disabled = true; pick.textContent = "Working…"; }
 }
 
 function done() {
   document.getElementById("loader").classList.remove("busy");
   const pick = document.getElementById("pick");
-  if (pick) { pick.disabled = false; pick.textContent = "Choose CSV / Excel files"; }
+  if (pick) { pick.disabled = false; pick.textContent = inUserMode() ? "Add a file or photo" : "Choose file"; }
 }
 
 function say(main, detail, bad) {
@@ -2069,22 +2954,201 @@ function say(main, detail, bad) {
   els.status.className = bad ? "bad" : "";
 }
 
+/* ---- months from a file plus invoices from photos ---- */
+const LINE_KEYS = Object.values(BUCKETS).flat();
+
+function emptyMonth(year, monthNum) {
+  const lines = {};
+  for (const c of LINE_KEYS) lines[c] = 0;
+  return {month: MONTH_NAMES[monthNum - 1], monthNum, year, revenue: 0, budget: 0, lines,
+          otherDirect: 0, otherOperating: 0, otherVariable: 0, otherFixed: 0};
+}
+
+/* The bucket totals, from the line items - the same arithmetic monthsFrom
+   does for a file, run again once invoices have added to the lines. */
+function withTotals(m) {
+  const sum = b => BUCKETS[b].reduce((t, c) => t + (Number(m.lines[c]) || 0), 0);
+  m.directExpenses    = round2(sum("direct")    + (m.otherDirect || 0));
+  m.operatingExpenses = round2(sum("operating") + (m.otherOperating || 0));
+  m.variableOverhead  = round2(sum("variable")  + (m.otherVariable || 0));
+  m.fixedOverhead     = round2(sum("fixed")     + (m.otherFixed || 0));
+  m.totalExpenses = round2(m.directExpenses + m.operatingExpenses + m.variableOverhead + m.fixedOverhead);
+  m.grossProfit   = round2(m.revenue - m.directExpenses);
+  m.netProfit     = round2(m.revenue - m.totalExpenses);
+  m.budgetPercent = m.budget ? round2(m.totalExpenses / m.budget * 100) : 0;
+  // The five top-level line keys data.json carries, kept in step.
+  for (const k of ["cogs", "labor", "utilities", "maintenance", "hardware"]) m[k] = m.lines[k];
+  return m;
+}
+
+/* Every invoice lands in the month of its date, line by line in the cost line
+   the owner confirmed; a receipt for money taken in adds to revenue. A month
+   that only invoices mention is created with no revenue or budget yet. */
+function combine(base, invoices) {
+  const months = base.map(m => Object.assign({}, m, {lines: Object.assign({}, m.lines), invoiceCount: 0}));
+  const find = (y, n) => months.find(x => x.year === y && x.monthNum === n);
+  for (const inv of invoices) {
+    let m = find(inv.year, inv.monthNum);
+    if (!m) { m = Object.assign(emptyMonth(inv.year, inv.monthNum), {invoiceCount: 0}); months.push(m); }
+    if (inv.kind === "sale") m.revenue = round2(m.revenue + inv.total);
+    else for (const l of inv.lines) m.lines[l.category] = round2((m.lines[l.category] || 0) + l.amount);
+    m.invoiceCount++;
+  }
+  months.forEach(withTotals);
+  return months.sort((a, b) => a.year - b.year || a.monthNum - b.monthNum);
+}
+
+/* ---- remembered data ----
+   The computed months and the confirmed invoices - not the file, not the
+   photos - kept in this browser's own storage so a returning owner does not
+   have to add them again on every visit. They never leave the device, and
+   "Forget my data" removes them along with any saved advice. */
+const DATA_KEY = "findash-data";
+const NUM_FIELDS = [
+  "monthNum", "revenue", "cogs", "labor", "utilities", "maintenance", "hardware",
+  "directExpenses", "operatingExpenses", "variableOverhead", "fixedOverhead",
+  "otherDirect", "otherOperating", "otherVariable", "otherFixed",
+  "totalExpenses", "grossProfit", "netProfit", "budget", "budgetPercent"
+];
+
+function saveData() {
+  try {
+    localStorage.setItem(DATA_KEY, JSON.stringify({
+      v: 2, saved: new Date().toISOString(), from: userFrom,
+      months: userBase || [], invoices: userInvoices
+    }));
+    return true;
+  } catch { return false; /* storage blocked or full; the caller says so */ }
+}
+
+const str = (v, cap) => typeof v === "string" ? v.slice(0, cap) : "";
+
+/* An invoice as this page wrote it, or nothing. Text fields stay raw here and
+   are escaped wherever they are drawn: they came from a model reading a photo. */
+function cleanInvoice(x) {
+  if (!x || typeof x !== "object" || !Array.isArray(x.lines)) return null;
+  if (!Number.isInteger(x.year) || !Number.isInteger(x.monthNum) || x.monthNum < 1 || x.monthNum > 12) return null;
+  const lines = x.lines
+    .filter(l => l && LINE_KEYS.includes(l.category) && Number.isFinite(l.amount))
+    .map(l => ({description: str(l.description, 160), category: l.category, amount: round2(l.amount)}));
+  const kind = x.kind === "sale" ? "sale" : "purchase";
+  const total = Number.isFinite(x.total) ? round2(x.total) : round2(lines.reduce((t, l) => t + l.amount, 0));
+  return {id: str(x.id, 40) || String(Math.random()), kind, supplier: str(x.supplier, 120),
+          number: str(x.number, 60), date: /^\d{4}-\d{2}-\d{2}$/.test(x.date) ? x.date : null,
+          year: x.year, monthNum: x.monthNum, total, lines, addedAt: str(x.addedAt, 40)};
+}
+
+/* Rebuilt field by field: the storage is this page's own, but anything that
+   is not the shape this page wrote is dropped rather than drawn. */
+function loadData() {
+  let o;
+  try { o = JSON.parse(localStorage.getItem(DATA_KEY)); }
+  catch { return null; /* nothing saved, or storage blocked */ }
+  if (!o || !Array.isArray(o.months)) return null;
+  const months = [];
+  for (const x of o.months) {
+    if (!x || typeof x.month !== "string") return null;
+    const m = {month: esc(unesc(x.month).slice(0, 60)),
+               year: Number.isInteger(x.year) ? x.year : new Date().getUTCFullYear(), lines: {}};
+    for (const k of NUM_FIELDS) m[k] = Number.isFinite(x[k]) ? x[k] : 0;
+    for (const c of LINE_KEYS) {
+      m.lines[c] = x.lines && Number.isFinite(x.lines[c]) ? x.lines[c] : 0;
+    }
+    months.push(m);
+  }
+  const invoices = (Array.isArray(o.invoices) ? o.invoices : []).map(cleanInvoice).filter(Boolean);
+  if (!months.length && !invoices.length) return null;
+  return {months: o.months.length ? months : null, invoices,
+          from: typeof o.from === "string" ? o.from.slice(0, 200) : null};
+}
+
+function forgetData() {
+  try { localStorage.removeItem(DATA_KEY); localStorage.removeItem(BRIEF_KEY); }
+  catch { /* storage blocked; nothing was saved to remove */ }
+  briefCache = null;
+}
+
+/* What the figures on screen came from, in one phrase. */
+function sourcePhrase() {
+  const n = userInvoices.length;
+  const inv = n ? `${n} invoice${n > 1 ? "s" : ""} from photos` : "";
+  return [userFrom, inv].filter(Boolean).join(" + ") || "your figures";
+}
+
+function showUser(detail) {
+  sourceNote = "Worked out in your browser from " + sourcePhrase() + ".";
+  render({generated: null, months: combine(userBase || [], userInvoices)});
+  document.getElementById("loader").classList.add("compact");
+  els.forget.hidden = false;
+  renderInvoiceList();
+  say("Your figures", detail, false);
+}
+
+function showDemo() {
+  userBase = null;
+  userInvoices = [];
+  userFrom = null;
+  held.dashboard = held.expenses = held.combined = null;
+  sourceNote = published ? DEMO_NOTE : "";
+  render(published || FALLBACK);
+  document.getElementById("loader").classList.remove("compact");
+  els.forget.hidden = true;
+  renderInvoiceList();
+  done();
+}
+
+const savedNote = ok => ok
+  ? "Saved in this browser, so it will be here next time."
+  : "This browser would not let us save it (a private window?), so you will need to add it again next visit.";
+
+/* Amounts written with a symbol say which currency they are in. Only an
+   unambiguous answer is used: a file with both $ and EUR in it says nothing,
+   and "$" alone does not override a reader who picked another dollar. */
+const SYMBOL_CODES = [["€", "EUR"], ["£", "GBP"], ["₹", "INR"], ["¥", "JPY"],
+                      ["CHF", "CHF"], ["$", "USD"]];
+const DOLLARS = ["USD", "CAD", "AUD", "NZD", "SGD", "MXN"];
+function symbolsIn(grid, seen) {
+  for (const r of grid) for (const c of r) {
+    const s = String(c);
+    if (!/\d/.test(s)) continue;
+    for (const [sym, code] of SYMBOL_CODES) if (s.includes(sym)) seen.add(code);
+  }
+}
+function adoptCurrency(code) {
+  if (!code || code === currency || (code === "USD" && DOLLARS.includes(currency))) return "";
+  if (!CURRENCIES.some(([c]) => c === code)) return "";
+  currency = code;
+  savePrefs();
+  els.currency.value = code;
+  return " Amounts are shown in " + code + ".";
+}
+
+const isPhoto = f => /^image\//.test(f.type) || /\.(jpe?g|png|webp|gif|heic|heif)$/i.test(f.name);
+
 async function handleFiles(list) {
   const files = [...list];
   if (!files.length) return;
+  const photos = files.filter(isPhoto);
+  const sheets = files.filter(f => !isPhoto(f));
+  if (sheets.length) await handleSheets(sheets);
+  if (photos.length) queuePhotos(photos);
+}
 
+async function handleSheets(files) {
   const readable = f => /\.(csv|xlsx)$/i.test(f.name);
   const rejected = files.filter(f => !readable(f));
   const usable   = files.filter(readable);
 
   if (!usable.length) {
     const xls = rejected.some(f => /\.xls$/i.test(f.name));
+    const pdf = rejected.some(f => /\.pdf$/i.test(f.name));
     return say("Not read", rejected.map(f => f.name).join(", ") +
-      (xls ? " — .xls is the older Excel format; re-save it as .xlsx or CSV."
-           : " — CSV and .xlsx are the formats read right now."), true);
+      (xls ? ": .xls is the older Excel format. Open it in Excel and save it as .xlsx or CSV."
+       : pdf ? ": PDFs can't be read yet. Take a screenshot of the invoice and add that instead."
+       : ": FinDash reads Excel (.xlsx), CSV and photos of invoices. The template shows the spreadsheet layout."), true);
   }
 
-  const unknown = [], unreadable = [];
+  const unknown = [], unreadable = [], symbols = new Set(), kinds = new Set();
   for (const [n, f] of usable.entries()) {
     const of = usable.length > 1 ? ` (${n + 1} of ${usable.length})` : "";
     let parsed;
@@ -2097,13 +3161,14 @@ async function handleFiles(list) {
       const grid = orient(/\.xlsx$/i.test(f.name)
         ? await readXlsx(await f.arrayBuffer())
         : parseCsvGrid(await f.text()));
+      symbolsIn(grid, symbols);
 
       // headers first, so anything unresolved can be corrected BEFORE the row
       // objects are keyed off them - once built, the keys are baked in
       let headers = headerRow(grid), leftovers = {};
       try {
         // Only this step can wait on the network, so only it gets its own label.
-        if (needsMapping(headers)) busy("Matching columns", "asking about " + f.name + of);
+        if (needsMapping(headers)) busy("Matching columns", "checking the column names in " + f.name + of);
         ({headers, leftovers} = await resolveHeaders(headers));
       } catch (mapErr) {
         // the local pass still stands; only the unresolved columns are lost
@@ -2118,16 +3183,22 @@ async function handleFiles(list) {
     // A sheet carrying revenue AND costs stands alone; the two-file shapes
     // still have to be paired up as before.
     const kind = isCombined(parsed.headers) ? "combined" : classify(parsed.headers);
-    if (kind) held[kind] = Object.assign(parsed, {fileName: f.name});
+    if (kind) { held[kind] = Object.assign(parsed, {fileName: f.name}); kinds.add(kind); }
     else unknown.push(f.name);
   }
+
+  // The newest files win. A one-file sheet held from an earlier drop used to
+  // take precedence over a fresh pair of files, so the pair was ignored.
+  if (kinds.has("combined")) held.dashboard = held.expenses = null;
+  else if (kinds.size) held.combined = null;
 
   if (unreadable.length) {
     return say("Could not open", unreadable.join(", "), true);
   }
   if (unknown.length) {
-    return say("Unrecognized columns", unknown.join(", ") +
-      " — need a revenue column (dashboard) or a cogs column (expenses).", true);
+    return say("Columns not recognised", unknown.join(", ") +
+      ": the file needs a Revenue column and cost columns such as Rent or Cost of goods sold. " +
+      "Download the template above to see the layout.", true);
   }
   // One sheet with revenue and costs together needs no partner file.
   let months, skipped = [], from;
@@ -2135,51 +3206,454 @@ async function handleFiles(list) {
     ({months} = monthsFromOne(held.combined));
     from = held.combined.fileName;
   } else {
-    if (!held.dashboard) return say("Need one more file", "Got the expenses file. Still need the one with month, revenue and budget — or a single sheet containing both.", true);
-    if (!held.expenses)  return say("Need one more file", "Got the dashboard file. Still need the one with the expense columns — or a single sheet containing both.", true);
+    if (!held.dashboard) return say("Need one more file", "Got the expenses file. Also add the one with month, " +
+      "revenue and budget, or use the template, which holds everything in one file.", true);
+    if (!held.expenses)  return say("Need one more file", "Got the revenue file. Also add the one with the cost " +
+      "columns, or use the template, which holds everything in one file.", true);
     ({months, skipped} = monthsFromCsv(held.dashboard, held.expenses));
     from = held.dashboard.fileName + " + " + held.expenses.fileName;
   }
 
   if (!months.length) {
-    return say("Nothing to show", "No month in this data could be read.", true);
+    return say("Nothing to show", "No month in this file could be read. The template shows the layout.", true);
   }
 
-  const note = skipped.length ? " · skipped " + skipped.join(", ") + " (no expenses row)" : "";
-  sourceNote = "Calculated in your browser from " + from + ". Nothing was uploaded.";
-  render({generated: null, months});
-  say("Your figures", months.length + " month" + (months.length > 1 ? "s" : "") +
-      " from " + from + note, false);
-  els.reset.hidden = !published;
+  // A month with no year is shown in the current year. Pin that now, or the
+  // same saved file would read as next year's figures after New Year, and an
+  // invoice could not find its month.
+  for (const m of months) if (!m.year) m.year = new Date().getUTCFullYear();
+
+  const curNote = symbols.size === 1 ? adoptCurrency([...symbols][0]) : "";
+  const note = skipped.length ? ". Skipped " + skipped.join(", ") + " (no costs row)" : "";
+  const n = userInvoices.length;
+  const invNote = n
+    ? ` Your ${n} invoice${n > 1 ? "s" : ""} from photos ${n > 1 ? "are" : "is"} still added on top; ` +
+      "remove any this file already counts."
+    : "";
+  userBase = months;
+  userFrom = from;
+  const saved = saveData();
+  showUser(months.length + " month" + (months.length > 1 ? "s" : "") + " from " + from + note + ". " +
+    savedNote(saved) + curNote + invNote);
+}
+
+/* ================= photos of invoices and receipts =================
+   A spreadsheet is read here, in the page. A photo cannot be: it goes to
+   /api/read-document, where Claude reads it. The photo is shrunk first (the
+   model reads up to 2576 px on the long edge, and the hosting limit is 4.5 MB
+   a request), the reading comes back with its own arithmetic checked, and
+   nothing is added until the owner has looked at it and pressed Add. */
+
+const photoQueue = [];
+let reviewing = false;
+
+function queuePhotos(files) {
+  photoQueue.push(...files);
+  if (!reviewing) nextPhoto();
+}
+
+async function nextPhoto() {
+  const file = photoQueue.shift();
+  if (!file) { reviewing = false; return; }
+  reviewing = true;
+  try {
+    const caps = await loadCapabilities();
+    if (!caps.photos) {
+      photoQueue.length = 0;
+      reviewing = false;
+      return say("Photos can't be read here",
+        "Reading a photo needs this site's AI service, which isn't set up. Use the template instead.", true);
+    }
+    const left = photoQueue.length ? ` (${photoQueue.length} more waiting)` : "";
+    busy("Reading your photo", file.name + left + ". This can take up to a minute.");
+    const photo = await photoForUpload(file);
+
+    let result = await readDocument(photo);
+    // A reading that fails its own arithmetic gets one more, closer look with
+    // the failures spelled out. Whichever reading checks out better is shown.
+    if (result.document.legible && result.document.kind !== "other" && !result.checks.ok) {
+      busy("Double-checking", "Some figures on " + file.name + " didn't add up; reading it again.");
+      try {
+        const second = await readDocument(photo, {previous: result.document, problems: result.checks.problems});
+        if (badness(second.checks) <= badness(result.checks)) result = second;
+      } catch (err) {
+        console.warn("second reading failed:", err.message);   // the first reading still stands
+      }
+    }
+    say("Check your photo", "Read from " + file.name + ". Look over the lines below, then add them or not.", false);
+    showReview(file, photo.preview, result);
+  } catch (err) {
+    say("Photo not read", file.name + ": " + err.message, true);
+    reviewing = false;
+    if (photoQueue.length) nextPhoto();
+  }
+}
+
+const badness = c => c.problems.length * 1000 + Math.abs(c.difference || 0);
+
+/* Decode, turn upright, shrink, re-encode as JPEG. createImageBitmap reads the
+   file straight from disk, which the page's content security policy allows
+   where an <img> pointed at a blob: URL would not. */
+async function photoForUpload(file) {
+  let bmp;
+  try { bmp = await createImageBitmap(file, {imageOrientation: "from-image"}); }
+  catch {
+    throw new Error("this browser can't open that kind of photo. Save it as a JPEG, or take a screenshot " +
+                    "of it, and add that instead.");
+  }
+  const draw = (scale, quality) => {
+    const w = Math.max(1, Math.round(bmp.width * scale)), h = Math.max(1, Math.round(bmp.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#fff";                       // transparent PNGs would turn black as JPEG
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(bmp, 0, 0, w, h);
+    return new Promise(r => canvas.toBlob(b => r({blob: b, canvas}), "image/jpeg", quality));
+  };
+  let scale = Math.min(1, 2576 / Math.max(bmp.width, bmp.height));
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const {blob} = await draw(scale, 0.88);
+    if (blob && blob.size <= 3_000_000) {
+      const {canvas} = await draw(Math.min(1, 320 / Math.max(bmp.width, bmp.height)), 0.7);
+      return {data: await toBase64(blob), mediaType: "image/jpeg", preview: canvas.toDataURL("image/jpeg", 0.7)};
+    }
+    scale *= 0.75;
+  }
+  throw new Error("this photo is too large to send. Try a smaller one.");
+}
+
+function toBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).split(",")[1]);
+    r.onerror = () => reject(new Error("the photo could not be read from disk"));
+    r.readAsDataURL(blob);
+  });
+}
+
+async function readDocument(photo, review) {
+  let res;
+  try {
+    res = await fetch("/api/read-document", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({image: photo.data, mediaType: photo.mediaType, review})
+    });
+  } catch { throw new Error("the photo could not be sent. Check your connection and try again."); }
+  let body = null;
+  try { body = await res.json(); } catch { /* an HTML error page; the status says enough */ }
+  if (!res.ok || !body || !body.document) {
+    if (res.status === 404) throw new Error("reading photos isn't available on this copy of FinDash.");
+    if (res.status === 413) throw new Error("this photo is too large to send. Try a smaller one.");
+    throw new Error((body && body.error) || "the reading service returned " + res.status);
+  }
+  return body;
+}
+
+const money2 = n => cur(n, NO_CENTS.includes(currency) ? 0 : 2);
+const longDate = iso => new Date(iso + "T00:00:00Z")
+  .toLocaleDateString("en-US", {day: "numeric", month: "long", year: "numeric", timeZone: "UTC"});
+
+/* Every cost line, grouped as the report groups them, for the category picker. */
+function categoryOptions(selected) {
+  const groups = [["Direct costs", "direct"], ["Operating costs", "operating"],
+                  ["Variable overhead", "variable"], ["Fixed overhead", "fixed"]];
+  return groups.map(([label, b]) => `<optgroup label="${label}">${BUCKETS[b].map(c =>
+    `<option value="${c}"${c === selected ? " selected" : ""}>${LINE_LABELS[c]}</option>`).join("")}</optgroup>`).join("");
+}
+
+/* Months the reading could go to: the document's own, every month already on
+   file, and this month - newest first. */
+function monthChoices(doc) {
+  const seen = new Map();
+  const add = (y, n) => { const k = y * 100 + n; if (!seen.has(k)) seen.set(k, {year: y, monthNum: n}); };
+  if (doc.date) add(Number(doc.date.slice(0, 4)), Number(doc.date.slice(5, 7)));
+  if (inUserMode()) for (const m of data.months) add(m.year, m.monthNum);
+  const now = new Date();
+  add(now.getUTCFullYear(), now.getUTCMonth() + 1);
+  return [...seen.values()].sort((a, b) => (b.year * 100 + b.monthNum) - (a.year * 100 + a.monthNum));
+}
+
+let review = null;   // {doc, checks, file}
+
+function showReview(file, preview, {document: doc, checks}) {
+  review = {doc, checks, file};
+  const box = document.getElementById("review");
+  const name = esc(doc.supplier || file.name);
+
+  if (!doc.legible || doc.kind === "other" || !doc.lines.length) {
+    box.innerHTML = `<div class="review-top">
+        <img class="review-thumb" src="${preview}" alt="">
+        <div><p class="review-kicker">Read from ${esc(file.name)}</p>
+          <h3>${doc.legible ? "This doesn't look like an invoice or receipt" : "This photo couldn't be read"}</h3>
+          <p class="review-meta">FinDash can add supplier invoices, bills and receipts. For monthly totals, use the template.</p>
+          ${doc.notes.length ? `<ul class="review-notes">${doc.notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}
+        </div></div>
+      <div class="review-actions"><button type="button" class="btn" id="review-cancel">OK</button></div>`;
+    box.hidden = false;
+    box.scrollIntoView({block: "nearest"});
+    return;
+  }
+
+  const sale = doc.kind === "sale";
+  const total = checks.total !== null ? checks.total : checks.lineSum;
+  const meta = [doc.document_number ? (sale ? "Receipt " : "Invoice ") + esc(doc.document_number) : "",
+                doc.date ? longDate(doc.date) : "No date found: choose the month below",
+                doc.customer ? "billed to " + esc(doc.customer) : ""].filter(Boolean).join(" &middot; ");
+
+  let verdict;
+  if (checks.ok && checks.totalReadable) {
+    verdict = `<p class="review-check ok">✓ The ${doc.lines.length} lines add up to the printed total of ${money2(total)}.</p>`;
+  } else if (!checks.totalReadable) {
+    verdict = `<p class="review-check warn">The total couldn't be read, so the lines could not be checked against it.
+               They add up to ${money2(checks.lineSum)}. Check them against your paper copy.</p>`;
+  } else {
+    verdict = `<p class="review-check bad">⚠ The lines add up to ${money2(checks.lineSum)}, but the printed total is
+               ${money2(checks.total)}. Check the lines marked below against your paper copy before adding.</p>`;
+  }
+
+  const issueAt = new Map(checks.lineIssues.map(x => [x.index, x.expected]));
+  const rows = doc.lines.map((l, i) => {
+    const detail = [l.original ? esc(l.original) : "",
+                    l.quantity !== null ? esc(`${l.quantity}${l.unit ? " " + l.unit : ""}`) : "",
+                    l.billed_quantity !== null && l.unit_price !== null ? esc(`${l.billed_quantity} × ${l.unit_price}`) : ""]
+                   .filter(Boolean).join(" &middot; ");
+    const flags = (issueAt.has(i) ? `<span class="review-flag">Quantity × price gives ${money2(issueAt.get(i))}</span>` : "") +
+      (l.amount_source === "computed" ? `<span class="review-flag soft">Worked out from quantity × price: the printed amount wasn't readable</span>` : "");
+    return `<tr class="${issueAt.has(i) ? "flag" : ""}">
+      <th scope="row">${esc(l.description)}${detail ? `<span class="review-orig">${detail}</span>` : ""}${flags}</th>
+      <td>${sale ? "Revenue" : `<select class="select small" data-line="${i}" aria-label="Cost line for ${esc(l.description)}">${categoryOptions(l.category)}</select>`}</td>
+      <td class="amt">${money2(l.amount)}</td>
+    </tr>`;
+  }).join("");
+
+  // The document's own month by default; the newest month when it had no date.
+  const choices = monthChoices(doc);
+  const pick = doc.date ? `${Number(doc.date.slice(0, 4))}-${Number(doc.date.slice(5, 7))}` : `${choices[0].year}-${choices[0].monthNum}`;
+  const monthOpts = choices.map(c => `<option value="${c.year}-${c.monthNum}"${`${c.year}-${c.monthNum}` === pick ? " selected" : ""}>` +
+    `${cap(MONTH_NAMES[c.monthNum - 1])} ${c.year}</option>`).join("");
+
+  box.innerHTML = `<div class="review-top">
+      <img class="review-thumb" src="${preview}" alt="">
+      <div>
+        <p class="review-kicker">Read from your photo. Check it before adding.</p>
+        <h3>${name}</h3>
+        <p class="review-meta">${meta}</p>
+        ${verdict}
+      </div>
+    </div>
+    <div class="table-wrap"><table class="review-lines">
+      <thead><tr><th scope="col">Line</th><th scope="col">${sale ? "Adds to" : "Cost line"}</th><th scope="col">Amount</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr><th scope="row">Lines total</th><td></td><td class="amt">${money2(checks.lineSum)}</td></tr></tfoot>
+    </table></div>
+    <p class="review-sum" id="review-sum"></p>
+    ${doc.notes.length ? `<ul class="review-notes">${doc.notes.map(n => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}
+    <div class="review-actions">
+      <label class="check">Add to <select class="select" id="review-month">${monthOpts}</select></label>
+      <span class="review-dup" id="review-dup"></span>
+      <button type="button" class="btn" id="review-cancel">Don't add</button>
+      <button type="button" class="btn primary" id="review-add"></button>
+    </div>
+    <p class="review-foot">Only add ${sale ? "receipts" : "invoices"} that your monthly file doesn't already count.
+      The photo itself isn't kept.${photoQueue.length ? ` ${photoQueue.length} more photo${photoQueue.length > 1 ? "s" : ""} waiting.` : ""}</p>`;
+  box.hidden = false;
+  updateReview();
+  box.scrollIntoView({block: "nearest"});
+}
+
+/* The summary, the duplicate warning and the button label all follow the
+   owner's choices, so they are recomputed whenever a select changes. */
+function updateReview() {
+  if (!review) return;
+  const {doc, checks} = review;
+  const box = document.getElementById("review");
+  const sale = doc.kind === "sale";
+  const [y, n] = box.querySelector("#review-month").value.split("-").map(Number);
+  const monthName = `${cap(MONTH_NAMES[n - 1])} ${y}`;
+  const amount = sale ? (checks.total !== null ? checks.total : checks.lineSum) : checks.lineSum;
+
+  if (!sale) {
+    const by = {};
+    box.querySelectorAll("select[data-line]").forEach(s => {
+      const l = doc.lines[Number(s.dataset.line)];
+      by[s.value] = round2((by[s.value] || 0) + l.amount);
+    });
+    box.querySelector("#review-sum").innerHTML = "Adds " + Object.entries(by)
+      .filter(([, v]) => v)
+      .map(([k, v]) => `<b>${LINE_LABELS[k]}</b> ${money2(v)}`).join(", ") + ` to ${monthName}.`;
+  } else {
+    box.querySelector("#review-sum").innerHTML = `Adds <b>${money2(amount)}</b> to revenue for ${monthName}.`;
+  }
+
+  // The same document twice would count its money twice.
+  const dup = userInvoices.find(i =>
+    (doc.document_number && i.number === doc.document_number && i.supplier === (doc.supplier || "")) ||
+    (i.date && i.date === doc.date && Math.abs(i.total - amount) < 0.005));
+  box.querySelector("#review-dup").textContent = dup
+    ? `Already added: ${dup.supplier || "an invoice"} for ${money2(dup.total)}${dup.date ? " dated " + longDate(dup.date) : ""}. Adding it again counts it twice.`
+    : "";
+  box.querySelector("#review-add").textContent = (dup ? "Add again: " : "Add ") + `${money2(amount)} to ${monthName}`;
+}
+
+function closeReview() {
+  if (review) {
+    say(inUserMode() ? "Your figures" : "Demo data", "Nothing was added from " + review.file.name + ".", false);
+  }
+  review = null;
+  const box = document.getElementById("review");
+  box.hidden = true;
+  box.innerHTML = "";
+  if (photoQueue.length) nextPhoto();
+  else reviewing = false;
+}
+
+function addReviewed() {
+  const {doc, checks} = review;
+  const box = document.getElementById("review");
+  const [year, monthNum] = box.querySelector("#review-month").value.split("-").map(Number);
+  const sale = doc.kind === "sale";
+  const lines = doc.lines.map((l, i) => {
+    const s = box.querySelector(`select[data-line="${i}"]`);
+    return {description: l.description, amount: l.amount, category: s ? s.value : "cogs"};
+  });
+  const inv = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+    kind: sale ? "sale" : "purchase",
+    supplier: doc.supplier || review.file.name, number: doc.document_number || "",
+    date: doc.date, year, monthNum,
+    total: sale ? (checks.total !== null ? checks.total : checks.lineSum) : checks.lineSum,
+    lines: sale ? [] : lines, addedAt: new Date().toISOString()
+  };
+  // On the demo, userBase is null: an invoice starts the owner's own figures
+  // rather than landing on top of the sample months.
+  userInvoices.push(inv);
+  const curNote = !userBase && userInvoices.length === 1 ? adoptCurrency(doc.currency) : "";
+  const ok = saveData();
+  closeReviewSilently();
+  const monthName = `${cap(MONTH_NAMES[monthNum - 1])} ${year}`;
+  const m = combine(userBase || [], userInvoices).find(x => x.year === year && x.monthNum === monthNum);
+  const noRevenue = !sale && m && !m.revenue
+    ? ` ${monthName} has no revenue on file yet: add your sales with the template to see your profit.` : "";
+  showUser(`Added ${inv.supplier}, ${money2(inv.total)}, to ${monthName}. ${savedNote(ok)}${noRevenue}${curNote}`);
+  // Land on the month the invoice went into.
+  const idx = data.months.findIndex(x => x.year === year && x.monthNum === monthNum);
+  if (idx >= 0) select(idx);
+  if (photoQueue.length) nextPhoto();
+  else reviewing = false;
+}
+
+function closeReviewSilently() {
+  review = null;
+  const box = document.getElementById("review");
+  box.hidden = true;
+  box.innerHTML = "";
+}
+
+function wireReview() {
+  const box = document.getElementById("review");
+  box.addEventListener("change", e => { if (e.target.matches("select")) updateReview(); });
+  box.addEventListener("click", e => {
+    if (e.target.closest("#review-cancel")) closeReview();
+    else if (e.target.closest("#review-add")) addReviewed();
+  });
+}
+
+/* The invoices behind the figures, each removable. */
+function renderInvoiceList() {
+  const el = document.getElementById("inv-list");
+  const n = userInvoices.length;
+  el.hidden = !n;
+  if (!n) { el.innerHTML = ""; return; }
+  const wasOpen = el.open;
+  el.innerHTML = `<summary>${n} invoice${n > 1 ? "s" : ""} and receipt${n > 1 ? "s" : ""} added from photos</summary>
+    <ul>${userInvoices.map(i => `<li>
+      <span><b>${esc(i.supplier || "Invoice")}</b>${i.number ? " #" + esc(i.number) : ""}
+        &middot; ${money2(i.total)} ${i.kind === "sale" ? "revenue" : "costs"}
+        &middot; ${cap(MONTH_NAMES[i.monthNum - 1])} ${i.year}</span>
+      <button type="button" class="btn small" data-remove="${esc(i.id)}">Remove</button></li>`).join("")}</ul>`;
+  el.open = wasOpen;
+}
+
+function wireInvoiceList() {
+  document.getElementById("inv-list").addEventListener("click", e => {
+    const b = e.target.closest("[data-remove]");
+    if (!b) return;
+    const inv = userInvoices.find(i => i.id === b.dataset.remove);
+    userInvoices = userInvoices.filter(i => i.id !== b.dataset.remove);
+    if (!inUserMode()) {
+      forgetData();
+      showDemo();
+      return say("Demo data", "Removed the last invoice. Showing the demo again.", false);
+    }
+    const ok = saveData();
+    showUser(`Removed ${inv ? inv.supplier : "the invoice"}. ${savedNote(ok)}`);
+    document.getElementById("inv-list").open = true;
+  });
 }
 
 function wireLoader() {
   els.source = document.getElementById("source");
   els.status = document.getElementById("status");
-  els.reset  = document.getElementById("reset");
-  const loader   = document.getElementById("loader");
+  els.forget = document.getElementById("forget");
+  els.currency = document.getElementById("currency");
   const dropzone = document.getElementById("dropzone");
   const input    = document.getElementById("file");
 
   // #sheet is never replaced, only refilled, so one listener covers every redraw
   document.getElementById("sheet").addEventListener("click", e => {
-    const hit = e.target.closest("[data-month]");
-    if (hit) select(Number(hit.dataset.month));
+    const hit = e.target.closest("[data-idx]");
+    if (hit) select(Number(hit.dataset.idx));
   });
 
-  // Period pills: re-render the current month under the new scope.
+  // Period control: re-render the current month under the new scope.
   const periodsEl = document.getElementById("periods");
   periodsEl.innerHTML = PERIODS.map(([k, label]) =>
-    `<li><button type="button" data-period="${k}"
-       aria-current="${k === period}">${label}</button></li>`).join("");
+    `<button type="button" data-period="${k}" aria-pressed="${k === period}">${label}</button>`).join("");
   periodsEl.addEventListener("click", e => {
     const b = e.target.closest("[data-period]");
     if (!b) return;
     period = b.dataset.period;
     periodsEl.querySelectorAll("button").forEach(x =>
-      x.setAttribute("aria-current", x.dataset.period === period));
+      x.setAttribute("aria-pressed", x.dataset.period === period));
+    if (active) select(data.months.indexOf(active));
+  });
+
+  if (!CURRENCIES.some(([c]) => c === currency)) currency = "USD";
+  // Code and symbol only: the full names made the select wide enough to push
+  // the toolbar onto a second line. The name is still there as a tooltip.
+  const symbolOf = c => {
+    const was = currency;
+    currency = c;
+    const part = fmt(0).formatToParts(0).find(x => x.type === "currency");
+    currency = was;
+    return part ? part.value : c;
+  };
+  els.currency.innerHTML = CURRENCIES.map(([c, name]) => {
+    const sym = symbolOf(c);
+    return `<option value="${c}" title="${name}">${c}${sym !== c ? ` (${sym})` : ""}</option>`;
+  }).join("");
+  els.currency.value = currency;
+  els.currency.addEventListener("change", () => {
+    currency = els.currency.value;
+    savePrefs();
+    if (active) draw(active);
+    renderInvoiceList();
+    updateReview();
+  });
+  const exactBox = document.getElementById("exact");
+  exactBox.checked = exact;
+  exactBox.addEventListener("change", () => {
+    exact = exactBox.checked;
+    savePrefs();
     if (active) draw(active);
   });
+
+  document.getElementById("print").addEventListener("click", () => window.print());
+  document.getElementById("export").addEventListener("click", exportWorkbook);
+  document.getElementById("tpl-xlsx").addEventListener("click", () => downloadTemplate("xlsx"));
+  document.getElementById("tpl-csv").addEventListener("click", () => downloadTemplate("csv"));
 
   document.getElementById("pick").addEventListener("click", () => input.click());
   dropzone.addEventListener("click", () => input.click());
@@ -2188,12 +3662,13 @@ function wireLoader() {
   });
   input.addEventListener("change", e => { handleFiles(e.target.files); input.value = ""; });
 
-  els.reset.addEventListener("click", () => {
-    held.dashboard = held.expenses = held.combined = null;
-    sourceNote = PUBLISHED_NOTE;
-    render(published);
-    say("Demo data", "Showing the published demo figures.", false);
-    els.reset.hidden = true;
+  els.forget.addEventListener("click", () => {
+    forgetData();
+    closeReviewSilently();
+    photoQueue.length = 0;
+    reviewing = false;
+    showDemo();
+    say("Demo data", "Your figures were removed from this browser. Showing the demo again.", false);
   });
 
   // Drop anywhere on the page. preventDefault on dragover is what stops the
@@ -2206,30 +3681,50 @@ function wireLoader() {
     e.preventDefault(); depth = 0; dropzone.classList.remove("over");
     handleFiles(e.dataTransfer.files);
   });
+
+  wireReview();
+  wireInvoiceList();
+
+  // Mention photos only where this deployment can read them.
+  loadCapabilities().then(c => {
+    document.querySelectorAll(".photo-only").forEach(el => { el.hidden = !c.photos; });
+  });
 }
 
 /* Single entry point for the data. Anything that can produce the same shape
-   as data.json can call render() - that is where a future upload would hand
-   its parsed result in. */
+   as data.json can call render(). A model forecast belongs to the months it
+   was made from, so new data drops it. */
 function render(json) {
   data = json;
+  forecastData = null;
   build();
 }
 
 wireLoader();
+wireHelp();
+
+// Saved figures first: a returning owner should land on their own numbers,
+// not watch the demo flash up and get replaced.
+const remembered = loadData();
+if (remembered) {
+  userBase = remembered.months;
+  userInvoices = remembered.invoices;
+  userFrom = remembered.from;
+  showUser(`Saved in this browser: ${sourcePhrase()}.`);
+}
 
 fetch("data.json")
   .then(r => r.ok ? r.json() : Promise.reject(r.status))
-  .then(json => { published = json; render(json); })
+  .then(json => { published = json; if (!inUserMode()) showDemo(); })
   .catch(() => {
-    sourceNote = "";
-    render(FALLBACK);
+    if (inUserMode()) return;
+    showDemo();
     const f = document.getElementById("footer");
-    f.innerHTML = 'Showing sample figures. <code>data.json</code> could not be loaded — ' +
-      'serve this folder over http (<code>python3 -m http.server</code>) ' +
+    f.innerHTML = 'Showing sample figures. <code>data.json</code> could not be loaded. ' +
+      'Serve this folder over http (<code>python3 -m http.server</code>) ' +
       'or place data.json alongside this file.';
     f.classList.add("notice");
-    say("Demo data", "Couldn't load your financial data \u2014 import a CSV or Excel file above.", true);
+    say("Demo data", "Couldn't load the demo figures, so built-in samples are showing. Add your own file above.", true);
   });
 </script>
 </body>

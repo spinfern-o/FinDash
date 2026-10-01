@@ -143,7 +143,9 @@
   }
   .est-pair .lab{font-size:12px;color:var(--ink-3);margin:0 0 5px}
   .est-pair .num{font-size:20px;font-weight:700;letter-spacing:-0.02em;margin:0;color:var(--ink)}
-  .est-pair .chg{font-size:11px;margin:3px 0 0;color:var(--ink-3)}
+  .est-pair .chg{font-size:11px;margin:4px 0 0;color:var(--ink-3)}
+  .est-pair .chg .ok{color:var(--accent);font-weight:600}
+  .est-pair .chg .miss{color:var(--critical);font-weight:600}
   .est-note{font-size:13px;color:var(--ink-2);margin:0 0 14px}
   .est-note em{font-style:normal}
   .est table{margin-top:0}
@@ -797,12 +799,23 @@ function estimator(m) {
         : `<em>Your last budget of ${money0(current)} covers a typical month with ${money0(current - typical)} to spare.</em>`)
     : "<em>No budget on file to compare against.</em>";
 
+  // Each candidate is only meaningful against what actually happened: a budget
+  // is "right" if it would have held. Counting the breaches turns two abstract
+  // figures into a choice a reader can make.
+  const covers = v => ms.filter(x => x.totalExpenses <= v).length;
+  const coverLine = (v) => {
+    const n = covers(v), miss = ms.length - n;
+    return miss === 0
+      ? `<span class="ok">would have covered all ${ms.length}</span>`
+      : `<span class="miss">would have been blown in ${miss} of ${ms.length}</span>`;
+  };
+
   return `<div class="est">
     <div class="est-pair">
       <div><p class="lab">Typical month</p><p class="num">${money0(typical)}</p>
-           <p class="chg"><span>mean of ${ms.length} months</span></p></div>
+           <p class="chg">mean of ${ms.length} &middot; ${coverLine(typical)}</p></div>
       <div><p class="lab">Cover a bad month</p><p class="num">${money0(bad)}</p>
-           <p class="chg"><span>highest of ${ms.length}</span></p></div>
+           <p class="chg">highest of ${ms.length} &middot; ${coverLine(bad)}</p></div>
     </div>
     <p class="est-note">${vsCurrent}</p>
     <table>

@@ -257,6 +257,38 @@
     font-size:12px;font-weight:600;color:var(--ink);
   }
 
+  /* ---- revenue vs expenses, grouped bars ---- */
+  .pair-scroll{--pairw:104px;overflow-x:auto;overflow-y:hidden;padding-top:26px}
+  .pairs{display:flex;gap:16px;height:150px;align-items:flex-end;min-width:max-content}
+  .pair{
+    flex:1 0 var(--pairw);min-width:0;height:100%;position:relative;
+    display:flex;align-items:flex-end;justify-content:center;gap:6px;
+  }
+  .pair .bar2{
+    width:34px;border:none;padding:0;cursor:pointer;border-radius:4px 4px 0 0;
+    transition:filter .12s;
+  }
+  .pair .bar2:hover{filter:brightness(1.1)}
+  .pair .bar2:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .bar-rev{background:var(--s1)}
+  .bar-exp{background:var(--s2)}
+  .pair .net{
+    position:absolute;top:-22px;left:0;right:0;text-align:center;
+    font-size:12px;font-weight:600;color:var(--accent);white-space:nowrap;
+  }
+  .pair .net.loss{color:var(--critical)}
+  .pair-labels{display:flex;gap:16px;margin-top:8px;min-width:max-content}
+  .pair-labels div{
+    flex:1 0 var(--pairw);min-width:0;text-align:center;font-size:12px;
+    color:var(--ink-3);text-transform:capitalize;white-space:nowrap;cursor:pointer;
+  }
+  .pair-labels div.on{color:var(--ink);font-weight:600}
+  .pair-vals{display:flex;gap:16px;margin-top:2px;min-width:max-content}
+  .pair-vals div{
+    flex:1 0 var(--pairw);min-width:0;text-align:center;font-size:11px;
+    color:var(--ink-3);white-space:nowrap;font-variant-numeric:tabular-nums;
+  }
+
   /* ---- ledger table ---- */
   table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
   caption{text-align:left;font-size:13px;color:var(--ink-3);padding-bottom:14px}
@@ -446,6 +478,46 @@ function otherRow(amount, revenue) {
   return amount ? row("Other (uncategorised)", amount, revenue, "indent-row") : "";
 }
 
+/* Revenue beside total expenses, month by month. Two bars on one scale - the
+   gap between them IS the profit, which is what a reader is looking for. Each
+   month's net is labelled above its pair and the dollar figures sit under the
+   month name, so the numbers are readable without hovering. */
+function pairChart(months, activeNum) {
+  const H = 150;
+  const top = Math.max(1, ...months.map(m => Math.max(m.revenue, m.totalExpenses)));
+
+  const bars = months.map(m => {
+    const loss = m.netProfit < 0;
+    const rh = (m.revenue / top) * H;
+    const eh = (m.totalExpenses / top) * H;
+    return `<div class="pair">
+      <div class="net${loss ? " loss" : ""}">${money0(m.netProfit)}</div>
+      <button type="button" class="bar2 bar-rev" style="height:${rh}px"
+              data-month="${m.monthNum}"
+              aria-label="${m.month} revenue ${money0(m.revenue)}"></button>
+      <button type="button" class="bar2 bar-exp" style="height:${eh}px"
+              data-month="${m.monthNum}"
+              aria-label="${m.month} total expenses ${money0(m.totalExpenses)}"></button>
+    </div>`;
+  }).join("");
+
+  const names = months.map(m =>
+    `<div class="${m.monthNum === activeNum ? "on" : ""}" data-month="${m.monthNum}">${m.month}</div>`).join("");
+  const vals = months.map(m =>
+    `<div>${money0(m.revenue)} &middot; ${money0(m.totalExpenses)}</div>`).join("");
+
+  return `<div class="pair-scroll">
+            <div class="pairs">${bars}</div>
+            <div class="pair-labels">${names}</div>
+            <div class="pair-vals">${vals}</div>
+          </div>
+          <ul class="key">
+            <li><i class="bar-rev"></i><b>Revenue</b></li>
+            <li><i class="bar-exp"></i><b>Total expenses</b></li>
+            <li><b>Figure above each pair:</b> net profit</li>
+          </ul>`;
+}
+
 function row(label, amount, revenue, cls = "") {
   return `<tr class="${cls}">
     <th scope="row">${label}</th>
@@ -501,6 +573,12 @@ function draw(m) {
         <h2>Net profit by month</h2>
         <p class="sub">Every month on file &middot; ${cap(m.month)} highlighted</p>
         ${trend(data.months, m.monthNum)}
+      </section>
+
+      <section class="card wide">
+        <h2>Revenue vs expenses</h2>
+        <p class="sub">Every month on file &middot; the gap between the bars is that month's profit</p>
+        ${pairChart(data.months, m.monthNum)}
       </section>
 
       <section class="card wide">

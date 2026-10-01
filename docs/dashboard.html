@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Monthly Report</title>
+<title>FinDash &middot; Financial Overview</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap" rel="stylesheet">
@@ -452,7 +452,7 @@
 <main>
   <div class="masthead">
     <div class="masthead-left">
-      <p class="wordmark">Monthly Output</p>
+      <p class="wordmark">Financial Overview</p>
       <a class="home-link" href="index.html">&larr; Home</a>
     </div>
     <span class="stamp" id="stamp"></span>
@@ -460,13 +460,13 @@
 
   <div class="loader" id="loader">
     <div class="loader-text">
-      <strong id="source">Published figures</strong>
-      <span id="status">Read from data.json &middot; CSV or .xlsx accepted</span>
+      <strong id="source">Demo data</strong>
+      <span id="status">Import a CSV or Excel file to build your financial overview. Processed locally in your browser &mdash; nothing is uploaded.</span>
     </div>
     <div class="loader-actions">
       <input type="file" id="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple hidden>
-      <button type="button" class="btn primary" id="pick">Choose files</button>
-      <button type="button" class="btn" id="reset" hidden>Use published figures</button>
+      <button type="button" class="btn primary" id="pick">Choose CSV / Excel files</button>
+      <button type="button" class="btn" id="reset" hidden>Use demo data</button>
     </div>
   </div>
 
@@ -507,7 +507,7 @@ const fmtPct = n => (n < 0 ? "\u2212" : "") + Math.abs(n).toFixed(1) + "%";
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 
 let data, active;
-const PUBLISHED_NOTE = "Figures come from data.json, written by the Java dashboard on each run.";
+  const PUBLISHED_NOTE = "Showing demo data. Import your own CSV or Excel file above to see your numbers.";
 let sourceNote = PUBLISHED_NOTE;
 
 /* ---------- the allocation bar ---------- */
@@ -1689,7 +1689,7 @@ function busy(main, detail) {
 function done() {
   document.getElementById("loader").classList.remove("busy");
   const pick = document.getElementById("pick");
-  if (pick) { pick.disabled = false; pick.textContent = "Choose files"; }
+  if (pick) { pick.disabled = false; pick.textContent = "Choose CSV / Excel files"; }
 }
 
 function say(main, detail, bad) {
@@ -1817,7 +1817,7 @@ function wireLoader() {
     held.dashboard = held.expenses = held.combined = null;
     sourceNote = PUBLISHED_NOTE;
     render(published);
-    say("Published figures", "Read from data.json", false);
+    say("Demo data", "Showing the published demo figures.", false);
     els.reset.hidden = true;
   });
 
@@ -1854,7 +1854,7 @@ fetch("data.json")
       'serve this folder over http (<code>python3 -m http.server</code>) ' +
       'or place data.json alongside this file.';
     f.classList.add("notice");
-    say("Sample figures", "data.json could not be read \u2014 load your CSVs above", true);
+    say("Demo data", "Couldn't load your financial data \u2014 import a CSV or Excel file above.", true);
   });
 </script>
 </body>

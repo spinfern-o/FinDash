@@ -4,6 +4,7 @@
     {
       "month": "july",
       "monthNum": 7,
+      "year": 2026,
       "revenue": 72000.00,
 
       "maintenance": 950.00,
@@ -29,6 +30,7 @@
     {
       "month": "august",
       "monthNum": 8,
+      "year": 2026,
       "revenue": 64000.00,
 
       "maintenance": 4200.00,
@@ -54,6 +56,7 @@
     {
       "month": "september",
       "monthNum": 9,
+      "year": 2026,
       "revenue": 33000.00,
 
       "maintenance": 310.00,

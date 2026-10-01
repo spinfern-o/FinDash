@@ -241,6 +241,24 @@
   .fan .key i.fan-sw-band{background:var(--s2);opacity:.3}
   .fan .brief-note{margin-top:10px}
 
+  /* ---- shared y-axis scale ----
+     Every bar/line chart needs a reference value for its top and bottom, or a
+     reader has no way to judge "is that bar big" without hovering each one.
+     Absolutely positioned against the chart's own plot area so the ticks line
+     up with the pixel math (y()/top/bot) already computed for the bars. */
+  .fan{padding-left:48px;position:relative}
+  .fan .axis-y{left:-48px}
+  .trend-scroll{padding-left:48px}
+  .trend .axis-y{left:-48px}
+  .pair-scroll{padding-left:48px}
+  .pairs .axis-y{left:-48px}
+  .axis-y{position:absolute;top:0;bottom:0;width:42px;pointer-events:none}
+  .axis-y span{
+    position:absolute;left:0;right:0;transform:translateY(-50%);
+    text-align:right;font-size:11px;color:var(--ink-3);
+    white-space:nowrap;font-variant-numeric:tabular-nums;
+  }
+
   /* ---- budget estimator ---- */
   .est-pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
   .est-pair > div{
@@ -586,15 +604,15 @@
 const FALLBACK = {
   generated: "sample data",
   months: [
-    {month:"july",monthNum:7,revenue:72000,cogs:26000,labor:12000,utilities:2800,
+    {month:"july",monthNum:7,year:2026,revenue:72000,cogs:26000,labor:12000,utilities:2800,
      maintenance:950,hardware:0,directExpenses:45500,operatingExpenses:7750,
      variableOverhead:3750,fixedOverhead:7420,totalExpenses:64420,
      grossProfit:26500,netProfit:7580,budget:66000,budgetPercent:97.61},
-    {month:"august",monthNum:8,revenue:64000,cogs:21000,labor:9000,utilities:3100,
+    {month:"august",monthNum:8,year:2026,revenue:64000,cogs:21000,labor:9000,utilities:3100,
      maintenance:4200,hardware:0,directExpenses:37500,operatingExpenses:6160,
      variableOverhead:7300,fixedOverhead:7620,totalExpenses:58580,
      grossProfit:26500,netProfit:5420,budget:57000,budgetPercent:102.77},
-    {month:"september",monthNum:9,revenue:33000,cogs:11000,labor:3500,utilities:1900,
+    {month:"september",monthNum:9,year:2026,revenue:33000,cogs:11000,labor:3500,utilities:1900,
      maintenance:310,hardware:2400,directExpenses:20200,operatingExpenses:5560,
      variableOverhead:2210,fixedOverhead:8670,totalExpenses:36640,
      grossProfit:12800,netProfit:-3640,budget:34000,budgetPercent:107.76}
@@ -610,6 +628,13 @@ const fmtPct = n => (n < 0 ? "\u2212" : "") + Math.abs(n).toFixed(1) + "%";
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 
 let data, active;
+
+/* A bare month name is ambiguous once data spans more than one year. Every
+   month on file should carry its own year; this only falls back to the
+   generated date (or today) for older data that predates that field. */
+const yearOf = m => m.year || (data && data.generated ? new Date(data.generated).getUTCFullYear() : new Date().getUTCFullYear());
+const monthLabel = m => `${cap(m.month)} ${yearOf(m)}`;
+const monthShort = m => `${m.month.slice(0, 3)} '${String(yearOf(m)).slice(2)}`;
   const PUBLISHED_NOTE = "Showing demo data. Import your own CSV or Excel file above to see your numbers.";
 let sourceNote = PUBLISHED_NOTE;
 
@@ -690,10 +715,18 @@ function trend(months, activeNum) {
 
   const labels = months.map(m =>
     `<div class="${m.monthNum === activeNum ? "on" : ""}" data-month="${m.monthNum}"
-     >${m.month}</div>`).join("");
+     >${monthShort(m)}</div>`).join("");
 
   return `<div class="trend-scroll">
-            <div class="trend">${cols}<div class="zero" style="top:${zero}px"></div></div>
+            <div class="trend">
+              ${cols}
+              <div class="zero" style="top:${zero}px"></div>
+              <div class="axis-y">
+                <span style="top:0">${money0(top)}</span>
+                ${bot < 0 ? `<span style="top:${zero}px">$0</span>` : ""}
+                <span style="top:${H}px">${money0(bot)}</span>
+              </div>
+            </div>
             <div class="trend-labels">${labels}</div>
           </div>`;
 }
@@ -728,12 +761,18 @@ function pairChart(months, activeNum) {
   }).join("");
 
   const names = months.map(m =>
-    `<div class="${m.monthNum === activeNum ? "on" : ""}" data-month="${m.monthNum}">${m.month}</div>`).join("");
+    `<div class="${m.monthNum === activeNum ? "on" : ""}" data-month="${m.monthNum}">${monthShort(m)}</div>`).join("");
   const vals = months.map(m =>
     `<div>${money0(m.revenue)} &middot; ${money0(m.totalExpenses)}</div>`).join("");
 
   return `<div class="pair-scroll">
-            <div class="pairs">${bars}</div>
+            <div class="pairs">
+              ${bars}
+              <div class="axis-y">
+                <span style="top:0">${money0(top)}</span>
+                <span style="top:${H}px">$0</span>
+              </div>
+            </div>
             <div class="pair-labels">${names}</div>
             <div class="pair-vals">${vals}</div>
           </div>
@@ -766,17 +805,27 @@ function deltaVsPrev(m) {
 }
 
 /* ---- period scoping ----
-   "This month" is the selected month; "quarter" is it plus the two before;
-   "year to date" is everything up to and including it. Scopes the pulse strip
-   and the priorities list - the charts always show every month on file. */
+   "This month" is the selected month. "This quarter" is the real calendar
+   quarter (Jan-Mar, Apr-Jun, Jul-Sep, Oct-Dec) that month falls in, not just
+   "the two rows before it" - a selected month that starts a quarter should
+   not pull in the tail of the previous one. "Year to date" is every month on
+   file in that same calendar year, through the selected month. Scopes the
+   pulse strip and the priorities list - the charts always show every month
+   on file. */
 let period = "month";
 const PERIODS = [["month","This month"],["quarter","This quarter"],["ytd","Year to date"]];
+const quarterOf = n => Math.ceil(n / 3);
 
 function periodSlice(m, which) {
   const i = data.months.findIndex(x => x.monthNum === m.monthNum);
   if (i < 0) return [m];
-  if (which === "quarter") return data.months.slice(Math.max(0, i - 2), i + 1);
-  if (which === "ytd")     return data.months.slice(0, i + 1);
+  if (which === "quarter") {
+    return data.months.filter(x =>
+      yearOf(x) === yearOf(m) && quarterOf(x.monthNum) === quarterOf(m.monthNum));
+  }
+  if (which === "ytd") {
+    return data.months.filter(x => yearOf(x) === yearOf(m) && x.monthNum <= m.monthNum);
+  }
   return [data.months[i]];
 }
 
@@ -1033,8 +1082,17 @@ function fanChart(months) {
                 `${at(months.length - 1)},${y(net[net.length - 1])}`].join(" ");
 
   const zero = y(0);
-  const labels = [...months.map(m => m.month.slice(0, 3)),
-                  ...f.predicted.map((_, i) => "+" + (i + 1))];
+  // Real future calendar months, not "+1/+2/+3" - a reader should be able to
+  // tell at a glance that the projection covers Oct/Nov/Dec, not an abstract offset.
+  const last = months[months.length - 1];
+  const futureLabel = i => {
+    const n = last.monthNum + i, wrapped = ((n - 1) % 12) + 1;
+    const y2 = yearOf(last) + Math.floor((n - 1) / 12);
+    const name = new Date(Date.UTC(2000, wrapped - 1, 1)).toLocaleString("en-US", {month: "short"});
+    return `${name} '${String(y2).slice(2)}`;
+  };
+  const labels = [...months.map(m => monthShort(m)),
+                  ...f.predicted.map((_, i) => futureLabel(i + 1))];
 
   return `<div class="fan">
     <svg viewBox="0 0 100 ${H}" preserveAspectRatio="none" role="img"
@@ -1044,6 +1102,11 @@ function fanChart(months) {
       <polyline points="${histPts}" class="fan-hist"/>
       <polyline points="${midPts}" class="fan-mid"/>
     </svg>
+    <div class="axis-y">
+      <span style="top:0">${money0(top)}</span>
+      ${bot < 0 ? `<span style="top:${zero}px">$0</span>` : ""}
+      <span style="top:${H}px">${money0(bot)}</span>
+    </div>
     <div class="fan-labels">${labels.map((l, i) =>
       `<span class="${i >= months.length ? "fut" : ""}">${l}</span>`).join("")}</div>
     <ul class="key">
@@ -1108,7 +1171,7 @@ function draw(m) {
       </section>
 
       <section class="card wide hero"><div class="badge">◉</div>
-        <p class="eyebrow">${cap(m.month)} &middot; net result</p>
+        <p class="eyebrow">${monthLabel(m)} &middot; net result</p>
         <p class="figure${loss ? " loss" : ""}">${money(net)}${deltaVsPrev(m)}</p>
         <p class="note">
           ${rev ? fmtPct(pct(net, rev)) + " of " + money(rev) + " in revenue."
@@ -1130,24 +1193,26 @@ function draw(m) {
         <div class="badge">▤</div>
         <h2>Against budget</h2>
         <p class="sub">Total costs measured against the month's budget</p>
-        <div class="gaugeline">
-          <span>Budget <strong>${money(m.budget)}</strong></span>
-          <span><strong class="${used > 100 ? "neg" : ""}">${fmtPct(used)} used</strong></span>
-        </div>
-        <div class="gauge">
-          <div class="gauge-fill${used > 100 ? " over" : ""}" style="width:${Math.min(used, 100)}%"></div>
-          ${used > 100 ? '<div class="gauge-mark" style="left:100%"></div>' : ""}
-        </div>
-        <div class="gauge-foot">
-          <span>${money(m.totalExpenses)} spent</span>
-          <span>${over > 0 ? money(over) + " over" : money(-over) + " left"}</span>
-        </div>
+        ${m.budget
+          ? `<div class="gaugeline">
+               <span>Budget <strong>${money(m.budget)}</strong></span>
+               <span><strong class="${used > 100 ? "neg" : ""}">${fmtPct(used)} used</strong></span>
+             </div>
+             <div class="gauge">
+               <div class="gauge-fill${used > 100 ? " over" : ""}" style="width:${Math.min(used, 150) / 150 * 100}%"></div>
+               <div class="gauge-mark" style="left:${100 / 150 * 100}%"></div>
+             </div>
+             <div class="gauge-foot">
+               <span>${money(m.totalExpenses)} spent</span>
+               <span>${over > 0 ? money(over) + " over" : money(-over) + " left"}</span>
+             </div>`
+          : `<p class="none">No budget provided for ${cap(m.month)} &mdash; nothing to compare spending against.</p>`}
       </section>
 
       <section class="card">
         <div class="badge">▲</div>
         <h2>Net profit by month</h2>
-        <p class="sub">Every month on file &middot; ${cap(m.month)} highlighted</p>
+        <p class="sub">Every month on file &middot; ${monthLabel(m)} highlighted</p>
         ${trend(data.months, m.monthNum)}
       </section>
 
@@ -1330,7 +1395,7 @@ function wireTooltip() {
 function build() {
   const list = document.getElementById("months");
   list.innerHTML = data.months.map(m =>
-    `<li><button type="button" data-num="${m.monthNum}">${m.month}</button></li>`).join("");
+    `<li><button type="button" data-num="${m.monthNum}">${monthLabel(m)}</button></li>`).join("");
 
   list.addEventListener("click", e => {
     const btn = e.target.closest("button");

@@ -1,6 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "outputDirectory": "docs",
+  "cleanUrls": true,
+  "trailingSlash": false,
   "functions": {
     "api/map-columns.js": {
       "maxDuration": 15
@@ -12,12 +14,6 @@
       "maxDuration": 60
     }
   },
-  "rewrites": [
-    {
-      "source": "/dashboard",
-      "destination": "/dashboard.html"
-    }
-  ],
   "headers": [
     {
       "source": "/(.*)",

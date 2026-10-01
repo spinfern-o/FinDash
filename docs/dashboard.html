@@ -86,15 +86,32 @@
 
   /* ---- csv loader ---- */
   .loader{
-    display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
-    gap:10px 16px;background:var(--card);border:1px solid var(--line);
-    border-radius:14px;padding:12px 14px 12px 18px;margin-bottom:16px;
-    transition:border-color .12s,box-shadow .12s;
+    background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:18px;margin-bottom:16px;
+    display:flex;flex-direction:column;gap:14px;
   }
-  .loader.over{border-color:var(--accent);box-shadow:0 0 0 3px var(--line-soft)}
-  .loader-text{min-width:0;font-size:13px;color:var(--ink-3)}
-  .loader-text strong{display:block;font-size:14px;font-weight:600;color:var(--ink)}
-  .loader-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .loader-head{min-width:0;font-size:13px;color:var(--ink-3)}
+  .loader-head strong{display:block;font-size:14px;font-weight:600;color:var(--ink)}
+  .loader-text .bad{color:var(--critical)}
+
+  .dropzone{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    text-align:center;padding:30px 20px;border:1.5px dashed var(--line);border-radius:12px;
+    cursor:pointer;background:var(--card-2);
+    transition:border-color .12s,background .12s,box-shadow .12s;
+  }
+  .dropzone:hover,.dropzone:focus-visible{border-color:var(--ink-3)}
+  .dropzone:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .dropzone.over{border-color:var(--accent);background:var(--card);box-shadow:0 0 0 3px var(--line-soft)}
+  .dropzone-icon{
+    display:flex;align-items:center;justify-content:center;width:38px;height:38px;
+    margin-bottom:6px;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--accent);
+  }
+  .dropzone.over .dropzone-icon{border-color:var(--accent)}
+  .dropzone-title{margin:0;font-size:14px;font-weight:600;color:var(--ink)}
+  .dropzone-sub{margin:0;font-size:12px;color:var(--ink-3)}
+
+  .loader-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
   .btn{
     font:inherit;font-size:13px;font-weight:500;
     border:1px solid var(--line);background:var(--card);color:var(--ink);
@@ -105,7 +122,6 @@
   .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
   .btn.primary:hover{filter:brightness(1.08)}
   .btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
-  .loader-text .bad{color:var(--critical)}
 
   /* ---- busy state ----
      A file that parses instantly and one that waits on a network round trip
@@ -459,14 +475,21 @@
   </div>
 
   <div class="loader" id="loader">
-    <div class="loader-text">
+    <div class="loader-head">
       <strong id="source">Demo data</strong>
       <span id="status">Import a CSV or Excel file to build your financial overview. Processed locally in your browser &mdash; nothing is uploaded.</span>
     </div>
-    <div class="loader-actions">
+    <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload CSV or Excel file">
       <input type="file" id="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple hidden>
-      <button type="button" class="btn primary" id="pick">Choose CSV / Excel files</button>
+      <span class="dropzone-icon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 .5 9H6"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>
+      </span>
+      <p class="dropzone-title">Drag &amp; drop or click to browse</p>
+      <p class="dropzone-sub">CSV or XLSX &middot; processed locally, nothing uploaded</p>
+    </div>
+    <div class="loader-actions">
       <button type="button" class="btn" id="reset" hidden>Use demo data</button>
+      <button type="button" class="btn primary" id="pick">Choose CSV / Excel files</button>
     </div>
   </div>
 
@@ -1787,8 +1810,9 @@ function wireLoader() {
   els.source = document.getElementById("source");
   els.status = document.getElementById("status");
   els.reset  = document.getElementById("reset");
-  const loader = document.getElementById("loader");
-  const input  = document.getElementById("file");
+  const loader   = document.getElementById("loader");
+  const dropzone = document.getElementById("dropzone");
+  const input    = document.getElementById("file");
 
   // #sheet is never replaced, only refilled, so one listener covers every redraw
   document.getElementById("sheet").addEventListener("click", e => {
@@ -1811,6 +1835,10 @@ function wireLoader() {
   });
 
   document.getElementById("pick").addEventListener("click", () => input.click());
+  dropzone.addEventListener("click", () => input.click());
+  dropzone.addEventListener("keydown", e => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); input.click(); }
+  });
   input.addEventListener("change", e => { handleFiles(e.target.files); input.value = ""; });
 
   els.reset.addEventListener("click", () => {
@@ -1824,11 +1852,11 @@ function wireLoader() {
   // Drop anywhere on the page. preventDefault on dragover is what stops the
   // browser from just navigating to the dropped file.
   let depth = 0;
-  document.addEventListener("dragenter", e => { e.preventDefault(); depth++; loader.classList.add("over"); });
+  document.addEventListener("dragenter", e => { e.preventDefault(); depth++; dropzone.classList.add("over"); });
   document.addEventListener("dragover",  e => e.preventDefault());
-  document.addEventListener("dragleave", e => { e.preventDefault(); if (--depth <= 0) loader.classList.remove("over"); });
+  document.addEventListener("dragleave", e => { e.preventDefault(); if (--depth <= 0) dropzone.classList.remove("over"); });
   document.addEventListener("drop", e => {
-    e.preventDefault(); depth = 0; loader.classList.remove("over");
+    e.preventDefault(); depth = 0; dropzone.classList.remove("over");
     handleFiles(e.dataTransfer.files);
   });
 }

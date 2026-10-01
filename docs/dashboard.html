@@ -744,6 +744,26 @@ function otherRow(amount, revenue) {
   return amount ? row("Other (uncategorised)", amount, revenue, "indent-row") : "";
 }
 
+/* One bucket: its total, every line item under it that has a value, then
+   whatever the total does not account for.
+
+   The ledger used to hard-code five rows - COGS, Labor, Hardware, Utilities,
+   Maintenance - while the bucket totals summed all fourteen expense columns.
+   July itemised 41,750 of 64,420 and the four bucket totals silently disagreed
+   with the rows beneath them. Driving the rows off BUCKETS means a column can
+   never again count toward a total without appearing somewhere, and the
+   trailing Other row absorbs the difference for data.json, whose writer only
+   emits five of the line items. */
+function bucketSection(m, key, label, total, rev) {
+  const cols = BUCKETS[key];
+  const listed = cols.reduce((t, c) => t + lineVal(m, c), 0);
+  const rows = cols
+    .filter(c => lineVal(m, c))
+    .map(c => row(LINE_LABELS[c] || cap(c), lineVal(m, c), rev, "indent-row"))
+    .join("");
+  return row(label, total, rev, "group") + rows + otherRow(round2(total - listed), rev);
+}
+
 /* Revenue beside total expenses, month by month. Two bars on one scale - the
    gap between them IS the profit, which is what a reader is looking for. Each
    month's net is labelled above its pair and the dollar figures sit under the
@@ -857,12 +877,16 @@ function previousSlice(m, which) {
   return first === 0 ? [] : data.months.slice(start, first);
 }
 
-function chg(now, before, kind) {
+/* lowerIsBetter separates direction from sentiment. The arrow always follows
+   the number; the colour follows whether that is good news. Costs rising 9%
+   used to render green, because every increase was treated as an improvement. */
+function chg(now, before, kind, lowerIsBetter) {
   if (before === undefined || before === null || !isFinite(before) || before === 0) return "";
   const diff = kind === "pts" ? now - before : ((now - before) / Math.abs(before)) * 100;
   const up = diff >= 0;
+  const good = lowerIsBetter ? !up : up;
   const txt = kind === "pts" ? Math.abs(diff).toFixed(1) + " pts" : fmtPct(Math.abs(diff));
-  return `<p class="chg${up ? "" : " down"}">${up ? "\u2191" : "\u2193"} ${txt} <span>vs previous</span></p>`;
+  return `<p class="chg${good ? "" : " down"}">${up ? "\u2191" : "\u2193"} ${txt} <span>vs previous</span></p>`;
 }
 
 /* Four headline numbers for the chosen period, each against the run before it. */
@@ -878,9 +902,9 @@ function pulse(m) {
     ${stat("Revenue", money0(now.revenue), was ? chg(now.revenue, was.revenue) : "")}
     ${stat("Net margin", now.revenue ? fmtPct(now.margin) : "\u2014",
            was && was.revenue && now.revenue ? chg(now.margin, was.margin, "pts") : "")}
-    ${stat("Total costs", money0(now.total), was ? chg(now.total, was.total) : "")}
+    ${stat("Total costs", money0(now.total), was ? chg(now.total, was.total, null, true) : "")}
     ${stat("Budget used", now.budget ? fmtPct(now.budgetPct) : "\u2014",
-           was && was.budget ? chg(now.budgetPct, was.budgetPct, "pts") : "")}
+           was && was.budget ? chg(now.budgetPct, was.budgetPct, "pts", true) : "")}
   </div>`;
 }
 
@@ -1248,22 +1272,10 @@ function draw(m) {
           <tbody>
             ${row("Revenue", rev, rev, "group")}
 
-            ${row("Direct expenses", m.directExpenses, rev, "group")}
-            ${row("Cost of goods sold", m.cogs, rev, "indent-row")}
-            ${row("Labor", m.labor, rev, "indent-row")}
-            ${otherRow(m.otherDirect, rev)}
-
-            ${row("Operating expenses", m.operatingExpenses, rev, "group")}
-            ${row("Hardware", m.hardware, rev, "indent-row")}
-            ${otherRow(m.otherOperating, rev)}
-
-            ${row("Variable overhead", m.variableOverhead, rev, "group")}
-            ${row("Utilities", m.utilities, rev, "indent-row")}
-            ${row("Maintenance", m.maintenance, rev, "indent-row")}
-            ${otherRow(m.otherVariable, rev)}
-
-            ${row("Fixed overhead", m.fixedOverhead, rev, "group")}
-            ${otherRow(m.otherFixed, rev)}
+            ${bucketSection(m, "direct",    "Direct expenses",    m.directExpenses,    rev)}
+            ${bucketSection(m, "operating", "Operating expenses", m.operatingExpenses, rev)}
+            ${bucketSection(m, "variable",  "Variable overhead",  m.variableOverhead,  rev)}
+            ${bucketSection(m, "fixed",     "Fixed overhead",     m.fixedOverhead,     rev)}
 
             ${row("Total expenses", m.totalExpenses, rev, "total")}
             <tr class="total">
@@ -1299,6 +1311,18 @@ function wireBriefing(m) {
   const btn = document.getElementById("brief-go");
   const out = document.getElementById("brief");
   if (!btn || !out) return;
+
+  // Name the months that will be sent. The briefing is scoped to the selected
+  // period, and a reader who gets a one-month verdict while three are on file
+  // will reasonably read it as covering all three.
+  const note = document.getElementById("brief-note");
+  if (note) {
+    const names = periodSlice(m, period).map(x => cap(x.month));
+    note.textContent = (names.length === 1
+      ? `Sends ${names[0]} only, the period selected above.`
+      : `Sends ${names.length} months, ${names[0]} to ${names[names.length - 1]}.`)
+      + " Your figures stay here until you ask.";
+  }
 
   btn.addEventListener("click", async () => {
     const ms = periodSlice(m, period);
@@ -1448,15 +1472,23 @@ function wireTooltip() {
   });
 }
 
+let monthClickWired = false;
+
 function build() {
   const list = document.getElementById("months");
   list.innerHTML = data.months.map(m =>
     `<li><button type="button" data-num="${m.monthNum}">${monthLabel(m)}</button></li>`).join("");
 
-  list.addEventListener("click", e => {
-    const btn = e.target.closest("button");
-    if (btn) select(Number(btn.dataset.num));
-  });
+  // build() runs again on every import, and innerHTML above replaces the
+  // buttons but not the <ul> holding this listener - so re-registering stacked
+  // another handler each time and one click redrew the page N times.
+  if (!monthClickWired) {
+    list.addEventListener("click", e => {
+      const btn = e.target.closest("button");
+      if (btn) select(Number(btn.dataset.num));
+    });
+    monthClickWired = true;
+  }
 
   document.getElementById("stamp").textContent =
     data.generated ? "Generated " + data.generated : "";
@@ -1464,7 +1496,10 @@ function build() {
   foot.textContent = sourceNote;
   foot.classList.remove("notice");
 
-  select(data.months[0].monthNum);
+  // The latest month, not the oldest. A dashboard opens on the most recent
+  // period, and the briefing is scoped to whatever is selected - so opening on
+  // July meant the briefing never saw the August and September budget breaches.
+  select(data.months[data.months.length - 1].monthNum);
 }
 
 function select(num) {
@@ -1848,6 +1883,22 @@ const BUCKETS = {
 };
 const sumOf = (r, keys) => keys.reduce((t, k) => t + NUM(r[k]), 0);
 
+/* Display names for every column in BUCKETS. Without an entry here a column
+   would reach the ledger as its raw CSV header. */
+const LINE_LABELS = {
+  "cogs": "Cost of goods sold", "labor": "Labor",
+  "employee meals": "Employee meals", "tax": "Tax",
+  "packaging": "Packaging", "credit card fees": "Credit card fees",
+  "marketing": "Marketing", "hardware": "Hardware",
+  "utilities": "Utilities", "maintenance": "Maintenance",
+  "rent": "Rent", "insurance": "Insurance",
+  "business license": "Business license", "telephone": "Telephone"
+};
+
+/* An uploaded file carries all fourteen line items under .lines; data.json
+   carries five of them as top-level keys. Read whichever shape this month is. */
+const lineVal = (m, key) => NUM(m.lines ? m.lines[key] : m[key]);
+
 /* Which of the two files is this? Decided by header, not by filename. */
 const classify = h =>
   h.includes("revenue") ? "dashboard" :
@@ -1898,10 +1949,17 @@ function monthsFrom(entries, leftovers) {
     const grossProfit   = revenue - directExpenses;
     const netProfit     = grossProfit - operatingExpenses - variableOverhead - fixedOverhead;
 
+    // Every expense column, so the ledger can itemise anything that counted
+    // toward a bucket total. The five top-level keys stay for data.json parity.
+    const lines = {};
+    for (const cols of Object.values(BUCKETS)) {
+      for (const c of cols) lines[c] = NUM(row[c]);
+    }
+
     return {
       // Escaped here rather than at each of the ~15 places it is interpolated:
       // a CSV whose month cell is <img src=x onerror=...> executed in the page.
-      month: esc(String(month).toLowerCase()), monthNum, year, revenue,
+      month: esc(String(month).toLowerCase()), monthNum, year, revenue, lines,
       cogs: NUM(row.cogs), labor: NUM(row.labor), utilities: NUM(row.utilities),
       maintenance: NUM(row.maintenance), hardware: NUM(row.hardware),
       directExpenses, operatingExpenses, variableOverhead, fixedOverhead,
@@ -1939,6 +1997,21 @@ function monthsFrom(entries, leftovers) {
     }
     if (Math.abs((m.revenue - m.totalExpenses) - m.netProfit) > 0.005) {
       console.error("reconciliation failed: revenue - expenses != net profit", m.month);
+    }
+    // Each bucket against the line items under it. Comparing buckets only to
+    // the grand total stayed true the whole time the ledger was omitting nine
+    // of the fourteen line items, so it never caught that.
+    for (const [b, totalKey, otherKey] of [
+      ["direct", "directExpenses", "otherDirect"],
+      ["operating", "operatingExpenses", "otherOperating"],
+      ["variable", "variableOverhead", "otherVariable"],
+      ["fixed", "fixedOverhead", "otherFixed"]
+    ]) {
+      const listed = BUCKETS[b].reduce((t, c) => t + lineVal(m, c), 0) + m[otherKey];
+      if (Math.abs(listed - m[totalKey]) > 0.005) {
+        console.error("reconciliation failed: " + b + " does not match its line items",
+                      m.month, listed, m[totalKey]);
+      }
     }
   }
 

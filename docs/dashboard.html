@@ -135,6 +135,20 @@
   .pulse .chg span{font-weight:400;color:var(--ink-3)}
   @media (max-width:760px){ .pulse{grid-template-columns:repeat(2,1fr)} }
 
+  /* ---- budget estimator ---- */
+  .est-pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+  .est-pair > div{
+    background:var(--ground);border:1px solid var(--line);
+    border-radius:var(--radius);padding:12px 14px;
+  }
+  .est-pair .lab{font-size:12px;color:var(--ink-3);margin:0 0 5px}
+  .est-pair .num{font-size:20px;font-weight:700;letter-spacing:-0.02em;margin:0;color:var(--ink)}
+  .est-pair .chg{font-size:11px;margin:3px 0 0;color:var(--ink-3)}
+  .est-note{font-size:13px;color:var(--ink-2);margin:0 0 14px}
+  .est-note em{font-style:normal}
+  .est table{margin-top:0}
+  @media (max-width:560px){ .est-pair{grid-template-columns:1fr} }
+
   /* ---- priorities ---- */
   .prio{list-style:none;margin:0;padding:0}
   .prio li{
@@ -739,6 +753,68 @@ function priorities(m) {
     `<li><span class="tag ${tag}">${tag === "urgent" ? "Urgent" : "Watch"}</span><p>${html}</p></li>`).join("")}</ul>`;
 }
 
+/* ---- budget estimator ----
+   Built from the months on file, not a model. Two numbers rather than one,
+   because a single "suggested budget" hides the question that matters: do you
+   want to cover a typical month, or a bad one? Fixed costs barely move and are
+   safe to budget at their average; the lumpy buckets are where a month goes
+   wrong, so they are shown separately with their own worst case. */
+function estimator(m) {
+  const ms = periodSlice(m, period);
+  if (ms.length < 2) {
+    return `<p class="none">Needs at least two months to estimate from.
+            This period has ${ms.length}.</p>`;
+  }
+
+  const mean = k => ms.reduce((t, x) => t + x[k], 0) / ms.length;
+  const worst = k => Math.max(...ms.map(x => x[k]));
+
+  const typical = mean("totalExpenses");
+  const bad = worst("totalExpenses");
+  const current = ms[ms.length - 1].budget;
+
+  const rows = [
+    ["Direct",            "directExpenses"],
+    ["Operating",         "operatingExpenses"],
+    ["Variable overhead", "variableOverhead"],
+    ["Fixed overhead",    "fixedOverhead"]
+  ].map(([label, key]) => {
+    const avg = mean(key), hi = worst(key);
+    // A bucket whose worst month is close to its average is predictable; one
+    // that swings is where the risk lives. Say which is which.
+    const swing = avg ? ((hi - avg) / avg) * 100 : 0;
+    return `<tr>
+      <th scope="row">${label}</th>
+      <td class="amt">${money0(avg)}</td>
+      <td class="amt">${money0(hi)}</td>
+      <td class="share">${swing < 10 ? "steady" : "+" + fmtPct(swing)}</td>
+    </tr>`;
+  }).join("");
+
+  const vsCurrent = current
+    ? (typical > current
+        ? `<em>Your last budget of ${money0(current)} is ${money0(typical - current)} below a typical month.</em>`
+        : `<em>Your last budget of ${money0(current)} covers a typical month with ${money0(current - typical)} to spare.</em>`)
+    : "<em>No budget on file to compare against.</em>";
+
+  return `<div class="est">
+    <div class="est-pair">
+      <div><p class="lab">Typical month</p><p class="num">${money0(typical)}</p>
+           <p class="chg"><span>mean of ${ms.length} months</span></p></div>
+      <div><p class="lab">Cover a bad month</p><p class="num">${money0(bad)}</p>
+           <p class="chg"><span>highest of ${ms.length}</span></p></div>
+    </div>
+    <p class="est-note">${vsCurrent}</p>
+    <table>
+      <thead><tr>
+        <th scope="col">Bucket</th><th scope="col">Average</th>
+        <th scope="col">Worst</th><th scope="col">Swing</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
 function draw(m) {
   const rev  = m.revenue;
   const net  = m.netProfit;
@@ -759,6 +835,13 @@ function draw(m) {
           <button type="button" class="btn primary" id="brief-go">Get briefing</button>
         </div>
         <div class="brief" id="brief"></div>
+      </section>
+
+      <section class="card wide">
+        <div class="badge">◱</div>
+        <h2>Budget estimator</h2>
+        <p class="sub">What next month should be budgeted at, from the months on file</p>
+        ${estimator(m)}
       </section>
 
       <section class="card wide">

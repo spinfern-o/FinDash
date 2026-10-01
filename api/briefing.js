@@ -84,9 +84,19 @@ never investment or tax advice.`;
   try {
     const response = await client.messages.create({
       model: "claude-opus-5",
-      max_tokens: 2048,
+      // 12 months of figures produced a reply that overran 2048 and was cut
+      // off mid-JSON, surfacing as "did not return JSON". The server caps the
+      // list lengths anyway, so a larger ceiling costs nothing when unused.
+      max_tokens: 8192,
       messages: [{ role: "user", content: prompt }],
     });
+
+    // Truncation is not malformed output - say which it is, or the next person
+    // debugging this chases a JSON bug that is really a length limit.
+    if (response.stop_reason === "max_tokens") {
+      console.error("briefing truncated: hit max_tokens");
+      return res.status(502).json({ error: "the briefing ran long and was cut off - try a shorter period" });
+    }
 
     const text = response.content
       .filter(b => b.type === "text")

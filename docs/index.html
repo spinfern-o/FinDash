@@ -9,48 +9,27 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap" rel="stylesheet">
 <style>
   :root{
-    color-scheme:light;
-    --ground:#ffffff;
-    --card:#fbfbfc;
-    --line:#e6e6e8;
-    --line-soft:#f0f0f2;
-    --ink:#111827;
-    --ink-2:#4b5563;
-    --ink-3:#6b7280;
-    --accent:#059669;
+    color-scheme:dark;
+    --ground:#111111;
+    --card:#191919;
+    --line:rgba(245,245,245,0.1);
+    --line-soft:rgba(245,245,245,0.06);
+    --ink:#f5f5f5;
+    --ink-2:#b3b3b3;
+    --ink-3:#8c8c8c;
+    --accent:#94dc00;
+    --accent-ink:#111111;
 
-    /* categorical slots - validated light, surface #ffffff */
-    --s1:#047857;   /* direct expenses    */
-    --s2:#2a78d6;   /* operating expenses */
-    --s3:#eb6834;   /* variable overhead  */
-    --s4:#4a3aa7;   /* fixed overhead     */
-    --rest:#e4e4e1; /* profit remainder   */
+    /* categorical slots - validated dark, surface #191919 */
+    --s1:#3ddc84;   /* direct expenses    */
+    --s2:#5b9dff;   /* operating expenses */
+    --s3:#ff9b4d;   /* variable overhead  */
+    --s4:#b794f6;   /* fixed overhead     */
+    --rest:#94dc00; /* profit remainder   */
 
-    --critical:#d03b3b;
-    --radius:10px;
-  }
-
-  @media (prefers-color-scheme:dark){
-    :root{
-      color-scheme:dark;
-      --ground:#0b0b0c;
-      --card:#141416;
-      --line:#262629;
-      --line-soft:#1d1d20;
-      --ink:#f2f4f2;
-      --ink-2:#b7bdb9;
-      --ink-3:#8b928e;
-      --accent:#34d399;
-
-      /* same hues, re-stepped for the dark surface #1c201e */
-      --s1:#199e70;
-      --s2:#3987e5;
-      --s3:#d95926;
-      --s4:#9085e9;
-      --rest:#313733;
-
-      --critical:#e26a6a;
-    }
+    --critical:#e5484d;
+    --radius:12px;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   }
 
   *{box-sizing:border-box}
@@ -59,6 +38,8 @@
   body{
     margin:0;
     background:var(--ground);
+    background-image:radial-gradient(var(--line) .7px, transparent .7px);
+    background-size:28px 28px;
     color:var(--ink);
     font-family:Inter,ui-sans-serif,system-ui,sans-serif;
     font-size:14px;
@@ -73,9 +54,16 @@
   /* ---- masthead ---- */
   .masthead{
     display:flex;flex-wrap:wrap;align-items:baseline;
-    justify-content:space-between;gap:10px;margin-bottom:26px;
+    justify-content:space-between;gap:10px 16px;margin-bottom:26px;
   }
-  .wordmark{font-size:16px;font-weight:600;letter-spacing:-0.01em;margin:0}
+  .masthead-left{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+  .wordmark{font-size:16px;font-weight:700;letter-spacing:-0.01em;margin:0}
+  .home-link{
+    font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--ink-3);text-decoration:none;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .home-link:hover{color:var(--accent)}
   .stamp{font-size:13px;color:var(--ink-3)}
 
   /* ---- filter row: scopes every card below it ---- */
@@ -92,7 +80,7 @@
   }
   .filters button:hover{border-color:var(--ink-3);color:var(--ink)}
   .filters button[aria-current="true"]{
-    background:var(--accent);border-color:var(--accent);color:#fff;
+    background:var(--accent);border-color:var(--accent);color:var(--accent-ink);
   }
   .filters button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 
@@ -114,8 +102,8 @@
     transition:border-color .12s,background .12s;
   }
   .btn:hover{border-color:var(--ink-3)}
-  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-  .btn.primary:hover{filter:brightness(1.06)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+  .btn.primary:hover{filter:brightness(1.08)}
   .btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
   .loader-text .bad{color:var(--critical)}
 
@@ -138,6 +126,7 @@
     background:var(--card);border:1px solid var(--line);
     border-radius:var(--radius);padding:14px 16px;min-width:0;
   }
+  .pulse .stat:first-child{border-color:var(--accent)}
   .pulse .lab{font-size:12px;color:var(--ink-3);margin:0 0 6px;white-space:nowrap;
               overflow:hidden;text-overflow:ellipsis}
   .pulse .num{font-size:22px;font-weight:700;letter-spacing:-0.02em;margin:0;color:var(--ink)}
@@ -159,7 +148,7 @@
     background:var(--line-soft);color:var(--ink-2);
   }
   .prio .tag.urgent{background:var(--critical);color:#fff}
-  .prio .tag.watch{background:var(--s3);color:#fff}
+  .prio .tag.watch{background:var(--s3);color:var(--accent-ink)}
   .prio p{margin:0;color:var(--ink)}
   .prio p em{font-style:normal;color:var(--ink-3)}
   .prio .none{color:var(--ink-3);padding:10px 0}
@@ -197,7 +186,7 @@
   .card.wide{grid-column:1/-1}
 
   .card h2{
-    font-size:14px;font-weight:600;letter-spacing:-0.005em;
+    font-size:15px;font-weight:700;letter-spacing:-0.01em;
     margin:0;color:var(--ink);
   }
   .card .sub{font-size:12px;color:var(--ink-3);margin:3px 0 16px}
@@ -206,7 +195,7 @@
   .badge{
     position:absolute;top:16px;right:16px;
     width:28px;height:28px;border-radius:8px;
-    background:var(--ink);color:var(--ground);
+    background:var(--accent);color:var(--accent-ink);
     display:flex;align-items:center;justify-content:center;
     font-size:13px;line-height:1;
   }
@@ -214,12 +203,12 @@
   /* ---- hero ---- */
   .hero{padding:20px}
   .eyebrow{
-    font-size:13px;font-weight:500;letter-spacing:0;
-    text-transform:none;color:var(--ink-2);margin:0 0 8px;
+    font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--ink-2);margin:0 0 8px;
   }
   .figure{
     font-size:clamp(30px,5vw,40px);
-    font-weight:700;line-height:1.1;letter-spacing:-0.025em;
+    font-weight:800;line-height:1.1;letter-spacing:-0.03em;
     font-variant-numeric:normal;   /* proportional figures at display size */
     margin:0;color:var(--ink);
     display:inline-flex;align-items:baseline;gap:10px;flex-wrap:wrap;
@@ -410,7 +399,10 @@
 <body>
 <main>
   <div class="masthead">
-    <p class="wordmark">Monthly Output</p>
+    <div class="masthead-left">
+      <p class="wordmark">Monthly Output</p>
+      <a class="home-link" href="landing.html">&larr; Home</a>
+    </div>
     <span class="stamp" id="stamp"></span>
   </div>
 

@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="favicon.png">
 <title>FinDash &middot; Financial Overview</title>
 <script>
   window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
@@ -13,7 +14,7 @@
     var saved = localStorage.getItem("findash-theme");
     var theme = saved || (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
     if(theme === "light") document.documentElement.setAttribute("data-theme","light");
-  }catch(e){}
+  }catch(e){ /* localStorage/matchMedia unavailable (privacy mode, old browser); default theme stands */ }
 })();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -589,10 +590,10 @@
     var isLight = document.documentElement.getAttribute("data-theme") === "light";
     if(isLight){
       document.documentElement.removeAttribute("data-theme");
-      try{ localStorage.setItem("findash-theme","dark"); }catch(e){}
+      try{ localStorage.setItem("findash-theme","dark"); }catch(e){ /* storage blocked; theme still applies for this session */ }
     }else{
       document.documentElement.setAttribute("data-theme","light");
-      try{ localStorage.setItem("findash-theme","light"); }catch(e){}
+      try{ localStorage.setItem("findash-theme","light"); }catch(e){ /* storage blocked; theme still applies for this session */ }
     }
   });
 })();
@@ -1394,6 +1395,12 @@ function wireTooltip() {
     seg.addEventListener("focus", () => show(seg));
     seg.addEventListener("mouseleave", hide);
     seg.addEventListener("blur", hide);
+    // Touch screens get neither hover nor reliable focus-on-tap, so a tap
+    // toggles the same readout a mouse would show on hover.
+    seg.addEventListener("click", () => {
+      seg.classList.contains("tip-on") ? hide() : show(seg);
+      wrap.querySelectorAll(".seg").forEach(s => s.classList.toggle("tip-on", s === seg));
+    });
   });
 }
 

@@ -1212,12 +1212,15 @@ function periodSlice(m, which) {
   return [m];
 }
 
-/* The run of equal length immediately before this one, for the deltas. */
+/* The run of equal length immediately before this one, for the deltas. None
+   when the file does not go back that far: ten months of year to date "up
+   $100,254" on the four months before them is a comparison of lengths, not
+   of performance. */
 function previousSlice(m, which) {
   const cur = periodSlice(m, which);
   const first = data.months.indexOf(cur[0]);
-  if (first <= 0) return [];
-  return data.months.slice(Math.max(0, first - cur.length), first);
+  if (first < cur.length) return [];
+  return data.months.slice(first - cur.length, first);
 }
 
 /* A run of months folded into one month-shaped total, so every period card
@@ -1268,8 +1271,10 @@ function heroCard(v, pv) {
   const net = v.netProfit, rev = v.revenue, loss = net < 0;
   let delta = "";
   if (pv) {
-    const d = net - pv.netProfit;
-    delta = `<span class="delta${d < 0 ? " down" : ""}">${d < 0 ? "↓" : "↑"} ${money0(Math.abs(d))}
+    const d = Math.round(net - pv.netProfit);
+    delta = d === 0
+      ? `<span class="delta"><span>same as ${pv.label}</span></span>`
+      : `<span class="delta${d < 0 ? " down" : ""}">${d < 0 ? "↓" : "↑"} ${money0(Math.abs(d))}
              <span>vs ${pv.label}</span></span>`;
   }
   const note = !rev && !v.totalExpenses ? "Nothing was recorded for this period."
@@ -1356,7 +1361,7 @@ function priorities(all) {
   const recent = all.slice(-3);
   if (recent.length >= 2) {
     const a = recent[0], b = recent[recent.length - 1];
-    const span = `${cap(a.month)} to ${monthLabel(b)}`;
+    const span = `${yearOf(a) === yearOf(b) ? cap(a.month) : monthLabel(a)} to ${monthLabel(b)}`;
     if (a.revenue && b.revenue && a.totalExpenses) {
       const revChg = ((b.revenue - a.revenue) / a.revenue) * 100;
       const costChg = ((b.totalExpenses - a.totalExpenses) / a.totalExpenses) * 100;
@@ -2839,7 +2844,7 @@ function exportWorkbook() {
       ["Months", unesc(rangeName(ms))],
       ["Amounts in", currency],
       ["Exported", today],
-      ["Source", userFrom ? unesc(userFrom) : "FinDash demo data"],
+      ["Source", userFrom || "FinDash demo data"],
       ["Notes", "Each cost group's lines add up to its total. In the Total column, Budget used and Net margin are worked out from the totals."]
     ]}
   ]), `findash-report-${slug(rangeName(ms))}.xlsx`);

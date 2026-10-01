@@ -655,6 +655,39 @@ function toTable(grid) {
   return {headers, rows: buildRows(grid, headers)};
 }
 
+/* ---- orientation ----
+   A sheet exported for people often runs line items DOWN the first column with
+   periods across the top - the transpose of what a CSV does. Guessing from the
+   data beats asking: whichever axis lands on more canonical field names is the
+   header axis. Entirely local, no request. */
+
+function canonicalHits(cells) {
+  return cells.filter(c => CANONICAL.includes(canonical(c))).length;
+}
+
+function transpose(grid) {
+  const width = grid.reduce((w, r) => Math.max(w, r.length), 0);
+  return Array.from({length: width}, (_, c) => grid.map(r => r[c] === undefined ? "" : r[c]));
+}
+
+/** Returns the grid with headers across the top, flipping it if they ran down. */
+function orient(grid) {
+  if (!grid.length) return grid;
+  const firstRow = grid[0];
+  const firstCol = grid.map(r => r[0] === undefined ? "" : r[0]);
+  return canonicalHits(firstCol) > canonicalHits(firstRow) ? transpose(grid) : grid;
+}
+
+/* Excel stores dates as days since 1899-12-30. A transposed sheet puts those
+   serials in the period column, where a bare "46204" means nothing to a reader. */
+function excelDate(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n) || n < 20000 || n > 80000) return null;
+  const d = new Date(Date.UTC(1899, 11, 30) + n * 86400000);
+  return {month: d.toLocaleString("en-US", {month: "long", timeZone: "UTC"}).toLowerCase(),
+          monthNum: d.getUTCMonth() + 1};
+}
+
 /* What each column means. Local and synchronous - no network. */
 function headerRow(grid) {
   if (!grid.length) return [];
@@ -858,7 +891,9 @@ async function resolveHeaders(headers) {
   const res = await fetch("/api/map-columns", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({headers, fields: unplaced})
+    // Say which columns are still free. Without it the model happily buckets
+    // columns we already matched, and their money would be counted twice.
+    body: JSON.stringify({headers, fields: unplaced, unclaimed: unclaimed.map(u => u.h)})
   });
   if (!res.ok) throw new Error("mapping service returned " + res.status);
 
@@ -901,54 +936,89 @@ const classify = h =>
   h.includes("revenue") ? "dashboard" :
   h.includes("cogs")    ? "expenses"  : null;
 
-function monthsFromCsv(dash, exp) {
-  const byNum = new Map(exp.rows.map(r => [NUM(r["month num"]), r]));
-  const months = [], skipped = [];
+/* One sheet carrying revenue AND costs - no second file to join against.
+   Each row is a month; the two-file path below joins on "month num" instead. */
+const isCombined = headers => headers.includes("revenue") && headers.includes("cogs");
 
-  dash.rows.forEach(d => {
-    const n = NUM(d["month num"]);
-    const e = byNum.get(n);
-    if (!e) { skipped.push(d.month || ("month " + n)); return; }
+function monthsFromOne(table) {
+  // A transposed sheet's period column often has a blank header, holding either
+  // an Excel date serial or a label like "Sept 2026".
+  const periodKey = table.headers.find(h => h === "" || h === "month") ?? "";
+  return monthsFrom(table.rows.map((r, i) => {
+    const raw = String(r[periodKey] ?? "").trim();
+    const d = excelDate(raw);
+    return {
+      month:    d ? d.month    : (raw.toLowerCase() || ("period " + (i + 1))),
+      monthNum: d ? d.monthNum : (NUM(r["month num"]) || i + 1),
+      row: r
+    };
+  }), table.leftovers || {});
+}
 
-    const revenue = NUM(d.revenue), budget = NUM(d.budget);
+/* The arithmetic, shared by the one-file and two-file paths. Each entry is a
+   month with every figure already on one row object. */
+function monthsFrom(entries, leftovers) {
+  const lo = leftovers || {};
+
+  const months = entries.map(({month, monthNum, row}) => {
+    const revenue = NUM(row.revenue), budget = NUM(row.budget);
 
     // Costs with no named column still belong to a bucket - dropping them would
     // understate total expenses and break revenue - expenses = net profit.
-    const lo = exp.leftovers || {};
     const other = b => Object.keys(lo).reduce(
-      (t, k) => t + (lo[k] === b ? NUM(e[k]) : 0), 0);
+      (t, k) => t + (lo[k] === b ? NUM(row[k]) : 0), 0);
     const otherDirect    = other("direct");
     const otherOperating = other("operating");
     const otherVariable  = other("variable");
     const otherFixed     = other("fixed");
 
-    const directExpenses    = sumOf(e, BUCKETS.direct)    + otherDirect;
-    const operatingExpenses = sumOf(e, BUCKETS.operating) + otherOperating;
-    const variableOverhead  = sumOf(e, BUCKETS.variable)  + otherVariable;
-    const fixedOverhead     = sumOf(e, BUCKETS.fixed)     + otherFixed;
+    const directExpenses    = sumOf(row, BUCKETS.direct)    + otherDirect;
+    const operatingExpenses = sumOf(row, BUCKETS.operating) + otherOperating;
+    const variableOverhead  = sumOf(row, BUCKETS.variable)  + otherVariable;
+    const fixedOverhead     = sumOf(row, BUCKETS.fixed)     + otherFixed;
     const totalExpenses = directExpenses + operatingExpenses + variableOverhead + fixedOverhead;
     const grossProfit   = revenue - directExpenses;
     const netProfit     = grossProfit - operatingExpenses - variableOverhead - fixedOverhead;
 
-    months.push({
-      month: (d.month || ("month " + n)).toLowerCase(),
-      monthNum: n, revenue,
-      cogs: NUM(e.cogs), labor: NUM(e.labor), utilities: NUM(e.utilities),
-      maintenance: NUM(e.maintenance), hardware: NUM(e.hardware),
+    return {
+      month: String(month).toLowerCase(), monthNum, revenue,
+      cogs: NUM(row.cogs), labor: NUM(row.labor), utilities: NUM(row.utilities),
+      maintenance: NUM(row.maintenance), hardware: NUM(row.hardware),
       directExpenses, operatingExpenses, variableOverhead, fixedOverhead,
       otherDirect, otherOperating, otherVariable, otherFixed,
       totalExpenses, grossProfit, netProfit,
       budget, budgetPercent: budget ? round2(totalExpenses / budget * 100) : 0
-    });
+    };
   });
 
   months.sort((a, b) => a.monthNum - b.monthNum);
-  return {months, skipped};
+  return {months, skipped: []};
+}
+
+/* Two files joined on "month num": revenue and budget from one, costs from the
+   other, merged onto a single row so monthsFrom sees the same shape either way. */
+function monthsFromCsv(dash, exp) {
+  const byNum = new Map(exp.rows.map(r => [NUM(r["month num"]), r]));
+  const entries = [], skipped = [];
+
+  dash.rows.forEach(d => {
+    const n = NUM(d["month num"]);
+    const e = byNum.get(n);
+    if (!e) { skipped.push(d.month || ("month " + n)); return; }
+    entries.push({
+      month: d.month || ("month " + n),
+      monthNum: n,
+      row: Object.assign({}, e, {revenue: d.revenue, budget: d.budget})
+    });
+  });
+
+  const out = monthsFrom(entries, exp.leftovers);
+  return {months: out.months, skipped};
 }
 
 /* ---- wiring ---- */
 let published = null;                 // whatever data.json gave us, kept for Reset
-const held = {dashboard: null, expenses: null};   // files picked so far
+const held = {dashboard: null, expenses: null, combined: null};  // files picked so far
 
 const els = {};
 function say(main, detail, bad) {
@@ -976,9 +1046,9 @@ async function handleFiles(list) {
   for (const f of usable) {
     let parsed;
     try {
-      const grid = /\.xlsx$/i.test(f.name)
+      const grid = orient(/\.xlsx$/i.test(f.name)
         ? await readXlsx(await f.arrayBuffer())
-        : parseCsvGrid(await f.text());
+        : parseCsvGrid(await f.text()));
 
       // headers first, so anything unresolved can be corrected BEFORE the row
       // objects are keyed off them - once built, the keys are baked in
@@ -995,7 +1065,9 @@ async function handleFiles(list) {
     // columns we did not recognise - don't give column advice for a broken file
     catch (err) { unreadable.push(f.name + " (" + err.message + ")"); continue; }
 
-    const kind = classify(parsed.headers);
+    // A sheet carrying revenue AND costs stands alone; the two-file shapes
+    // still have to be paired up as before.
+    const kind = isCombined(parsed.headers) ? "combined" : classify(parsed.headers);
     if (kind) held[kind] = Object.assign(parsed, {fileName: f.name});
     else unknown.push(f.name);
   }
@@ -1007,20 +1079,27 @@ async function handleFiles(list) {
     return say("Unrecognized columns", unknown.join(", ") +
       " — need a revenue column (dashboard) or a cogs column (expenses).", true);
   }
-  if (!held.dashboard) return say("Need one more file", "Got the expenses CSV. Still need the one with month, revenue and budget.", true);
-  if (!held.expenses)  return say("Need one more file", "Got the dashboard CSV. Still need the one with the expense columns.", true);
+  // One sheet with revenue and costs together needs no partner file.
+  let months, skipped = [], from;
+  if (held.combined) {
+    ({months} = monthsFromOne(held.combined));
+    from = held.combined.fileName;
+  } else {
+    if (!held.dashboard) return say("Need one more file", "Got the expenses file. Still need the one with month, revenue and budget — or a single sheet containing both.", true);
+    if (!held.expenses)  return say("Need one more file", "Got the dashboard file. Still need the one with the expense columns — or a single sheet containing both.", true);
+    ({months, skipped} = monthsFromCsv(held.dashboard, held.expenses));
+    from = held.dashboard.fileName + " + " + held.expenses.fileName;
+  }
 
-  const {months, skipped} = monthsFromCsv(held.dashboard, held.expenses);
   if (!months.length) {
-    return say("Nothing to show", "No month number in the dashboard CSV matched a row in the expenses CSV.", true);
+    return say("Nothing to show", "No month in this data could be read.", true);
   }
 
   const note = skipped.length ? " · skipped " + skipped.join(", ") + " (no expenses row)" : "";
-  sourceNote = "Calculated in your browser from " + held.dashboard.fileName +
-               " and " + held.expenses.fileName + ". Nothing was uploaded.";
+  sourceNote = "Calculated in your browser from " + from + ". Nothing was uploaded.";
   render({generated: null, months});
   say("Your figures", months.length + " month" + (months.length > 1 ? "s" : "") +
-      " from " + held.dashboard.fileName + " + " + held.expenses.fileName + note, false);
+      " from " + from + note, false);
   els.reset.hidden = !published;
 }
 
@@ -1041,7 +1120,7 @@ function wireLoader() {
   input.addEventListener("change", e => { handleFiles(e.target.files); input.value = ""; });
 
   els.reset.addEventListener("click", () => {
-    held.dashboard = held.expenses = null;
+    held.dashboard = held.expenses = held.combined = null;
     sourceNote = PUBLISHED_NOTE;
     render(published);
     say("Published figures", "Read from data.json", false);

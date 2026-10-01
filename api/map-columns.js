@@ -54,7 +54,7 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: "origin not allowed" });
   }
 
-  const { headers, fields } = req.body ?? {};
+  const { headers, fields, unclaimed } = req.body ?? {};
 
   if (!isCleanList(headers, MAX_HEADERS)) {
     return res.status(400).json({ error: `headers must be 1-${MAX_HEADERS} strings` });
@@ -62,6 +62,11 @@ export default async function handler(req, res) {
   if (!isCleanList(fields, MAX_FIELDS)) {
     return res.status(400).json({ error: `fields must be 1-${MAX_FIELDS} strings` });
   }
+  // Which headers are still up for grabs. Without this the model is asked to
+  // bucket columns the caller has already matched, and answers for all of them.
+  const open = Array.isArray(unclaimed)
+    ? unclaimed.filter(h => typeof h === "string" && headers.includes(h))
+    : [];
 
   const prompt = `You are mapping spreadsheet column headers to canonical accounting fields.
 
@@ -76,8 +81,10 @@ Reply with JSON only - no prose, no code fences - shaped like:
 "mapping": one key per canonical field listed above, whose value is the header
 text it corresponds to, or null if no header fits.
 
-"other": for each header that matched no field above but is a real cost, which
-of these four buckets it behaves like: direct (traceable to a unit or job),
+Columns still unspoken for: ${open.length ? open.join(", ") : "(none)"}
+
+"other": for each of those unspoken-for columns that is a real cost - and ONLY
+those - which of these four buckets it behaves like: direct (traceable to a unit or job),
 operating (scales with volume but not per-unit), variable (rises with activity,
 but not proportionally), fixed (does not move with sales). Omit a header that is
 not a cost, or that is a subtotal of other columns - counting a subtotal
@@ -129,6 +136,10 @@ Copy header text exactly as given.`;
     const other = {};
     for (const [header, bucket] of Object.entries(mapping.other ?? {})) {
       if (!headers.includes(header) || claimed.has(header)) continue;
+      // When the caller said what is unclaimed, honour it: a column it has
+      // already matched must never come back as a leftover, or its money is
+      // counted twice - once in its named field and once in a bucket.
+      if (open.length && !open.includes(header)) continue;
       if (BUCKETS.includes(bucket)) other[header] = bucket;
     }
 

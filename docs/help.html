@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="favicon.png">
+<title>FinDash &middot; Help</title>
+<meta name="description" content="How to get your numbers into FinDash, what each figure means, and how your data is handled.">
+<script>
+(function(){
+  try{
+    var saved = localStorage.getItem("findash-theme");
+    var theme = saved || (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    if(theme === "light") document.documentElement.setAttribute("data-theme","light");
+  }catch(e){ /* localStorage/matchMedia unavailable (privacy mode, old browser); default theme stands */ }
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap" rel="stylesheet">
+<style>
+  /* Same tokens as the dashboard, so moving between the two feels like one product. */
+  :root{
+    color-scheme:dark;
+    --ground:#050505;--card:#121212;--card-2:#161616;
+    --line:rgba(245,245,245,0.1);--line-soft:rgba(245,245,245,0.06);
+    --ink:#f5f5f5;--ink-2:#b3b3b3;--ink-3:#8c8c8c;
+    --accent:#8b93f8;--accent-ink:#0b0b14;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  html[data-theme="light"]{
+    color-scheme:light;
+    --ground:#f6f6f7;--card:#ffffff;--card-2:#f1f1f2;
+    --line:rgba(10,10,10,0.12);--line-soft:rgba(10,10,10,0.06);
+    --ink:#0a0a0a;--ink-2:#4b4b50;--ink-3:#6e6e74;
+    --accent:#4f46e5;--accent-ink:#ffffff;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%;scroll-padding-top:16px}
+  body{
+    margin:0;background:var(--ground);color:var(--ink);
+    font-family:Inter,ui-sans-serif,system-ui,sans-serif;font-size:15px;line-height:1.6;
+    padding:clamp(24px,5vw,56px) clamp(16px,4vw,32px);
+  }
+  main{max-width:780px;margin:0 auto}
+  a{color:inherit}
+  .masthead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;margin-bottom:28px}
+  .masthead-left{display:flex;align-items:baseline;gap:18px;flex-wrap:wrap}
+  .wordmark{font-size:16px;font-weight:700;letter-spacing:-0.01em;text-decoration:none}
+  .nav-link{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);text-decoration:none}
+  .nav-link:hover{color:var(--ink)}
+  .btn{
+    display:inline-block;font:inherit;font-size:13px;font-weight:600;text-decoration:none;
+    background:var(--accent);color:var(--accent-ink);border-radius:10px;padding:8px 14px;
+  }
+  .theme-toggle{
+    display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;
+    background:var(--card);border:1px solid var(--line);color:var(--ink-2);cursor:pointer;
+  }
+  .theme-toggle svg{display:none}
+  html:not([data-theme="light"]) .theme-toggle svg.icon-sun{display:block}
+  html[data-theme="light"] .theme-toggle svg.icon-moon{display:block}
+  a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+  h1{font-size:clamp(28px,5vw,36px);font-weight:800;letter-spacing:-0.03em;line-height:1.15;margin:0 0 8px}
+  .lede{color:var(--ink-2);margin:0 0 22px;max-width:60ch}
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 30px;padding:0;list-style:none}
+  .toc a{
+    display:inline-block;font-size:13px;text-decoration:none;color:var(--ink-2);
+    border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 13px;
+  }
+  .toc a:hover{color:var(--ink);border-color:var(--ink-3)}
+  section{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:22px 24px;margin-bottom:18px;
+  }
+  h2{font-size:19px;font-weight:700;letter-spacing:-0.01em;margin:0 0 10px}
+  h3{font-size:15px;font-weight:700;margin:20px 0 6px}
+  p,li{color:var(--ink-2)}
+  p{margin:0 0 10px}
+  b,strong{color:var(--ink)}
+  ol,ul{margin:0 0 10px;padding-left:22px}
+  li{margin:3px 0}
+  dl{margin:0;display:grid;grid-template-columns:minmax(150px,max-content) 1fr;gap:0}
+  dt,dd{padding:10px 0;border-bottom:1px solid var(--line-soft);margin:0}
+  dt{font-weight:700;color:var(--ink);padding-right:18px}
+  dd{color:var(--ink-2)}
+  dl > :nth-last-child(-n+2){border-bottom:0}
+  .group-label{
+    grid-column:1/-1;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--ink-3);padding:16px 0 4px;border-bottom:1px solid var(--line);
+  }
+  .group-label:first-child{padding-top:0}
+  .note{font-size:13px;color:var(--ink-3)}
+  .faq dt{grid-column:1/-1;padding-bottom:2px;border-bottom:0}
+  .faq dd{grid-column:1/-1;padding-top:0}
+  @media (max-width:560px){
+    section{padding:18px 16px}
+    dl{grid-template-columns:1fr}
+    dt{padding-bottom:0;border-bottom:0}
+    dd{padding-top:2px}
+  }
+  footer{margin-top:24px;font-size:12px;color:var(--ink-3)}
+</style>
+<script src="glossary.js"></script>
+</head>
+<body>
+<main>
+  <div class="masthead">
+    <div class="masthead-left">
+      <a class="wordmark" href="/">FinDash</a>
+      <nav>
+        <a class="nav-link" href="/">Home</a>
+        <a class="nav-link" href="/dashboard">Dashboard</a>
+      </nav>
+    </div>
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle light and dark mode">
+      <svg class="icon-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+      <svg class="icon-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+    </button>
+  </div>
+
+  <h1>Help</h1>
+  <p class="lede">How to get your numbers in, what each figure means, and exactly what happens to your data.</p>
+  <ul class="toc">
+    <li><a href="#get-started">Get your numbers in</a></li>
+    <li><a href="#problems">If a file won't load</a></li>
+    <li><a href="#glossary">What the numbers mean</a></li>
+    <li><a href="#privacy">How we handle your data</a></li>
+    <li><a href="#sharing">Printing and sharing</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+
+  <section id="get-started">
+    <h2>Get your numbers in</h2>
+    <p>FinDash needs one spreadsheet with a row for each month. The quickest way is the template:
+       on the <a href="/dashboard">dashboard</a>, press <b>Download Excel template</b> (or CSV). It comes filled
+       in with three sample months, so you can see what goes where.</p>
+    <ol>
+      <li><b>Month and Year:</b> the month's name, such as July, and the year, such as 2026.</li>
+      <li><b>Revenue:</b> everything that came in from sales that month.</li>
+      <li><b>Budget:</b> the most you planned to spend that month in total. It is a spending limit, not a
+          sales target. Leave it blank if you don't set one.</li>
+      <li><b>The 14 cost columns:</b> each month's total for that cost. Leave a cost at 0 if you don't have it.</li>
+    </ol>
+    <p>Save the file and drop it on the dashboard, or press <b>Choose file</b>. Excel (.xlsx) and CSV both work.</p>
+
+    <h3>From QuickBooks Online</h3>
+    <ol>
+      <li>Go to <b>Reports</b> and open <b>Profit and Loss</b>.</li>
+      <li>Pick the months you want and set <b>Display columns by</b> to <b>Months</b>.</li>
+      <li>Copy each month's income and cost totals into the matching template columns.</li>
+    </ol>
+
+    <h3>From Xero</h3>
+    <ol>
+      <li>Open <b>Reports</b>, then <b>Profit and Loss</b>.</li>
+      <li>Choose your date range and compare by month.</li>
+      <li>Copy each month's totals into the template.</li>
+    </ol>
+
+    <h3>From your own spreadsheet</h3>
+    <ul>
+      <li>Put one month per row, with the template's column names across the top. The order of the columns
+          doesn't matter.</li>
+      <li>Common alternative names are recognised: Wages or Payroll for Labor, Advertising for Marketing,
+          Cost of goods for Cost of goods sold, Repairs for Maintenance, and so on.</li>
+      <li>A sheet laid out the other way round, with costs down the side and months across the top, is
+          read too.</li>
+      <li>Rows that add other rows up (Total costs, Gross profit, Net income) are spotted and left out, so
+          nothing is counted twice.</li>
+    </ul>
+    <p>A cost that doesn't have its own column? Add it to the closest one; the
+       <a href="#glossary">cost groups below</a> say what belongs where.</p>
+    <p class="note">The older two-file layout (one file with month, month num, revenue and budget, and one with
+       the expense columns) still works: add both files together.</p>
+  </section>
+
+  <section id="problems">
+    <h2>If a file won't load</h2>
+    <dl class="faq">
+      <dt>"Columns not recognised"</dt>
+      <dd>The file needs a Revenue column and at least one cost column such as Rent or Cost of goods sold.
+          Check the top row holds column names, or start from the template.</dd>
+      <dt>".xls is the older Excel format"</dt>
+      <dd>Open the file in Excel and choose <b>Save As</b>, then <b>Excel Workbook (.xlsx)</b> or <b>CSV</b>.</dd>
+      <dt>"Could not open"</dt>
+      <dd>The file may be damaged or password-protected. Remove the password, save it again, and retry.</dd>
+      <dt>"Need one more file"</dt>
+      <dd>You added half of the older two-file layout. Add the other file, or switch to the one-file template.</dd>
+      <dt>The months are in the wrong order or show the wrong year</dt>
+      <dd>Add a Year column. Without one, every month is assumed to be in the current year.</dd>
+      <dt>A figure is 100 times too big or too small</dt>
+      <dd>Write amounts in full. 1,250.00 and 1.250,00 are both read correctly, but a short "1,25" could mean
+          either 1.25 or 125, so it is read as 125.</dd>
+    </dl>
+  </section>
+
+  <section id="glossary">
+    <h2>What the numbers mean</h2>
+    <p>Every cost sits in exactly one of four groups, so the groups add up to your total costs and revenue
+       minus total costs is your net profit. The same explanations appear behind each <b>?</b> on the dashboard.</p>
+    <dl id="terms"><dd>Turn on JavaScript to see the glossary.</dd></dl>
+  </section>
+
+  <section id="privacy">
+    <h2>How we handle your data</h2>
+    <p><b>Your file stays on your computer.</b> It is opened and added up by your own browser. It is never
+       uploaded, and FinDash has no accounts and no database of anyone's figures.</p>
+    <p>Three things can leave your computer, and only these:</p>
+    <ul>
+      <li><b>When you press Get advice:</b> each month's totals (revenue, the four cost groups, net profit
+          and budget) are sent to Claude, Anthropic's AI model, which writes the advice. No line items, no
+          names, not your file. FinDash does not store them.</li>
+      <li><b>When a column name isn't recognised:</b> the column names from your file, never the numbers,
+          are sent so the unfamiliar ones can be matched to the right cost group. Files that use the
+          template's names never need this.</li>
+      <li><b>If a forecasting model is offered:</b> once you have six months on file, a button may appear
+          under the forecast. Pressing it sends the net profit figure for each month, nothing else.</li>
+    </ul>
+    <p><b>Saved in this browser:</b> after you add a file, the worked-out monthly figures (not the file
+       itself) and your latest advice are kept in this browser on this device, so they are there next time.
+       They are never sent anywhere. Press <b>Forget my data</b> on the dashboard to remove them. On a shared
+       computer, do that before you leave.</p>
+  </section>
+
+  <section id="sharing">
+    <h2>Printing and sharing</h2>
+    <ul>
+      <li><b>Print or save as PDF</b> gives a clean, light report of the period on screen. In the print
+          window, choose <b>Save as PDF</b> as the printer to get a file to email.</li>
+      <li><b>Export to Excel</b> downloads every line for every month side by side, with a total column,
+          ready for your accountant, partner or bank.</li>
+    </ul>
+  </section>
+
+  <section id="contact">
+    <h2>Contact</h2>
+    <p>Found a problem, or have a question this page doesn't answer?
+       <a href="https://github.com/spinfern-o/FinDash/issues">Tell us on GitHub</a>. Please don't include your
+       figures.</p>
+  </section>
+
+  <footer>FinDash &middot; <a href="/dashboard">Back to the dashboard</a></footer>
+</main>
+
+<script>
+(function(){
+  var toggle = document.getElementById("theme-toggle");
+  if(!toggle) return;
+  toggle.addEventListener("click", function(){
+    var isLight = document.documentElement.getAttribute("data-theme") === "light";
+    if(isLight){
+      document.documentElement.removeAttribute("data-theme");
+      try{ localStorage.setItem("findash-theme","dark"); }catch(e){ /* storage blocked; theme still applies for this session */ }
+    }else{
+      document.documentElement.setAttribute("data-theme","light");
+      try{ localStorage.setItem("findash-theme","light"); }catch(e){ /* storage blocked; theme still applies for this session */ }
+    }
+  });
+})();
+</script>
+<script>
+/* The glossary comes from glossary.js, the same file behind the dashboard's
+   "?" buttons, so the two pages can never define a word differently. */
+(function(){
+  var g = window.FINDASH_GLOSSARY;
+  var el = document.getElementById("terms");
+  if (!g || !el) return;
+  var groups = [
+    ["The four cost groups", ["direct", "operating", "variable", "fixed", "other"]],
+    ["Results", ["revenue", "totalCosts", "grossProfit", "netProfit", "netMargin", "shortfall", "ofRevenue"]],
+    ["Budget", ["budget", "budgetUsed", "typical", "swing"]],
+    ["Forecast", ["trend", "range"]]
+  ];
+  var html = "";
+  groups.forEach(function(group){
+    html += '<div class="group-label">' + group[0] + '</div>';
+    group[1].forEach(function(k){
+      if (g[k]) html += '<dt id="term-' + k + '">' + g[k].term + '</dt><dd>' + g[k].text + '</dd>';
+    });
+  });
+  el.innerHTML = html;
+})();
+</script>
+</body>
+</html>

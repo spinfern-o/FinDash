@@ -2230,6 +2230,9 @@ const EXPENSE_FIELDS = [
   "business license", "telephone", "employee meals", "tax", "labor"
 ];
 const CANONICAL = [...new Set([...DASHBOARD_FIELDS, ...EXPENSE_FIELDS, ...OPTIONAL_FIELDS])];
+/* One sheet holding everything, as the template does. No month number: the
+   month's name is enough, and the join it existed for has no second file. */
+const COMBINED_FIELDS = ["month", "revenue", "budget", ...EXPENSE_FIELDS.filter(f => f !== "month num")];
 
 /* Different words for the same line. Keys are already normalised. */
 const SYNONYMS = {
@@ -2305,11 +2308,18 @@ function openQuestions(headers) {
   // Which file is this? Decided from what already matched locally. When even
   // that is unclear we fall back to the union and let the model sort it out.
   const kind = classify(headers);
-  const expected = kind === "dashboard" ? DASHBOARD_FIELDS
+  const combined = isCombined(headers);
+  const expected = combined ? COMBINED_FIELDS
+                 : kind === "dashboard" ? DASHBOARD_FIELDS
                  : kind === "expenses"  ? EXPENSE_FIELDS
                  : CANONICAL;
 
   const placed = new Set(headers.filter(h => expected.includes(h)));
+  // A one-file sheet names its months by a Month column, a month number, or
+  // the blank-headed period column of a sideways sheet - any one will do.
+  // Treated as the two-file revenue sheet, it marked "month num" missing and
+  // sent every template upload to the mapping service for nothing.
+  if (combined && (headers.includes("month num") || headers.includes(""))) placed.add("month");
   return {
     unplaced: expected.filter(f => !placed.has(f)),
     // A blank header has no name to ask about (it is usually the period

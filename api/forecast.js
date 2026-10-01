@@ -67,13 +67,30 @@ export default async function handler(req, res) {
     }
 
     const data = await upstream.json();
-    const nums = v => (Array.isArray(v) ? v.map(Number).filter(Number.isFinite) : []);
+
+    // BE-050: filtering non-finite values silently shortened the arrays, so a
+    // partly-bad response became a plausible shorter forecast. Require exactly
+    // the horizon asked for, all finite, and the quantiles in order - a band
+    // where low > high is not a wide forecast, it is a broken one.
+    const band = v =>
+      Array.isArray(v) && v.length === h && v.every(x => Number.isFinite(Number(x)))
+        ? v.map(Number)
+        : null;
+
+    const low = band(data.low), predicted = band(data.predicted), high = band(data.high);
+    if (!low || !predicted || !high) {
+      return res.status(502).json({ error: "forecast service returned an incomplete band" });
+    }
+    for (let i = 0; i < h; i++) {
+      if (!(low[i] <= predicted[i] && predicted[i] <= high[i])) {
+        return res.status(502).json({ error: "forecast quantiles are out of order" });
+      }
+    }
 
     return res.status(200).json({
       model: String(data.model ?? "chronos"),
-      low: nums(data.low),
-      predicted: nums(data.predicted),
-      high: nums(data.high),
+      horizon: h,
+      low, predicted, high,
     });
   } catch (err) {
     // Never echo the upstream error - it can carry the service URL.

@@ -6,14 +6,14 @@
 <title>Monthly Report</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..600&family=Newsreader:opsz,wght@6..72,300..500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap" rel="stylesheet">
 <style>
   :root{
     color-scheme:light;
-    --ground:#f9fafb;
-    --card:#ffffff;
-    --line:#e7e5e4;
-    --line-soft:#f1f0ee;
+    --ground:#ffffff;
+    --card:#fbfbfc;
+    --line:#e6e6e8;
+    --line-soft:#f0f0f2;
     --ink:#111827;
     --ink-2:#4b5563;
     --ink-3:#6b7280;
@@ -27,16 +27,16 @@
     --rest:#e4e4e1; /* profit remainder   */
 
     --critical:#d03b3b;
-    --radius:20px;
+    --radius:10px;
   }
 
   @media (prefers-color-scheme:dark){
     :root{
       color-scheme:dark;
-      --ground:#141715;
-      --card:#1c201e;
-      --line:#2f3431;
-      --line-soft:#262b28;
+      --ground:#0b0b0c;
+      --card:#141416;
+      --line:#262629;
+      --line-soft:#1d1d20;
       --ink:#f2f4f2;
       --ink-2:#b7bdb9;
       --ink-3:#8b928e;
@@ -61,8 +61,8 @@
     background:var(--ground);
     color:var(--ink);
     font-family:Inter,ui-sans-serif,system-ui,sans-serif;
-    font-size:15px;
-    line-height:1.55;
+    font-size:14px;
+    line-height:1.5;
     padding-block:clamp(24px,5vw,56px);
     padding-left:clamp(16px,4vw,32px);
     padding-right:clamp(16px,4vw,32px);
@@ -125,31 +125,44 @@
     background:var(--card);
     border:1px solid var(--line);
     border-radius:var(--radius);
-    padding:24px;
+    padding:18px 20px;
     min-width:0;
+    position:relative;
   }
   .card.wide{grid-column:1/-1}
 
   .card h2{
-    font-family:Newsreader,"Iowan Old Style",Georgia,serif;
-    font-size:21px;font-weight:400;letter-spacing:-0.005em;
-    margin:0;
+    font-size:14px;font-weight:600;letter-spacing:-0.005em;
+    margin:0;color:var(--ink);
   }
-  .card .sub{font-size:13px;color:var(--ink-3);margin:2px 0 20px}
+  .card .sub{font-size:12px;color:var(--ink-3);margin:3px 0 16px}
+
+  /* the rounded icon badge Capitalio puts in each card's top-right */
+  .badge{
+    position:absolute;top:16px;right:16px;
+    width:28px;height:28px;border-radius:8px;
+    background:var(--ink);color:var(--ground);
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;line-height:1;
+  }
 
   /* ---- hero ---- */
-  .hero{padding:30px 28px 26px}
+  .hero{padding:20px}
   .eyebrow{
-    font-size:11px;font-weight:600;letter-spacing:.07em;
-    text-transform:uppercase;color:var(--ink-3);margin:0 0 10px;
+    font-size:13px;font-weight:500;letter-spacing:0;
+    text-transform:none;color:var(--ink-2);margin:0 0 8px;
   }
   .figure{
-    font-family:Newsreader,"Iowan Old Style",Georgia,serif;
-    font-size:clamp(42px,7.5vw,64px);
-    font-weight:400;line-height:1.04;letter-spacing:-0.02em;
+    font-size:clamp(30px,5vw,40px);
+    font-weight:700;line-height:1.1;letter-spacing:-0.025em;
     font-variant-numeric:normal;   /* proportional figures at display size */
-    margin:0;color:var(--accent);
+    margin:0;color:var(--ink);
+    display:inline-flex;align-items:baseline;gap:10px;flex-wrap:wrap;
   }
+  .figure.loss{color:var(--ink)}
+  .delta{font-size:13px;font-weight:600;letter-spacing:0;color:var(--accent)}
+  .delta.down{color:var(--critical)}
+  .delta span{font-weight:400;color:var(--ink-3)}
   .figure.loss{color:var(--critical)}
   .note{font-size:14px;color:var(--ink-2);margin:12px 0 0;max-width:52ch}
 
@@ -526,6 +539,19 @@ function row(label, amount, revenue, cls = "") {
   </tr>`;
 }
 
+/* Change against the previous month on file. Capitalio leads every stat with
+   one; it is the first thing an owner wants and we already have the figures. */
+function deltaVsPrev(m) {
+  const i = data.months.findIndex(x => x.monthNum === m.monthNum);
+  if (i <= 0) return "";
+  const prev = data.months[i - 1].netProfit;
+  if (!prev) return "";
+  const pct = ((m.netProfit - prev) / Math.abs(prev)) * 100;
+  const up = pct >= 0;
+  return `<span class="delta${up ? "" : " down"}">${up ? "\u2191" : "\u2193"} ${fmtPct(Math.abs(pct))}
+          <span>vs ${data.months[i - 1].month}</span></span>`;
+}
+
 function draw(m) {
   const rev  = m.revenue;
   const net  = m.netProfit;
@@ -535,9 +561,9 @@ function draw(m) {
 
   document.getElementById("sheet").innerHTML = `
     <div class="grid">
-      <section class="card wide hero">
+      <section class="card wide hero"><div class="badge">◉</div>
         <p class="eyebrow">${cap(m.month)} &middot; net result</p>
-        <p class="figure${loss ? " loss" : ""}">${money(net)}</p>
+        <p class="figure${loss ? " loss" : ""}">${money(net)}${deltaVsPrev(m)}</p>
         <p class="note">
           ${fmtPct(pct(net, rev))} of ${money(rev)} in revenue.
           ${loss
@@ -547,12 +573,14 @@ function draw(m) {
       </section>
 
       <section class="card wide">
+        <div class="badge">◔</div>
         <h2>Where revenue goes</h2>
         <p class="sub">Every cost bucket as a share of ${money(rev)} in revenue</p>
         ${allocation(m)}
       </section>
 
       <section class="card">
+        <div class="badge">▤</div>
         <h2>Against budget</h2>
         <p class="sub">Total costs measured against the month's budget</p>
         <div class="gaugeline">
@@ -570,18 +598,21 @@ function draw(m) {
       </section>
 
       <section class="card">
+        <div class="badge">▲</div>
         <h2>Net profit by month</h2>
         <p class="sub">Every month on file &middot; ${cap(m.month)} highlighted</p>
         ${trend(data.months, m.monthNum)}
       </section>
 
       <section class="card wide">
+        <div class="badge">▦</div>
         <h2>Revenue vs expenses</h2>
         <p class="sub">Every month on file &middot; the gap between the bars is that month's profit</p>
         ${pairChart(data.months, m.monthNum)}
       </section>
 
       <section class="card wide">
+        <div class="badge">☰</div>
         <h2>Financial Report</h2>
         <p class="sub">Every line is the amount of dollars and the percent of the revenue</p>
         <table>

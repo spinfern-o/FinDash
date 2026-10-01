@@ -240,6 +240,17 @@
   .fan .key i.fan-sw-mid{background:var(--s2)}
   .fan .key i.fan-sw-band{background:var(--s2);opacity:.3}
   .fan .brief-note{margin-top:10px}
+  .fan-plot{position:relative}
+  .fan-pt{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;padding:0;
+          border-radius:50%;border:2px solid var(--card);background:var(--positive);
+          cursor:pointer;transition:transform .1s ease}
+  .fan-pt.proj{background:var(--s2)}
+  .fan-pt:hover,.fan-pt:focus-visible{transform:scale(1.4)}
+  .fan-pt-label{position:absolute;transform:translate(-50%,calc(-100% - 12px));
+                background:var(--ink);color:var(--card);font-size:11px;font-weight:600;
+                padding:3px 8px;border-radius:6px;white-space:nowrap;
+                opacity:0;pointer-events:none;transition:opacity .12s ease;z-index:2}
+  .fan-pt-label.on{opacity:1}
 
   /* ---- shared y-axis scale ----
      Every bar/line chart needs a reference value for its top and bottom, or a
@@ -1128,14 +1139,29 @@ function fanChart(months) {
   const labels = [...months.map(m => monthShort(m)),
                   ...f.predicted.map((_, i) => futureLabel(i + 1))];
 
+  // Clickable points so a reader can pin the exact dollar figure behind any
+  // month instead of only seeing it on hover (or not at all on touch devices).
+  const points = [...net.map((v, i) => ({x: at(i), y: y(v), v, label: labels[i], proj: false})),
+                  ...f.predicted.map((v, i) => ({x: at(fi(i)), y: y(v), v,
+                                                  label: labels[months.length + i], proj: true}))];
+  const pointsHtml = points.map((p, i) => `
+    <button type="button" class="fan-pt${p.proj ? " proj" : ""}"
+            style="left:${p.x}%;top:${p.y}px" data-fan-pt="${i}" aria-expanded="false"
+            aria-label="${esc(p.label)}${p.proj ? " (projected)" : ""}: ${money0(p.v)}"></button>
+    <span class="fan-pt-label" id="fan-lbl-${i}" style="left:${p.x}%;top:${p.y}px">${money0(p.v)}</span>
+  `).join("");
+
   return `<div class="fan">
-    <svg viewBox="0 0 100 ${H}" preserveAspectRatio="none" role="img"
-         aria-label="Net profit history and ${f.predicted.length}-month projection">
-      ${bot < 0 ? `<line x1="0" y1="${zero}" x2="100" y2="${zero}" class="fan-zero"/>` : ""}
-      <polygon points="${band}" class="fan-band"/>
-      <polyline points="${histPts}" class="fan-hist"/>
-      <polyline points="${midPts}" class="fan-mid"/>
-    </svg>
+    <div class="fan-plot">
+      <svg viewBox="0 0 100 ${H}" preserveAspectRatio="none" role="img"
+           aria-label="Net profit history and ${f.predicted.length}-month projection">
+        ${bot < 0 ? `<line x1="0" y1="${zero}" x2="100" y2="${zero}" class="fan-zero"/>` : ""}
+        <polygon points="${band}" class="fan-band"/>
+        <polyline points="${histPts}" class="fan-hist"/>
+        <polyline points="${midPts}" class="fan-mid"/>
+      </svg>
+      ${pointsHtml}
+    </div>
     <div class="axis-y">
       <span style="top:0">${money0(top)}</span>
       ${bot < 0 ? `<span style="top:${zero}px">$0</span>` : ""}
@@ -2164,7 +2190,15 @@ function wireLoader() {
   // #sheet is never replaced, only refilled, so one listener covers every redraw
   document.getElementById("sheet").addEventListener("click", e => {
     const hit = e.target.closest("[data-month]");
-    if (hit) select(Number(hit.dataset.month));
+    if (hit) { select(Number(hit.dataset.month)); return; }
+    const pt = e.target.closest("[data-fan-pt]");
+    if (pt) {
+      const lbl = document.getElementById("fan-lbl-" + pt.dataset.fanPt);
+      if (lbl) {
+        const open = lbl.classList.toggle("on");
+        pt.setAttribute("aria-expanded", String(open));
+      }
+    }
   });
 
   // Period pills: re-render the current month under the new scope.

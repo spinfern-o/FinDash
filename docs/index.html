@@ -119,6 +119,71 @@
   .btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
   .loader-text .bad{color:var(--critical)}
 
+  /* ---- period selector ---- */
+  .periods{display:flex;gap:4px;margin:0 0 14px;padding:0;list-style:none}
+  .periods button{
+    font:inherit;font-size:12px;font-weight:500;color:var(--ink-3);
+    background:none;border:1px solid transparent;border-radius:7px;
+    padding:5px 10px;cursor:pointer;
+  }
+  .periods button:hover{color:var(--ink)}
+  .periods button[aria-current="true"]{
+    color:var(--ink);background:var(--card);border-color:var(--line);
+  }
+  .periods button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+  /* ---- business pulse ---- */
+  .pulse{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  .pulse .stat{
+    background:var(--card);border:1px solid var(--line);
+    border-radius:var(--radius);padding:14px 16px;min-width:0;
+  }
+  .pulse .lab{font-size:12px;color:var(--ink-3);margin:0 0 6px;white-space:nowrap;
+              overflow:hidden;text-overflow:ellipsis}
+  .pulse .num{font-size:22px;font-weight:700;letter-spacing:-0.02em;margin:0;color:var(--ink)}
+  .pulse .chg{font-size:12px;font-weight:600;margin-top:4px;color:var(--accent)}
+  .pulse .chg.down{color:var(--critical)}
+  .pulse .chg span{font-weight:400;color:var(--ink-3)}
+  @media (max-width:760px){ .pulse{grid-template-columns:repeat(2,1fr)} }
+
+  /* ---- priorities ---- */
+  .prio{list-style:none;margin:0;padding:0}
+  .prio li{
+    display:flex;gap:10px;align-items:flex-start;
+    padding:10px 0;border-bottom:1px solid var(--line-soft);font-size:13px;
+  }
+  .prio li:last-child{border-bottom:none}
+  .prio .tag{
+    flex:none;font-size:10px;font-weight:600;letter-spacing:.04em;
+    text-transform:uppercase;padding:3px 7px;border-radius:5px;
+    background:var(--line-soft);color:var(--ink-2);
+  }
+  .prio .tag.urgent{background:var(--critical);color:#fff}
+  .prio .tag.watch{background:var(--s3);color:#fff}
+  .prio p{margin:0;color:var(--ink)}
+  .prio p em{font-style:normal;color:var(--ink-3)}
+  .prio .none{color:var(--ink-3);padding:10px 0}
+
+  /* ---- briefing ---- */
+  .brief-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px}
+  .brief-head .btn{margin-left:auto}
+  .brief-note{font-size:12px;color:var(--ink-3);margin:0}
+  .brief h3{
+    font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--ink-3);margin:16px 0 8px;
+  }
+  .brief h3:first-child{margin-top:0}
+  .brief ul{margin:0;padding:0;list-style:none}
+  .brief li{
+    display:flex;gap:9px;align-items:flex-start;
+    padding:7px 0;font-size:13px;color:var(--ink);
+  }
+  .brief li::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;
+                    margin-top:6px;background:var(--ink-3)}
+  .brief .up li::before{background:var(--accent)}
+  .brief .risk li::before{background:var(--critical)}
+  .brief .act li::before{background:var(--s2)}
+
   /* ---- cards ---- */
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
   .card{
@@ -362,6 +427,7 @@
   </div>
 
   <ul class="filters" id="months"></ul>
+  <ul class="periods" id="periods"></ul>
   <div id="sheet"></div>
 
   <footer id="footer"></footer>
@@ -552,6 +618,135 @@ function deltaVsPrev(m) {
           <span>vs ${data.months[i - 1].month}</span></span>`;
 }
 
+/* ---- period scoping ----
+   "This month" is the selected month; "quarter" is it plus the two before;
+   "year to date" is everything up to and including it. Scopes the pulse strip
+   and the priorities list - the charts always show every month on file. */
+let period = "month";
+const PERIODS = [["month","This month"],["quarter","This quarter"],["ytd","Year to date"]];
+
+function periodSlice(m, which) {
+  const i = data.months.findIndex(x => x.monthNum === m.monthNum);
+  if (i < 0) return [m];
+  if (which === "quarter") return data.months.slice(Math.max(0, i - 2), i + 1);
+  if (which === "ytd")     return data.months.slice(0, i + 1);
+  return [data.months[i]];
+}
+
+/* Totals over a run of months. Margins are computed from the summed figures,
+   never averaged - averaging ratios silently weights a small month equally. */
+function aggregate(ms) {
+  const sum = k => ms.reduce((t, x) => t + x[k], 0);
+  const revenue = sum("revenue"), total = sum("totalExpenses"), budget = sum("budget");
+  return {
+    months: ms.length, revenue, total, budget,
+    net: sum("netProfit"),
+    margin: revenue ? (sum("netProfit") / revenue) * 100 : 0,
+    budgetPct: budget ? (total / budget) * 100 : 0
+  };
+}
+
+/* The run of equal length immediately before this one, for the delta. */
+function previousSlice(m, which) {
+  const cur = periodSlice(m, which);
+  const first = data.months.findIndex(x => x.monthNum === cur[0].monthNum);
+  const start = Math.max(0, first - cur.length);
+  return first === 0 ? [] : data.months.slice(start, first);
+}
+
+function chg(now, before, kind) {
+  if (before === undefined || before === null || !isFinite(before) || before === 0) return "";
+  const diff = kind === "pts" ? now - before : ((now - before) / Math.abs(before)) * 100;
+  const up = diff >= 0;
+  const txt = kind === "pts" ? Math.abs(diff).toFixed(1) + " pts" : fmtPct(Math.abs(diff));
+  return `<p class="chg${up ? "" : " down"}">${up ? "\u2191" : "\u2193"} ${txt} <span>vs previous</span></p>`;
+}
+
+/* Four headline numbers for the chosen period, each against the run before it. */
+function pulse(m) {
+  const now = aggregate(periodSlice(m, period));
+  const prevMs = previousSlice(m, period);
+  const was = prevMs.length ? aggregate(prevMs) : null;
+
+  const stat = (label, value, change) =>
+    `<div class="stat"><p class="lab">${label}</p><p class="num">${value}</p>${change}</div>`;
+
+  return `<div class="pulse">
+    ${stat("Revenue", money0(now.revenue), was ? chg(now.revenue, was.revenue) : "")}
+    ${stat("Net margin", fmtPct(now.margin), was ? chg(now.margin, was.margin, "pts") : "")}
+    ${stat("Total costs", money0(now.total), was ? chg(now.total, was.total) : "")}
+    ${stat("Budget used", now.budget ? fmtPct(now.budgetPct) : "\u2014",
+           was && was.budget ? chg(now.budgetPct, was.budgetPct, "pts") : "")}
+  </div>`;
+}
+
+/* ---- priorities ----
+   Observations read straight off the figures. No model involved and nothing
+   leaves the machine: these are arithmetic facts about the months on file,
+   ranked so the ones that cost money come first. */
+function priorities(m) {
+  const ms = periodSlice(m, period);
+  const all = data.months;
+  const out = [];
+
+  const losses = ms.filter(x => x.netProfit < 0);
+  if (losses.length) {
+    out.push(["urgent", `<strong>${losses.length} month${losses.length > 1 ? "s" : ""} at a loss</strong>
+      — ${losses.map(x => x.month).join(", ")}. <em>Costs exceeded revenue.</em>`]);
+  }
+
+  const over = ms.filter(x => x.budget && x.budgetPercent > 100);
+  if (over.length) {
+    out.push(["urgent", `<strong>Budget exceeded in ${over.length} of ${ms.length}</strong>
+      — ${over.map(x => x.month).join(", ")}. <em>Worst: ${fmtPct(Math.max(...over.map(x => x.budgetPercent)))} of budget.</em>`]);
+  }
+
+  // A line item far above its own history is the clearest "look at this" signal.
+  const lines = [["maintenance","Maintenance"],["hardware","Hardware"],["utilities","Utilities"]];
+  for (const [key, label] of lines) {
+    const hist = all.map(x => x[key]).filter(v => v > 0);
+    if (hist.length < 3) continue;
+    const avg = hist.reduce((a, b) => a + b, 0) / hist.length;
+    const spike = ms.find(x => x[key] > avg * 2.5);
+    if (spike) {
+      out.push(["watch", `<strong>${label} spiked in ${spike.month}</strong>
+        — ${money0(spike[key])} against a ${money0(avg)} average. <em>${(spike[key] / avg).toFixed(1)}x normal.</em>`]);
+    }
+  }
+
+  // Costs outrunning revenue is the thing an owner most wants flagged early.
+  if (ms.length >= 2) {
+    const a = ms[0], b = ms[ms.length - 1];
+    if (a.revenue && b.revenue) {
+      const revChg = ((b.revenue - a.revenue) / a.revenue) * 100;
+      const costChg = ((b.totalExpenses - a.totalExpenses) / a.totalExpenses) * 100;
+      if (costChg > revChg + 5) {
+        // Both can be falling and the margin still compress - say which it is
+        // rather than claiming costs rose when the figures show them dropping.
+        const head = costChg >= 0 && revChg < costChg ? "Costs rising faster than revenue"
+                   : costChg < 0 ? "Revenue falling faster than costs"
+                   : "Costs outpacing revenue";
+        out.push(["watch", `<strong>${head}</strong>
+          — costs ${costChg >= 0 ? "up" : "down"} ${fmtPct(Math.abs(costChg))} while revenue
+          ${revChg >= 0 ? "up" : "down"} ${fmtPct(Math.abs(revChg))} across ${a.month}\u2013${b.month}.
+          <em>Margin is being squeezed either way.</em>`]);
+      }
+    }
+    const marginDrop = (a.revenue ? a.netProfit / a.revenue : 0) - (b.revenue ? b.netProfit / b.revenue : 0);
+    if (marginDrop > 0.03) {
+      out.push(["watch", `<strong>Net margin down ${(marginDrop * 100).toFixed(1)} pts</strong>
+        — ${a.month} to ${b.month}. <em>Same revenue is keeping less.</em>`]);
+    }
+  }
+
+  if (!out.length) {
+    return `<p class="none">Nothing demanding attention this period — no losses, nothing over budget,
+            no line item far above its own average.</p>`;
+  }
+  return `<ul class="prio">${out.map(([tag, html]) =>
+    `<li><span class="tag ${tag}">${tag === "urgent" ? "Urgent" : "Watch"}</span><p>${html}</p></li>`).join("")}</ul>`;
+}
+
 function draw(m) {
   const rev  = m.revenue;
   const net  = m.netProfit;
@@ -560,7 +755,27 @@ function draw(m) {
   const used = m.budgetPercent;
 
   document.getElementById("sheet").innerHTML = `
+    ${pulse(m)}
     <div class="grid">
+      <section class="card wide">
+        <div class="badge">✦</div>
+        <h2>What to do next</h2>
+        <p class="sub">Claude reads your monthly totals and says where to look</p>
+        <div class="brief-head">
+          <p class="brief-note" id="brief-note">Your figures stay here until you ask.
+            Pressing this sends the monthly totals shown above — no line items, no names.</p>
+          <button type="button" class="btn primary" id="brief-go">Get briefing</button>
+        </div>
+        <div class="brief" id="brief"></div>
+      </section>
+
+      <section class="card wide">
+        <div class="badge">⚑</div>
+        <h2>Today's priorities</h2>
+        <p class="sub">Read straight off your figures &middot; nothing sent anywhere</p>
+        ${priorities(m)}
+      </section>
+
       <section class="card wide hero"><div class="badge">◉</div>
         <p class="eyebrow">${cap(m.month)} &middot; net result</p>
         <p class="figure${loss ? " loss" : ""}">${money(net)}${deltaVsPrev(m)}</p>
@@ -651,6 +866,7 @@ function draw(m) {
     </div>`;
 
   document.querySelectorAll(".indent-row th").forEach(th => th.classList.add("indent"));
+  wireBriefing(m);
   wireTooltip();
   centreActiveMonth();
 }
@@ -663,6 +879,59 @@ function centreActiveMonth() {
   if (box.scrollWidth <= box.clientWidth) return;        // nothing to scroll
   box.scrollLeft = col.offsetLeft - (box.clientWidth - col.offsetWidth) / 2;
 }
+
+/* ---- briefing ----
+   The one place figures leave the browser, and only when asked. Scoped to the
+   period on screen so the reader can see exactly what is being sent. */
+function wireBriefing(m) {
+  const btn = document.getElementById("brief-go");
+  const out = document.getElementById("brief");
+  if (!btn || !out) return;
+
+  btn.addEventListener("click", async () => {
+    const ms = periodSlice(m, period);
+    btn.disabled = true;
+    btn.textContent = "Reading\u2026";
+    out.innerHTML = "";
+
+    try {
+      const res = await fetch("/api/briefing", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        // Only the totals already on screen - rebuilt field by field so nothing
+        // else on the month object can travel along by accident.
+        body: JSON.stringify({months: ms.map(x => ({
+          month: x.month, revenue: x.revenue,
+          directExpenses: x.directExpenses, operatingExpenses: x.operatingExpenses,
+          variableOverhead: x.variableOverhead, fixedOverhead: x.fixedOverhead,
+          totalExpenses: x.totalExpenses, netProfit: x.netProfit, budget: x.budget
+        }))})
+      });
+      if (!res.ok) throw new Error("the briefing service returned " + res.status);
+
+      const {opportunities = [], risks = [], actions = []} = await res.json();
+      const block = (cls, title, items) => items.length
+        ? `<h3>${title}</h3><ul class="${cls}">${items.map(i => `<li>${esc(i)}</li>`).join("")}</ul>`
+        : "";
+
+      const html = block("up", "Opportunities", opportunities)
+                 + block("risk", "Risks", risks)
+                 + block("act", "Do next", actions);
+      out.innerHTML = html || `<p class="brief-note">Nothing stood out in these months.</p>`;
+      btn.textContent = "Refresh briefing";
+    } catch (err) {
+      out.innerHTML = `<p class="brief-note">Could not get a briefing \u2014 ${esc(err.message)}.
+        Your figures were not stored.</p>`;
+      btn.textContent = "Try again";
+    } finally {
+      btn.disabled = false;
+    }
+  }, {once: false});
+}
+
+/* Model output is text, not markup - render it as text. */
+const esc = s => String(s).replace(/[&<>"]/g, c =>
+  ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 
 /* Hover/focus readout on the allocation bar. The same numbers live in the
    legend and the ledger below, so the tooltip only ever enhances. */
@@ -1223,6 +1492,20 @@ function wireLoader() {
   document.getElementById("sheet").addEventListener("click", e => {
     const hit = e.target.closest("[data-month]");
     if (hit) select(Number(hit.dataset.month));
+  });
+
+  // Period pills: re-render the current month under the new scope.
+  const periodsEl = document.getElementById("periods");
+  periodsEl.innerHTML = PERIODS.map(([k, label]) =>
+    `<li><button type="button" data-period="${k}"
+       aria-current="${k === period}">${label}</button></li>`).join("");
+  periodsEl.addEventListener("click", e => {
+    const b = e.target.closest("[data-period]");
+    if (!b) return;
+    period = b.dataset.period;
+    periodsEl.querySelectorAll("button").forEach(x =>
+      x.setAttribute("aria-current", x.dataset.period === period));
+    if (active) draw(active);
   });
 
   document.getElementById("pick").addEventListener("click", () => input.click());

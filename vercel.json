@@ -4,6 +4,15 @@
   "functions": {
     "api/map-columns.js": {
       "maxDuration": 15
+    },
+    "api/briefing.js": {
+      "maxDuration": 60
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/dashboard",
+      "destination": "/dashboard.html"
+    }
+  ]
 }

@@ -65,6 +65,11 @@ direct (traceable to a unit or job), operating (scales with volume but not
 per-unit), variable overhead (rises with activity, not proportionally), and
 fixed overhead (does not move with sales).
 
+"budget" is the planned ceiling for TOTAL EXPENSES that month - it is not a
+revenue target. Compare it against totalExpenses only. A month is over budget
+when totalExpenses exceeds budget; saying revenue "beat budget" is a category
+error and must not appear.
+
 Monthly figures:
 ${JSON.stringify(clean, null, 1)}
 

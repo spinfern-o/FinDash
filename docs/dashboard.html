@@ -631,7 +631,14 @@ let data, active;
 /* A bare month name is ambiguous once data spans more than one year. Every
    month on file should carry its own year; this only falls back to the
    generated date (or today) for older data that predates that field. */
-const yearOf = m => m.year || (data && data.generated ? new Date(data.generated).getUTCFullYear() : new Date().getUTCFullYear());
+const fallbackYear = () => {
+  // data.generated is an ISO date from the Java writer, but the bundled sample
+  // says "sample data" - Date("sample data").getUTCFullYear() is NaN, which
+  // would render a month as "jul 'Na". Only trust it if it actually parsed.
+  const t = data && data.generated ? Date.parse(data.generated) : NaN;
+  return Number.isFinite(t) ? new Date(t).getUTCFullYear() : new Date().getUTCFullYear();
+};
+const yearOf = m => m.year || fallbackYear();
 const monthLabel = m => `${cap(m.month)} ${yearOf(m)}`;
 const monthShort = m => `${m.month.slice(0, 3)} '${String(yearOf(m)).slice(2)}`;
   const PUBLISHED_NOTE = "Showing demo data. Import your own CSV or Excel file above to see your numbers.";
@@ -1089,7 +1096,8 @@ function fanChart(months) {
   const futureLabel = i => {
     const n = last.monthNum + i, wrapped = ((n - 1) % 12) + 1;
     const y2 = yearOf(last) + Math.floor((n - 1) / 12);
-    const name = new Date(Date.UTC(2000, wrapped - 1, 1)).toLocaleString("en-US", {month: "short"});
+    const name = new Date(Date.UTC(2000, wrapped - 1, 1))
+      .toLocaleString("en-US", {month: "short", timeZone: "UTC"});
     return `${name} '${String(y2).slice(2)}`;
   };
   const labels = [...months.map(m => monthShort(m)),
@@ -1334,10 +1342,34 @@ function wireBriefing(m) {
 
 /* Swap the local trend for Chronos when asked. Falls back silently to the
    local line if the service is not configured - the chart already works. */
+let capabilities = null;   // {briefing, mapping, forecast} - fetched once
+
+/* Said in two places - the startup gate and a 503 at click time - so it lives
+   in one place. Never names FORECAST_URL: that is a log detail, not a reader's. */
+const NO_MODEL_NOTE = "A stronger forecasting model can be connected to this page; " +
+  "none is configured, so the trend above is computed locally.";
+
+/* Hide what is not deployed. Offering a button that always fails is worse than
+   not offering it, and the failure message leaked the env var name to visitors. */
+async function loadCapabilities() {
+  if (capabilities) return capabilities;
+  try {
+    const r = await fetch("/api/capabilities");
+    capabilities = r.ok ? await r.json() : {};
+  } catch { capabilities = {}; }
+  return capabilities;
+}
+
 function wireForecast() {
   const btn = document.getElementById("fc-go");
   const note = document.getElementById("fc-note");
   if (!btn) return;
+
+  loadCapabilities().then(c => {
+    if (c.forecast) return;
+    btn.hidden = true;
+    note.textContent = NO_MODEL_NOTE;
+  });
 
   btn.addEventListener("click", async () => {
     const series = data.months.map(x => x.netProfit);
@@ -1354,14 +1386,26 @@ function wireForecast() {
       let body;
       try { body = await res.json(); }
       catch { throw new Error("no forecast service is deployed yet"); }
+      // 503 means the service is reachable but has no usable model. Retrying
+      // cannot fix that, so stop offering the button rather than looping the
+      // reader through a button that will fail every time.
+      if (res.status === 503) {
+        btn.hidden = true;
+        note.textContent = NO_MODEL_NOTE;
+        console.warn("forecast model not available:", body.error || body.hint || "503");
+        return;
+      }
       if (!res.ok) throw new Error(body.hint || body.error || "returned " + res.status);
 
       forecastData = {low: body.low, predicted: body.predicted,
                       high: body.high, model: body.model};
       draw(active);                       // redraw with the model's numbers
     } catch (err) {
-      note.textContent = "Chronos unavailable (" + err.message +
-        "). Showing the local trend line instead.";
+      // The hint field names an environment variable - useful in a log, not on
+      // screen. Readers get the consequence, the console gets the cause.
+      console.warn("forecast unavailable:", err.message);
+      note.textContent = "The forecasting service could not be reached. " +
+        "Showing the locally computed trend instead.";
       btn.disabled = false;
       btn.textContent = "Try again";
     }
@@ -1505,7 +1549,15 @@ function excelDate(v) {
   if (!Number.isFinite(n) || n < 20000 || n > 80000) return null;
   const d = new Date(Date.UTC(1899, 11, 30) + n * 86400000);
   return {month: d.toLocaleString("en-US", {month: "long", timeZone: "UTC"}).toLowerCase(),
-          monthNum: d.getUTCMonth() + 1};
+          monthNum: d.getUTCMonth() + 1,
+          year: d.getUTCFullYear()};
+}
+
+/* A year written into the period cell - "Sept 2026", "2026-09", "09/2026".
+   Without this an imported month has no year at all and two Januaries collide. */
+function yearInText(raw) {
+  const m = String(raw).match(/(19|20)\d{2}/);
+  return m ? Number(m[0]) : null;
 }
 
 /* What each column means. Local and synchronous - no network. */
@@ -1636,12 +1688,17 @@ const normalise = s =>
    both wastes a request and invites a wrong answer, since asking where
    "revenue" lives in an expenses sheet has no right answer. */
 const DASHBOARD_FIELDS = ["month", "month num", "revenue", "budget"];
+
+/* Recognised but not required. A "year" column is read when present; listing it
+   as required would mark it unplaced on every file that lacks one and send a
+   mapping request that has nothing to resolve. */
+const OPTIONAL_FIELDS = ["year"];
 const EXPENSE_FIELDS = [
   "month num", "cogs", "packaging", "rent", "utilities", "maintenance",
   "hardware", "insurance", "marketing", "credit card fees",
   "business license", "telephone", "employee meals", "tax", "labor"
 ];
-const CANONICAL = [...new Set([...DASHBOARD_FIELDS, ...EXPENSE_FIELDS])];
+const CANONICAL = [...new Set([...DASHBOARD_FIELDS, ...EXPENSE_FIELDS, ...OPTIONAL_FIELDS])];
 
 /* Different words for the same line. Keys are already normalised. */
 const SYNONYMS = {
@@ -1803,6 +1860,7 @@ function monthsFromOne(table) {
     return {
       month:    d ? d.month    : (raw.toLowerCase() || ("period " + (i + 1))),
       monthNum: d ? d.monthNum : (NUM(r["month num"]) || i + 1),
+      year:     d ? d.year     : (NUM(r.year) || yearInText(raw) || null),
       row: r
     };
   }), table.leftovers || {});
@@ -1813,7 +1871,7 @@ function monthsFromOne(table) {
 function monthsFrom(entries, leftovers) {
   const lo = leftovers || {};
 
-  const months = entries.map(({month, monthNum, row}) => {
+  const months = entries.map(({month, monthNum, year, row}) => {
     const revenue = NUM(row.revenue), budget = NUM(row.budget);
 
     // Costs with no named column still belong to a bucket - dropping them would
@@ -1836,7 +1894,7 @@ function monthsFrom(entries, leftovers) {
     return {
       // Escaped here rather than at each of the ~15 places it is interpolated:
       // a CSV whose month cell is <img src=x onerror=...> executed in the page.
-      month: esc(String(month).toLowerCase()), monthNum, revenue,
+      month: esc(String(month).toLowerCase()), monthNum, year, revenue,
       cogs: NUM(row.cogs), labor: NUM(row.labor), utilities: NUM(row.utilities),
       maintenance: NUM(row.maintenance), hardware: NUM(row.hardware),
       directExpenses, operatingExpenses, variableOverhead, fixedOverhead,
@@ -1846,7 +1904,23 @@ function monthsFrom(entries, leftovers) {
     };
   });
 
-  months.sort((a, b) => a.monthNum - b.monthNum);
+  // A year column with one blank cell used to send that row to the very front,
+  // because its year sorted as 0. Rows arrive in file order, which is all but
+  // always chronological, so carry the last known year forward and give any
+  // leading blanks the first year we do know. Files with no year column at all
+  // are untouched - every row stays null and yearOf() handles them together.
+  const known = months.find(m => m.year)?.year ?? null;
+  if (known !== null) {
+    let carry = known;
+    for (const m of months) {
+      if (m.year) carry = m.year;
+      else m.year = carry;
+    }
+  }
+
+  // Chronological order needs the year: sorting on monthNum alone would put
+  // January 2026 before December 2025.
+  months.sort((a, b) => (a.year || 0) - (b.year || 0) || a.monthNum - b.monthNum);
 
   // BE-073: the two identities the whole dashboard rests on. If a future change
   // to the buckets or the catch-alls breaks one, say so loudly here rather than
@@ -1877,6 +1951,7 @@ function monthsFromCsv(dash, exp) {
     entries.push({
       month: d.month || ("month " + n),
       monthNum: n,
+      year: NUM(d.year) || yearInText(d.month) || null,
       row: Object.assign({}, e, {revenue: d.revenue, budget: d.budget})
     });
   });

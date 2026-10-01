@@ -63,6 +63,13 @@ export default async function handler(req, res) {
 
     if (!upstream.ok) {
       console.error("forecast upstream:", upstream.status);
+      // Pass a 503 through rather than flattening it to 502. The service
+      // answers 503 when it is up but the model is not loadable (no torch, no
+      // weights) - that is "unavailable, keep the local trend", not "broken".
+      // The upstream detail can name a file path, so it is logged, not echoed.
+      if (upstream.status === 503) {
+        return res.status(503).json({ error: "forecast model not available" });
+      }
       return res.status(502).json({ error: "forecast service returned " + upstream.status });
     }
 

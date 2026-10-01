@@ -10,19 +10,20 @@ the 250 MB serverless bundle limit, so it runs as its own small service and
 api/forecast.js proxies to it.
 
     pip install -r requirements.txt
-    uvicorn main:app --host 0.0.0.0 --port 8000
+    uvicorn main:app --host 0.0.0.0 --port 8000   # or: python main.py
 
 Then set FORECAST_URL in Vercel to this service's URL.
+
+Note that `chronos-forecasting` is not available through Hugging Face's
+serverless Inference API - the model card carries `inference: null`, so there is
+no hosted endpoint to call. Running this service is the way to use it.
 """
 
 import os
-from typing import List
+from typing import List, Optional
 
-import torch
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
-
-from chronos import BaseChronosPipeline
 
 MODEL_ID = os.environ.get("CHRONOS_MODEL", "amazon/chronos-bolt-base")
 
@@ -36,18 +37,41 @@ MAX_HORIZON = 12
 app = FastAPI(title="FinDash forecast")
 
 _pipeline = None
+_torch = None
+_load_error: Optional[str] = None
 
 
-def pipeline() -> BaseChronosPipeline:
-    """Loaded once, on first use - not at import, so the container starts fast."""
-    global _pipeline
-    if _pipeline is None:
+def _load():
+    """Import torch/chronos and load the weights, once, on first use.
+
+    Deliberately NOT at module import. torch and chronos-forecasting are heavy
+    optional dependencies; importing them at the top meant a missing or
+    mismatched install crashed the process on boot, so /health never answered
+    and the only symptom was "No module named 'chronos'" in a log nobody reads.
+    Now the service always starts and says what is wrong.
+    """
+    global _pipeline, _torch, _load_error
+    if _pipeline is not None or _load_error is not None:
+        return
+    try:
+        import torch
+        from chronos import BaseChronosPipeline
+    except ImportError as err:
+        _load_error = (
+            f"{err}. Install the model dependencies: "
+            "pip install -r requirements.txt"
+        )
+        return
+    try:
+        _torch = torch
         _pipeline = BaseChronosPipeline.from_pretrained(
             MODEL_ID,
             device_map="cpu",
             torch_dtype=torch.float32,
         )
-    return _pipeline
+    except Exception as err:  # network, disk, revoked repo, wrong model id
+        _torch = None
+        _load_error = f"could not load {MODEL_ID}: {type(err).__name__}: {err}"
 
 
 class ForecastRequest(BaseModel):
@@ -59,14 +83,25 @@ class ForecastRequest(BaseModel):
 class ForecastResponse(BaseModel):
     model: str
     horizon: int
-    low: List[float]       # p10 - the worst case
+    low: List[float]        # p10 - the worst case
     predicted: List[float]  # p50 - the expected path
-    high: List[float]      # p90 - the best case
+    high: List[float]       # p90 - the best case
 
 
 @app.get("/health")
 def health():
-    return {"ok": True, "model": MODEL_ID}
+    """Report whether the model is actually usable, not just that HTTP is up.
+
+    A green health check that only proves the web server booted is how a broken
+    model install reaches production.
+    """
+    _load()
+    return {
+        "ok": _pipeline is not None,
+        "model": MODEL_ID,
+        "model_loaded": _pipeline is not None,
+        "error": _load_error,
+    }
 
 
 @app.post("/forecast", response_model=ForecastResponse)
@@ -76,14 +111,23 @@ def forecast(req: ForecastRequest):
 
     if not req.series or len(req.series) > MAX_POINTS:
         raise HTTPException(status_code=400, detail=f"series must be 1-{MAX_POINTS} points")
-    if any(not isinstance(v, (int, float)) or v != v for v in req.series):
+    # Pydantic has already coerced these to float, so the remaining risk is
+    # NaN/inf, which sail through float() and poison the forecast silently.
+    if any(v != v or v in (float("inf"), float("-inf")) for v in req.series):
         raise HTTPException(status_code=400, detail="series must be finite numbers")
+
+    _load()
+    if _pipeline is None:
+        # 503, not 500: nothing about the request is wrong, the model is simply
+        # not available here. api/forecast.js passes this through so the page
+        # keeps its locally computed trend line instead of showing an error.
+        raise HTTPException(status_code=503, detail=_load_error or "model unavailable")
 
     # Chronos handles short context, but say so rather than pretending otherwise:
     # at four points the band will be very wide, which is the honest answer.
-    context = torch.tensor(req.series, dtype=torch.float32)
+    context = _torch.tensor(req.series, dtype=_torch.float32)
 
-    quantiles, _mean = pipeline().predict_quantiles(
+    quantiles, _mean = _pipeline.predict_quantiles(
         context=context,
         prediction_length=req.horizon,
         quantile_levels=[0.1, 0.5, 0.9],
@@ -98,3 +142,9 @@ def forecast(req: ForecastRequest):
         predicted=[round(float(v), 2) for v in q[:, 1]],
         high=[round(float(v), 2) for v in q[:, 2]],
     )
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", "8000")))

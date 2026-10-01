@@ -16,6 +16,12 @@ public class Expenses {
     double tax;
     double labor;
 
+    double otherDirect;
+    double otherOperating;
+    double otherVariable;
+    double otherFixed;
+
+    /** Fifteen named columns, no leftovers. Kept so existing callers still work. */
     public Expenses(
         int eMonthNum,
         double COGS,
@@ -48,6 +54,37 @@ public class Expenses {
         this.employeeMeals = employeeMeals;
         this.tax = tax;
         this.labor = labor;
+    }
+
+    /** Fifteen named columns plus whatever fell into the four catch-alls. */
+    public Expenses(
+        int eMonthNum,
+        double COGS,
+        double packaging,
+        double rent,
+        double utilities,
+        double maintenance,
+        double hardware,
+        double insurance,
+        double marketing,
+        double creditCardFees,
+        double businessLicense,
+        double telephone,
+        double employeeMeals,
+        double tax,
+        double labor,
+        double otherDirect,
+        double otherOperating,
+        double otherVariable,
+        double otherFixed
+    ) {
+        this(eMonthNum, COGS, packaging, rent, utilities, maintenance, hardware,
+             insurance, marketing, creditCardFees, businessLicense, telephone,
+             employeeMeals, tax, labor);
+        this.otherDirect    = otherDirect;
+        this.otherOperating = otherOperating;
+        this.otherVariable  = otherVariable;
+        this.otherFixed     = otherFixed;
     }
 
     public int eMonthNum() {
@@ -108,5 +145,26 @@ public class Expenses {
 
     public double labor() {
         return labor;
+    }
+
+    public double otherDirect() {
+        return otherDirect;
+    }
+
+    public double otherOperating() {
+        return otherOperating;
+    }
+
+    public double otherVariable() {
+        return otherVariable;
+    }
+
+    public double otherFixed() {
+        return otherFixed;
+    }
+
+    /** Anything that landed in a catch-all, across all four buckets. */
+    public double otherTotal() {
+        return otherDirect + otherOperating + otherVariable + otherFixed;
     }
 }

@@ -10,6 +10,8 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import java.util.Iterator;
 
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.okhttp.AnthropicOkHttpClient;
@@ -57,7 +59,7 @@ public class CFODashboard {
     }
 
     public double fixedOverhead() {
-        return (expenses.rent() + expenses.insurance() + expenses.businessLicense() + expenses.telephone());
+        return (expenses.rent() + expenses.insurance() + expenses.businessLicense() + expenses.telephone() + expenses.otherFixed());
     }
 
     public double fixedOverheadPct() {
@@ -65,7 +67,7 @@ public class CFODashboard {
     }
 
     public double variableOverhead() {
-        return (expenses.utilities() + expenses.maintenance());
+        return (expenses.utilities() + expenses.maintenance() + expenses.otherVariable());
     }
 
     public double variableOverheadPct() {
@@ -73,7 +75,7 @@ public class CFODashboard {
     }
 
     public double directExpenses(){
-        return (expenses.COGS() + expenses.labor() + expenses.employeeMeals() + expenses.tax());
+        return (expenses.COGS() + expenses.labor() + expenses.employeeMeals() + expenses.tax() + expenses.otherDirect());
     }
 
     public double directExpensesPct(){
@@ -81,7 +83,7 @@ public class CFODashboard {
     }
 
     public double operatingExpenses(){
-        return (expenses.packaging() + expenses.creditCardFees() + expenses.marketing() + expenses.hardware());
+        return (expenses.packaging() + expenses.creditCardFees() + expenses.marketing() + expenses.hardware() + expenses.otherOperating());
     }
 
     public double operatingExpensesPct(){
@@ -382,7 +384,7 @@ public class CFODashboard {
     }
 
     /** Lowercase, collapse punctuation - so "Cost of Goods " and "cost_of_goods"
-        compare equal. */
+        are equal */
     static String normalise(String s) {
         return s == null ? "" : s.toLowerCase().replaceAll("[^a-z0-9]+", " ").trim();
     }
@@ -395,8 +397,18 @@ public class CFODashboard {
      * never a row of figures. If the call fails, falls back to the positional
      * order in `fields`, which is what the old hardcoded indices did.
      */
-    static Map<String, Integer> resolveColumns(String[] headers, List<String> fields) {
-        Map<String, Integer> col = new HashMap<>();
+    /** Which named column each field lives in, plus where the unclaimed columns belong. */
+    static class ColumnMap {
+        final Map<String, Integer> columns = new HashMap<>();   // field -> column index
+        final Map<Integer, String> leftovers = new HashMap<>(); // column index -> bucket
+    }
+
+    /** The four buckets a leftover column can be assigned to. */
+    static final List<String> BUCKETS = List.of("direct", "operating", "variable", "fixed");
+
+    static ColumnMap resolveColumns(String[] headers, List<String> fields) {
+        ColumnMap map = new ColumnMap();
+        Map<String, Integer> col = map.columns;
 
         // 1. free pass: exact match after normalising
         for (int i = 0; i < headers.length; i++) {
@@ -408,13 +420,23 @@ public class CFODashboard {
                 }
             }
         }
-        if (col.size() == fields.size()) {
-            return col;                      // everything placed, no API call needed
-        }
 
         List<String> unplaced = new ArrayList<>();
         for (String f : fields) {
             if (!col.containsKey(f)) unplaced.add(f);
+        }
+        List<Integer> unclaimed = new ArrayList<>();
+        for (int i = 0; i < headers.length; i++) {
+            if (!col.containsValue(i)) unclaimed.add(i);
+        }
+
+        // Every field placed AND every column spoken for - nothing to ask about.
+        if (unplaced.isEmpty() && unclaimed.isEmpty()) return map;
+
+        StringBuilder leftoverList = new StringBuilder();
+        for (int i : unclaimed) {
+            if (leftoverList.length() > 0) leftoverList.append(", ");
+            leftoverList.append(headers[i]);
         }
 
         String prompt = """
@@ -422,13 +444,28 @@ public class CFODashboard {
 
             Canonical fields still needing a column: %s
 
-            The file's headers, in order: %s
+            Columns not yet spoken for: %s
 
-            Reply with JSON only - no prose, no code fences. One key per canonical
-            field listed above, whose value is the header text it corresponds to,
-            or null if no header fits. Copy header text exactly as given.
-            Example: {"cogs": "Cost of Goods", "labor": null}
-            """.formatted(String.join(", ", unplaced), String.join(", ", headers));
+            All of the file's headers, in order: %s
+
+            Reply with JSON only - no prose, no code fences - shaped like:
+            {"mapping": {"cogs": "Cost of Goods", "labor": null},
+             "other":   {"Bank service charge": "operating"}}
+
+            "mapping": one key per canonical field listed above, whose value is the
+            header text it corresponds to, or null if no header fits.
+
+            "other": for each unspoken-for column that is a real cost, which of these
+            four buckets it behaves like: direct (traceable to a unit or job),
+            operating (scales with volume but not per-unit), variable (rises with
+            activity, not proportionally), fixed (does not move with sales).
+            Omit a column entirely if it is not a cost, or if it is a subtotal of
+            other columns - counting a subtotal alongside its parts double-counts it.
+
+            Copy header text exactly as given.
+            """.formatted(String.join(", ", unplaced),
+                          leftoverList.toString(),
+                          String.join(", ", headers));
 
         try {
             MessageCreateParams params = MessageCreateParams.builder()
@@ -448,27 +485,37 @@ public class CFODashboard {
             int open = text.indexOf('{'), close = text.lastIndexOf('}');
             if (open < 0 || close <= open) {
                 System.out.println("Column mapping: model did not return JSON, using column order instead");
-                return positional(fields);
+                return positionalMap(fields);
             }
 
-            Map<String, String> reply = new ObjectMapper().readValue(
-                text.substring(open, close + 1),
-                new TypeReference<Map<String, String>>() {});
+            JsonNode root = new ObjectMapper().readTree(text.substring(open, close + 1));
 
             // 2. turn header NAMES into column INDICES, rejecting anything invented
-            for (Map.Entry<String, String> e : reply.entrySet()) {
-                String field = e.getKey(), header = e.getValue();
-                if (header == null || !unplaced.contains(field)) continue;
+            JsonNode mapping = root.path("mapping");
+            for (Iterator<String> it = mapping.fieldNames(); it.hasNext(); ) {
+                String field = it.next();
+                JsonNode v = mapping.get(field);
+                if (v == null || v.isNull() || !unplaced.contains(field)) continue;
 
-                int idx = -1;
-                for (int i = 0; i < headers.length; i++) {
-                    if (normalise(headers[i]).equals(normalise(header))) { idx = i; break; }
-                }
+                int idx = indexOfHeader(headers, v.asText());
                 if (idx < 0) {
-                    System.out.println("Column mapping: ignoring \"" + header + "\" - not a header in this file");
+                    System.out.println("Column mapping: ignoring \"" + v.asText() + "\" - not a header in this file");
                     continue;
                 }
                 if (!col.containsValue(idx)) col.put(field, idx);
+            }
+
+            // 3. park whatever is still unclaimed in the bucket it behaves like,
+            //    so its money reaches the totals instead of disappearing
+            JsonNode other = root.path("other");
+            for (Iterator<String> it = other.fieldNames(); it.hasNext(); ) {
+                String header = it.next();
+                String bucket = other.get(header).asText("");
+                if (!BUCKETS.contains(bucket)) continue;
+
+                int idx = indexOfHeader(headers, header);
+                if (idx < 0 || col.containsValue(idx)) continue;   // invented, or now claimed
+                map.leftovers.put(idx, bucket);
             }
 
             for (String f : fields) {
@@ -476,12 +523,32 @@ public class CFODashboard {
                     System.out.println("Column mapping: no column for \"" + f + "\", treating it as 0");
                 }
             }
-            return col;
+            for (int i = 0; i < headers.length; i++) {
+                if (!col.containsValue(i) && !map.leftovers.containsKey(i)) {
+                    System.out.println("Column mapping: \"" + headers[i] + "\" left out of every bucket");
+                }
+            }
+            return map;
 
         } catch (Exception e) {
             System.out.println("Column mapping unavailable (" + e.getMessage() + "), using column order instead");
-            return positional(fields);
+            return positionalMap(fields);
         }
+    }
+
+    /** Where a header sits, compared loosely. -1 when it is not in the file. */
+    static int indexOfHeader(String[] headers, String header) {
+        for (int i = 0; i < headers.length; i++) {
+            if (normalise(headers[i]).equals(normalise(header))) return i;
+        }
+        return -1;
+    }
+
+    /** Positional fallback wrapped as a ColumnMap, with no leftovers. */
+    static ColumnMap positionalMap(List<String> fields) {
+        ColumnMap map = new ColumnMap();
+        map.columns.putAll(positional(fields));
+        return map;
     }
 
     /** field 0 -> column 0, field 1 -> column 1 ... the original hardcoded behaviour. */
@@ -489,6 +556,17 @@ public class CFODashboard {
         Map<String, Integer> col = new HashMap<>();
         for (int i = 0; i < fields.size(); i++) col.put(fields.get(i), i);
         return col;
+    }
+
+    /** Sum of every unclaimed column the mapper parked in this bucket. */
+    static double leftoverTotal(String[] row, ColumnMap map, String bucket) {
+        double sum = 0;
+        for (Map.Entry<Integer, String> e : map.leftovers.entrySet()) {
+            if (!bucket.equals(e.getValue())) continue;
+            int i = e.getKey();
+            if (i >= 0 && i < row.length) sum += parseAmount(row[i]);
+        }
+        return sum;
     }
 
     /** Reads one field as text, tolerating a missing or out-of-range column. */
@@ -513,7 +591,8 @@ public class CFODashboard {
             File file = new File("data/expenses.csv");
             Scanner expenseReader = new Scanner(file);
             String[] headers = parseCsvLine(expenseReader.nextLine());
-            Map<String,Integer> col = resolveColumns(headers, EXPENSE_FIELDS);
+            ColumnMap cmap = resolveColumns(headers, EXPENSE_FIELDS);
+            Map<String,Integer> col = cmap.columns;
 
             while(expenseReader.hasNextLine()){
                 String line = expenseReader.nextLine();
@@ -550,7 +629,11 @@ public class CFODashboard {
                     telephone,
                     employeeMeals,
                     tax,
-                    labor
+                    labor,
+                    leftoverTotal(eData, cmap, "direct"),
+                    leftoverTotal(eData, cmap, "operating"),
+                    leftoverTotal(eData, cmap, "variable"),
+                    leftoverTotal(eData, cmap, "fixed")
                 );
 
                 expensesByMonth.put(monthNum, expenses); //into hashmap
@@ -564,7 +647,7 @@ public class CFODashboard {
             File file = new File("data/dashboard.csv");
             Scanner fileReader = new Scanner(file);
             String[] headers = parseCsvLine(fileReader.nextLine());
-            Map<String,Integer> col = resolveColumns(headers, DASHBOARD_FIELDS);
+            Map<String,Integer> col = resolveColumns(headers, DASHBOARD_FIELDS).columns;
 
             while(fileReader.hasNextLine()){
                 String line = fileReader.nextLine();

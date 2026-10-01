@@ -440,6 +440,12 @@ function trend(months, activeNum) {
           </div>`;
 }
 
+/* Shown only when non-zero, so an uncategorised cost is never silently folded
+   into a bucket total without appearing anywhere. */
+function otherRow(amount, revenue) {
+  return amount ? row("Other (uncategorised)", amount, revenue, "indent-row") : "";
+}
+
 function row(label, amount, revenue, cls = "") {
   return `<tr class="${cls}">
     <th scope="row">${label}</th>
@@ -510,15 +516,19 @@ function draw(m) {
             ${row("Direct expenses", m.directExpenses, rev, "group")}
             ${row("Cost of goods sold", m.cogs, rev, "indent-row")}
             ${row("Labor", m.labor, rev, "indent-row")}
+            ${otherRow(m.otherDirect, rev)}
 
             ${row("Operating expenses", m.operatingExpenses, rev, "group")}
             ${row("Hardware", m.hardware, rev, "indent-row")}
+            ${otherRow(m.otherOperating, rev)}
 
             ${row("Variable overhead", m.variableOverhead, rev, "group")}
             ${row("Utilities", m.utilities, rev, "indent-row")}
             ${row("Maintenance", m.maintenance, rev, "indent-row")}
+            ${otherRow(m.otherVariable, rev)}
 
             ${row("Fixed overhead", m.fixedOverhead, rev, "group")}
+            ${otherRow(m.otherFixed, rev)}
 
             ${row("Total expenses", m.totalExpenses, rev, "total")}
             <tr class="total">
@@ -605,7 +615,7 @@ function select(num) {
 
 /* Character-scanning parser: handles quoted fields, embedded commas,
    doubled "" escapes, and both \n and \r\n line endings. */
-function parseCsv(text) {
+function parseCsvGrid(text) {
   const rows = [];
   let row = [], field = "", quoted = false;
 
@@ -630,7 +640,12 @@ function parseCsv(text) {
   row.push(field);
   if (row.some(v => v.trim() !== "")) rows.push(row);
 
-  return toTable(rows);
+  return rows;
+}
+
+/* Kept for callers that want headers and rows in one go. */
+function parseCsv(text) {
+  return toTable(parseCsvGrid(text));
 }
 
 /* Grid of cells -> {headers, rows}. Shared by the CSV and xlsx readers so both
@@ -806,6 +821,54 @@ function canonical(header) {
   return best ? (SYNONYMS[best] || best) : n;
 }
 
+/* ---- server-side header mapping ----
+   Everything above is local and free. This is the one step that leaves the
+   machine, and only header TEXT goes - never a row of figures. It runs only
+   when the local pass left something unresolved. */
+
+const BUCKET_NAMES = ["direct", "operating", "variable", "fixed"];
+
+/**
+ * Given the locally-canonicalised headers, fill in what is still unknown.
+ * Returns the corrected header list plus {headerKey: bucket} for columns that
+ * matched no field but are real costs.
+ */
+async function resolveHeaders(headers) {
+  const placed   = new Set(headers.filter(h => CANONICAL.includes(h)));
+  const unplaced = CANONICAL.filter(f => !placed.has(f));
+  const unclaimed = headers
+    .map((h, i) => ({h, i}))
+    .filter(({h}) => !CANONICAL.includes(h));
+
+  // Every field placed and every column spoken for - nothing to ask.
+  if (!unplaced.length && !unclaimed.length) return {headers, leftovers: {}};
+
+  const res = await fetch("/api/map-columns", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({headers, fields: unplaced})
+  });
+  if (!res.ok) throw new Error("mapping service returned " + res.status);
+
+  const {mapping = {}, other = {}} = await res.json();
+  const fixed = headers.slice();
+
+  // names -> positions: the model answers in header text, arrays index by number
+  for (const [field, header] of Object.entries(mapping)) {
+    const i = fixed.indexOf(header);
+    if (i >= 0 && !CANONICAL.includes(fixed[i])) fixed[i] = field;
+  }
+
+  const leftovers = {};
+  for (const [header, bucket] of Object.entries(other)) {
+    const i = fixed.indexOf(header);
+    if (i >= 0 && !CANONICAL.includes(fixed[i]) && BUCKET_NAMES.includes(bucket)) {
+      leftovers[fixed[i]] = bucket;
+    }
+  }
+  return {headers: fixed, leftovers};
+}
+
 const NUM = v => {
   const n = Number(String(v).replace(/[$,\s]/g, ""));
   return Number.isFinite(n) ? n : 0;
@@ -836,10 +899,21 @@ function monthsFromCsv(dash, exp) {
     if (!e) { skipped.push(d.month || ("month " + n)); return; }
 
     const revenue = NUM(d.revenue), budget = NUM(d.budget);
-    const directExpenses    = sumOf(e, BUCKETS.direct);
-    const operatingExpenses = sumOf(e, BUCKETS.operating);
-    const variableOverhead  = sumOf(e, BUCKETS.variable);
-    const fixedOverhead     = sumOf(e, BUCKETS.fixed);
+
+    // Costs with no named column still belong to a bucket - dropping them would
+    // understate total expenses and break revenue - expenses = net profit.
+    const lo = exp.leftovers || {};
+    const other = b => Object.keys(lo).reduce(
+      (t, k) => t + (lo[k] === b ? NUM(e[k]) : 0), 0);
+    const otherDirect    = other("direct");
+    const otherOperating = other("operating");
+    const otherVariable  = other("variable");
+    const otherFixed     = other("fixed");
+
+    const directExpenses    = sumOf(e, BUCKETS.direct)    + otherDirect;
+    const operatingExpenses = sumOf(e, BUCKETS.operating) + otherOperating;
+    const variableOverhead  = sumOf(e, BUCKETS.variable)  + otherVariable;
+    const fixedOverhead     = sumOf(e, BUCKETS.fixed)     + otherFixed;
     const totalExpenses = directExpenses + operatingExpenses + variableOverhead + fixedOverhead;
     const grossProfit   = revenue - directExpenses;
     const netProfit     = grossProfit - operatingExpenses - variableOverhead - fixedOverhead;
@@ -850,6 +924,7 @@ function monthsFromCsv(dash, exp) {
       cogs: NUM(e.cogs), labor: NUM(e.labor), utilities: NUM(e.utilities),
       maintenance: NUM(e.maintenance), hardware: NUM(e.hardware),
       directExpenses, operatingExpenses, variableOverhead, fixedOverhead,
+      otherDirect, otherOperating, otherVariable, otherFixed,
       totalExpenses, grossProfit, netProfit,
       budget, budgetPercent: budget ? round2(totalExpenses / budget * 100) : 0
     });
@@ -889,9 +964,20 @@ async function handleFiles(list) {
   for (const f of usable) {
     let parsed;
     try {
-      parsed = /\.xlsx$/i.test(f.name)
-        ? toTable(await readXlsx(await f.arrayBuffer()))
-        : parseCsv(await f.text());
+      const grid = /\.xlsx$/i.test(f.name)
+        ? await readXlsx(await f.arrayBuffer())
+        : parseCsvGrid(await f.text());
+
+      // headers first, so anything unresolved can be corrected BEFORE the row
+      // objects are keyed off them - once built, the keys are baked in
+      let headers = headerRow(grid), leftovers = {};
+      try {
+        ({headers, leftovers} = await resolveHeaders(headers));
+      } catch (mapErr) {
+        // the local pass still stands; only the unresolved columns are lost
+        console.warn("column mapping unavailable:", mapErr.message);
+      }
+      parsed = {headers, rows: buildRows(grid, headers), leftovers};
     }
     // a file we could not open at all is a different problem from one whose
     // columns we did not recognise - don't give column advice for a broken file

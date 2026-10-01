@@ -4,21 +4,32 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FinDash &middot; Financial Overview</title>
+<script>
+(function(){
+  try{
+    var saved = localStorage.getItem("findash-theme");
+    var theme = saved || (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    if(theme === "light") document.documentElement.setAttribute("data-theme","light");
+  }catch(e){}
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap" rel="stylesheet">
 <style>
   :root{
     color-scheme:dark;
-    --ground:#0a0a0a;
-    --card:#131313;
+    --ground:#050505;
+    --card:#121212;
+    --card-2:#161616;
     --line:rgba(245,245,245,0.1);
     --line-soft:rgba(245,245,245,0.06);
     --ink:#f5f5f5;
     --ink-2:#b3b3b3;
     --ink-3:#8c8c8c;
-    --accent:#94dc00;
-    --accent-ink:#0a0a0a;
+    --accent:#ef4444;
+    --accent-ink:#ffffff;
+    --positive:#94dc00;
 
     /* categorical slots - validated dark, surface #191919 */
     --s1:#3ddc84;   /* direct expenses    */
@@ -30,6 +41,27 @@
     --critical:#e5484d;
     --radius:12px;
     --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+
+  html[data-theme="light"]{
+    color-scheme:light;
+    --ground:#f6f6f7;
+    --card:#ffffff;
+    --card-2:#f1f1f2;
+    --line:rgba(10,10,10,0.12);
+    --line-soft:rgba(10,10,10,0.06);
+    --ink:#0a0a0a;
+    --ink-2:#4b4b50;
+    --ink-3:#86868c;
+    --accent:#e11d2e;
+    --accent-ink:#ffffff;
+    --positive:#1f9d2e;
+    --critical:#d6333b;
+    --s1:#1f9d53;
+    --s2:#2f6fe0;
+    --s3:#d97a1f;
+    --s4:#8955d9;
+    --rest:#1f9d2e;
   }
 
   *{box-sizing:border-box}
@@ -65,6 +97,18 @@
   }
   .home-link:hover{color:var(--accent)}
   .stamp{font-size:13px;color:var(--ink-3)}
+  .masthead-right{display:flex;align-items:center;gap:12px}
+  .theme-toggle{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:30px;height:30px;border-radius:8px;
+    background:var(--card);border:1px solid var(--line);color:var(--ink-2);
+    cursor:pointer;transition:border-color .12s,color .12s;
+  }
+  .theme-toggle:hover{border-color:var(--ink-3);color:var(--ink)}
+  .theme-toggle:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .theme-toggle svg{display:none}
+  html:not([data-theme="light"]) .theme-toggle svg.icon-sun{display:block}
+  html[data-theme="light"] .theme-toggle svg.icon-moon{display:block}
 
   /* ---- filter row: scopes every card below it ---- */
   .filters{
@@ -86,15 +130,32 @@
 
   /* ---- csv loader ---- */
   .loader{
-    display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
-    gap:10px 16px;background:var(--card);border:1px solid var(--line);
-    border-radius:14px;padding:12px 14px 12px 18px;margin-bottom:16px;
-    transition:border-color .12s,box-shadow .12s;
+    background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:18px;margin-bottom:16px;
+    display:flex;flex-direction:column;gap:14px;
   }
-  .loader.over{border-color:var(--accent);box-shadow:0 0 0 3px var(--line-soft)}
-  .loader-text{min-width:0;font-size:13px;color:var(--ink-3)}
-  .loader-text strong{display:block;font-size:14px;font-weight:600;color:var(--ink)}
-  .loader-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .loader-head{min-width:0;font-size:13px;color:var(--ink-3)}
+  .loader-head strong{display:block;font-size:14px;font-weight:600;color:var(--ink)}
+  .loader-text .bad{color:var(--critical)}
+
+  .dropzone{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    text-align:center;padding:30px 20px;border:1.5px dashed var(--line);border-radius:12px;
+    cursor:pointer;background:var(--card-2);
+    transition:border-color .12s,background .12s,box-shadow .12s;
+  }
+  .dropzone:hover,.dropzone:focus-visible{border-color:var(--ink-3)}
+  .dropzone:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .dropzone.over{border-color:var(--accent);background:var(--card);box-shadow:0 0 0 3px var(--line-soft)}
+  .dropzone-icon{
+    display:flex;align-items:center;justify-content:center;width:38px;height:38px;
+    margin-bottom:6px;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--accent);
+  }
+  .dropzone.over .dropzone-icon{border-color:var(--accent)}
+  .dropzone-title{margin:0;font-size:14px;font-weight:600;color:var(--ink)}
+  .dropzone-sub{margin:0;font-size:12px;color:var(--ink-3)}
+
+  .loader-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
   .btn{
     font:inherit;font-size:13px;font-weight:500;
     border:1px solid var(--line);background:var(--card);color:var(--ink);
@@ -152,7 +213,7 @@
   .pulse .lab{font-size:12px;color:var(--ink-3);margin:0 0 6px;white-space:nowrap;
               overflow:hidden;text-overflow:ellipsis}
   .pulse .num{font-size:22px;font-weight:700;letter-spacing:-0.02em;margin:0;color:var(--ink)}
-  .pulse .chg{font-size:12px;font-weight:600;margin-top:4px;color:var(--accent)}
+  .pulse .chg{font-size:12px;font-weight:600;margin-top:4px;color:var(--positive)}
   .pulse .chg.down{color:var(--critical)}
   .pulse .chg span{font-weight:400;color:var(--ink-3)}
   @media (max-width:760px){ .pulse{grid-template-columns:repeat(2,1fr)} }
@@ -160,7 +221,7 @@
   /* ---- forecast fan ---- */
   .fan svg{width:100%;height:150px;display:block;overflow:visible}
   .fan-band{fill:var(--s2);opacity:.16}
-  .fan-hist{fill:none;stroke:var(--accent);stroke-width:2;vector-effect:non-scaling-stroke;
+  .fan-hist{fill:none;stroke:var(--positive);stroke-width:2;vector-effect:non-scaling-stroke;
             stroke-linejoin:round}
   .fan-mid{fill:none;stroke:var(--s2);stroke-width:2;stroke-dasharray:5 4;
            vector-effect:non-scaling-stroke;stroke-linejoin:round}
@@ -171,7 +232,7 @@
     text-transform:capitalize;white-space:nowrap;
   }
   .fan-labels .fut{color:var(--s2);font-weight:600}
-  .fan .key i.fan-sw-hist{background:var(--accent)}
+  .fan .key i.fan-sw-hist{background:var(--positive)}
   .fan .key i.fan-sw-mid{background:var(--s2)}
   .fan .key i.fan-sw-band{background:var(--s2);opacity:.3}
   .fan .brief-note{margin-top:10px}
@@ -185,7 +246,7 @@
   .est-pair .lab{font-size:12px;color:var(--ink-3);margin:0 0 5px}
   .est-pair .num{font-size:20px;font-weight:700;letter-spacing:-0.02em;margin:0;color:var(--ink)}
   .est-pair .chg{font-size:11px;margin:4px 0 0;color:var(--ink-3)}
-  .est-pair .chg .ok{color:var(--accent);font-weight:600}
+  .est-pair .chg .ok{color:var(--positive);font-weight:600}
   .est-pair .chg .miss{color:var(--critical);font-weight:600}
   .est-note{font-size:13px;color:var(--ink-2);margin:0 0 14px}
   .est-note em{font-style:normal}
@@ -226,7 +287,7 @@
   }
   .brief li::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;
                     margin-top:6px;background:var(--ink-3)}
-  .brief .up li::before{background:var(--accent)}
+  .brief .up li::before{background:var(--positive)}
   .brief .risk li::before{background:var(--critical)}
   .brief .act li::before{background:var(--s2)}
 
@@ -271,7 +332,7 @@
     display:inline-flex;align-items:baseline;gap:10px;flex-wrap:wrap;
   }
   .figure.loss{color:var(--ink)}
-  .delta{font-size:13px;font-weight:600;letter-spacing:0;color:var(--accent)}
+  .delta{font-size:13px;font-weight:600;letter-spacing:0;color:var(--positive)}
   .delta.down{color:var(--critical)}
   .delta span{font-weight:400;color:var(--ink-3)}
   .figure.loss{color:var(--critical)}
@@ -332,7 +393,7 @@
   .gaugeline strong{color:var(--ink);font-weight:600}
   .gaugeline strong.neg{color:var(--critical)}
   .gauge{position:relative;height:12px;background:var(--line-soft);border-radius:6px}
-  .gauge-fill{height:100%;background:var(--accent);border-radius:6px}
+  .gauge-fill{height:100%;background:var(--positive);border-radius:6px}
   .gauge-fill.over{background:var(--critical)}
   .gauge-mark{position:absolute;top:-5px;bottom:-5px;width:2px;background:var(--ink)}
   .gauge-foot{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-3);margin-top:8px}
@@ -365,7 +426,7 @@
   }
   .trend .above .mark{border-radius:4px 4px 0 0}
   .trend .below .mark{border-radius:0 0 4px 4px}
-  .trend .col.on .mark{background:var(--accent)}
+  .trend .col.on .mark{background:var(--positive)}
   .trend .col.on.neg .mark{background:var(--critical)}
   .trend .zero{position:absolute;left:0;right:0;height:1px;background:var(--line)}
   .trend-labels{display:flex;gap:14px;margin-top:8px;min-width:max-content}
@@ -398,7 +459,7 @@
   .bar-exp{background:var(--s2)}
   .pair .net{
     position:absolute;top:-22px;left:0;right:0;text-align:center;
-    font-size:12px;font-weight:600;color:var(--accent);white-space:nowrap;
+    font-size:12px;font-weight:600;color:var(--positive);white-space:nowrap;
   }
   .pair .net.loss{color:var(--critical)}
   .pair-labels{display:flex;gap:16px;margin-top:8px;min-width:max-content}
@@ -460,11 +521,17 @@
       <p class="wordmark">Financial Overview</p>
       <a class="home-link" href="index.html">&larr; Home</a>
     </div>
-    <span class="stamp" id="stamp"></span>
+    <div class="masthead-right">
+      <span class="stamp" id="stamp"></span>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle light and dark mode">
+        <svg class="icon-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+        <svg class="icon-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+      </button>
+    </div>
   </div>
 
   <div class="loader" id="loader">
-    <div class="loader-text">
+    <div class="loader-head">
       <strong id="source">Demo data</strong>
       <span id="status">Import a CSV or Excel file to build your financial overview. Read and totalled in your browser &mdash; the file is never uploaded.</span>
       <p class="privacy-note">Three buttons below do send something, and only when pressed:
@@ -472,10 +539,17 @@
         figures, and column matching sends header names when a file uses unfamiliar ones.
         Your file, its rows, and its line items are never sent.</p>
     </div>
-    <div class="loader-actions">
+    <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload CSV or Excel file">
       <input type="file" id="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple hidden>
-      <button type="button" class="btn primary" id="pick">Choose CSV / Excel files</button>
+      <span class="dropzone-icon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 .5 9H6"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>
+      </span>
+      <p class="dropzone-title">Drag &amp; drop or click to browse</p>
+      <p class="dropzone-sub">CSV or XLSX &middot; processed locally, nothing uploaded</p>
+    </div>
+    <div class="loader-actions">
       <button type="button" class="btn" id="reset" hidden>Use demo data</button>
+      <button type="button" class="btn primary" id="pick">Choose CSV / Excel files</button>
     </div>
   </div>
 
@@ -486,6 +560,22 @@
   <footer id="footer"></footer>
 </main>
 
+<script>
+(function(){
+  var toggle = document.getElementById("theme-toggle");
+  if(!toggle) return;
+  toggle.addEventListener("click", function(){
+    var isLight = document.documentElement.getAttribute("data-theme") === "light";
+    if(isLight){
+      document.documentElement.removeAttribute("data-theme");
+      try{ localStorage.setItem("findash-theme","dark"); }catch(e){}
+    }else{
+      document.documentElement.setAttribute("data-theme","light");
+      try{ localStorage.setItem("findash-theme","light"); }catch(e){}
+    }
+  });
+})();
+</script>
 <script>
 // fallback for loading the real .json data after it loads
 
@@ -1824,8 +1914,9 @@ function wireLoader() {
   els.source = document.getElementById("source");
   els.status = document.getElementById("status");
   els.reset  = document.getElementById("reset");
-  const loader = document.getElementById("loader");
-  const input  = document.getElementById("file");
+  const loader   = document.getElementById("loader");
+  const dropzone = document.getElementById("dropzone");
+  const input    = document.getElementById("file");
 
   // #sheet is never replaced, only refilled, so one listener covers every redraw
   document.getElementById("sheet").addEventListener("click", e => {
@@ -1848,6 +1939,10 @@ function wireLoader() {
   });
 
   document.getElementById("pick").addEventListener("click", () => input.click());
+  dropzone.addEventListener("click", () => input.click());
+  dropzone.addEventListener("keydown", e => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); input.click(); }
+  });
   input.addEventListener("change", e => { handleFiles(e.target.files); input.value = ""; });
 
   els.reset.addEventListener("click", () => {
@@ -1861,11 +1956,11 @@ function wireLoader() {
   // Drop anywhere on the page. preventDefault on dragover is what stops the
   // browser from just navigating to the dropped file.
   let depth = 0;
-  document.addEventListener("dragenter", e => { e.preventDefault(); depth++; loader.classList.add("over"); });
+  document.addEventListener("dragenter", e => { e.preventDefault(); depth++; dropzone.classList.add("over"); });
   document.addEventListener("dragover",  e => e.preventDefault());
-  document.addEventListener("dragleave", e => { e.preventDefault(); if (--depth <= 0) loader.classList.remove("over"); });
+  document.addEventListener("dragleave", e => { e.preventDefault(); if (--depth <= 0) dropzone.classList.remove("over"); });
   document.addEventListener("drop", e => {
-    e.preventDefault(); depth = 0; loader.classList.remove("over");
+    e.preventDefault(); depth = 0; dropzone.classList.remove("over");
     handleFiles(e.dataTransfer.files);
   });
 }

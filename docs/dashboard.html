@@ -166,6 +166,12 @@
   .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
   .btn.primary:hover{filter:brightness(1.08)}
   .btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .loader-text .bad{color:var(--critical)}
+  .privacy-note{
+    font-size:11px;line-height:1.5;color:var(--ink-3);
+    margin:6px 0 0;max-width:64ch;
+  }
+  .privacy-note b{color:var(--ink-2);font-weight:600}
 
   /* ---- busy state ----
      A file that parses instantly and one that waits on a network round trip
@@ -527,7 +533,11 @@
   <div class="loader" id="loader">
     <div class="loader-head">
       <strong id="source">Demo data</strong>
-      <span id="status">Import a CSV or Excel file to build your financial overview. Processed locally in your browser &mdash; nothing is uploaded.</span>
+      <span id="status">Import a CSV or Excel file to build your financial overview. Read and totalled in your browser &mdash; the file is never uploaded.</span>
+      <p class="privacy-note">Three buttons below do send something, and only when pressed:
+        <b>Get briefing</b> sends the monthly totals, <b>Use Chronos</b> sends the net profit
+        figures, and column matching sends header names when a file uses unfamiliar ones.
+        Your file, its rows, and its line items are never sent.</p>
     </div>
     <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload CSV or Excel file">
       <input type="file" id="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple hidden>
@@ -806,7 +816,8 @@ function pulse(m) {
 
   return `<div class="pulse">
     ${stat("Revenue", money0(now.revenue), was ? chg(now.revenue, was.revenue) : "")}
-    ${stat("Net margin", fmtPct(now.margin), was ? chg(now.margin, was.margin, "pts") : "")}
+    ${stat("Net margin", now.revenue ? fmtPct(now.margin) : "\u2014",
+           was && was.revenue && now.revenue ? chg(now.margin, was.margin, "pts") : "")}
     ${stat("Total costs", money0(now.total), was ? chg(now.total, was.total) : "")}
     ${stat("Budget used", now.budget ? fmtPct(now.budgetPct) : "\u2014",
            was && was.budget ? chg(now.budgetPct, was.budgetPct, "pts") : "")}
@@ -1096,7 +1107,8 @@ function draw(m) {
         <p class="eyebrow">${cap(m.month)} &middot; net result</p>
         <p class="figure${loss ? " loss" : ""}">${money(net)}${deltaVsPrev(m)}</p>
         <p class="note">
-          ${fmtPct(pct(net, rev))} of ${money(rev)} in revenue.
+          ${rev ? fmtPct(pct(net, rev)) + " of " + money(rev) + " in revenue."
+                : "No revenue recorded this month."}
           ${loss
             ? `Costs ran past revenue by ${money(Math.abs(net))}.`
             : `Kept ${money(net)} after every cost.`}
@@ -1347,6 +1359,9 @@ function select(num) {
 /* Character-scanning parser: handles quoted fields, embedded commas,
    doubled "" escapes, and both \n and \r\n line endings. */
 function parseCsvGrid(text) {
+  // Excel's "CSV UTF-8" export starts with a byte-order mark. Left in place it
+  // becomes part of the first header, which then matches nothing.
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
   const rows = [];
   let row = [], field = "", quoted = false;
 
@@ -1660,8 +1675,29 @@ async function resolveHeaders(headers) {
 }
 
 const NUM = v => {
-  const n = Number(String(v).replace(/[$,\s]/g, ""));
-  return Number.isFinite(n) ? n : 0;
+  let t = String(v == null ? "" : v).trim();
+  if (!t) return 0;
+
+  // Accounting convention: (1,250.00) means -1250. Stripping the brackets and
+  // reading 1250 as positive silently flips the sign of every such figure.
+  let neg = false;
+  if (/^\(.*\)$/.test(t)) { neg = true; t = t.slice(1, -1); }
+
+  t = t.replace(/[^0-9.,\-\s]/g, "").trim();   // drop currency symbols
+
+  // Only the unambiguous European forms are converted. "1.250,00" and
+  // "1 250,00" can mean nothing else. A bare "1,25" is genuinely ambiguous -
+  // it is left as thousands rather than guessed at, since guessing wrong here
+  // is a 100x error either way.
+  if (/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(t) || /^-?\d{1,3}( \d{3})+(,\d+)?$/.test(t)) {
+    t = t.replace(/[. ]/g, "").replace(",", ".");
+  } else {
+    t = t.replace(/[,\s]/g, "");
+  }
+
+  const n = Number(t);
+  if (!Number.isFinite(n)) return 0;
+  return neg ? -n : n;
 };
 const round2 = n => Math.round(n * 100) / 100;
 
@@ -1724,7 +1760,9 @@ function monthsFrom(entries, leftovers) {
     const netProfit     = grossProfit - operatingExpenses - variableOverhead - fixedOverhead;
 
     return {
-      month: String(month).toLowerCase(), monthNum, revenue,
+      // Escaped here rather than at each of the ~15 places it is interpolated:
+      // a CSV whose month cell is <img src=x onerror=...> executed in the page.
+      month: esc(String(month).toLowerCase()), monthNum, revenue,
       cogs: NUM(row.cogs), labor: NUM(row.labor), utilities: NUM(row.utilities),
       maintenance: NUM(row.maintenance), hardware: NUM(row.hardware),
       directExpenses, operatingExpenses, variableOverhead, fixedOverhead,

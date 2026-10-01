@@ -273,8 +273,9 @@ arithmetic itself when you hand it CSVs directly.)
 
 ## Web dashboard
 
-`docs/index.html` renders the same figures as a web page, published by GitHub Pages
-from the `/docs` folder on `main`:
+`docs/index.html` is the public landing page; `docs/dashboard.html` renders the same
+figures as a web page. Both are published by GitHub Pages from the `/docs` folder
+on `main`:
 
 **<https://spinfern-o.github.io/FinDash/>**
 
@@ -325,6 +326,7 @@ src/main/java/
 data/               Input CSVs
 docs/               Published by GitHub Pages from the /docs folder on main
 docs/data.json      Generated on every run
-docs/index.html     Web dashboard
+docs/index.html     Landing page
+docs/dashboard.html Web dashboard
 bin/                Compiled classes (git-ignored)
 ```

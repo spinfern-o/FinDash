@@ -15,7 +15,8 @@
  *
  * Request:  { "months": [{month, revenue, directExpenses, operatingExpenses,
  *                         variableOverhead, fixedOverhead, totalExpenses,
- *                         netProfit, budget}] }
+ *                         netProfit, budget}],
+ *             "currency": "USD" }        (optional ISO 4217 code)
  * Response: { "opportunities": [...], "risks": [...], "actions": [...] }
  */
 
@@ -44,7 +45,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "POST only" });
   }
 
-  const { months } = req.body ?? {};
+  const { months, currency } = req.body ?? {};
+  // The page shows amounts in the reader's chosen currency; advice written in
+  // dollars beside a dashboard in euros reads as a mistake. Three capital
+  // letters or nothing - free text never reaches the prompt.
+  const code = typeof currency === "string" && /^[A-Z]{3}$/.test(currency) ? currency : null;
   if (!Array.isArray(months) || !months.length || months.length > MAX_MONTHS) {
     return res.status(400).json({ error: `months must be 1-${MAX_MONTHS} entries` });
   }
@@ -60,7 +65,7 @@ export default async function handler(req, res) {
   });
 
   const prompt = `You are advising the owner of a small business on their own monthly figures.
-Every amount is in whole currency units. Costs are grouped into four buckets:
+Every amount is in whole ${code ? code : "currency"} units${code ? `; write amounts in ${code}` : ""}. Costs are grouped into four buckets:
 direct (traceable to a unit or job), operating (scales with volume but not
 per-unit), variable overhead (rises with activity, not proportionally), and
 fixed overhead (does not move with sales).

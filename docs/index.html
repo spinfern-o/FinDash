@@ -8,7 +8,7 @@
 <script>
   window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
 </script>
-<meta name="description" content="Revenue, costs, and budget read straight off your own CSVs: one clear monthly dashboard, built for non-tech, international, and everyday teams.">
+<meta name="description" content="Revenue, costs and budget from the figures you already have: one clear monthly dashboard for small business owners. No signup, and your file never leaves your browser.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -32,9 +32,12 @@
     --ink:#f5f5f5;
     --ink-2:#b3b3b3;
     --ink-3:#8c8c8c;
-    --accent:#ef4444;
-    --accent-2:#f87171;
-    --accent-ink:#ffffff;
+    /* Brand colour. Not red: on a finance product red reads as "loss", and the
+       dashboard keeps it for exactly that. Matches the dashboard's buttons. */
+    --accent:#8b93f8;
+    --accent-2:#a5b4fc;
+    --accent-ink:#0b0b14;
+    --critical:#e5484d;
     --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   }
 
@@ -48,9 +51,10 @@
     --ink:#0a0a0a;
     --ink-2:#4b4b50;
     --ink-3:#86868c;
-    --accent:#e11d2e;
-    --accent-2:#f24a56;
+    --accent:#4f46e5;
+    --accent-2:#6366f1;
     --accent-ink:#ffffff;
+    --critical:#d6333b;
   }
 
   *{box-sizing:border-box}
@@ -185,7 +189,10 @@
   .preview .cell{padding:4px 2px}
   .preview .cell p{margin:0;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
   .preview .cell strong{display:block;margin-top:9px;font-size:21px;font-weight:700;letter-spacing:-0.02em}
-  .preview .cell small{display:block;margin-top:4px;font-size:12px;color:var(--accent);font-weight:600}
+  .preview .cell small{display:block;margin-top:4px;font-size:12px;color:var(--ink-3);font-weight:600}
+  .preview .cell small.bad,.preview .cell strong.bad{color:var(--critical)}
+  .preview-cap{grid-column:1/-1;margin:0;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+  .preview-cap a{color:inherit}
 
   /* ---- forecast chart ---- */
   .forecast{
@@ -200,6 +207,8 @@
   .forecast-legend span{display:flex;align-items:center;gap:8px}
   .legend-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none}
   .legend-dot.proj{background:transparent;border:1.5px dashed var(--accent-2)}
+  a.nav-tag{text-decoration:none}
+  a.nav-tag:hover{color:var(--ink)}
   .forecast-chart{margin-top:22px;width:100%;height:auto;display:block}
   .forecast-chart .grid-line{stroke:var(--line-soft);stroke-width:1}
   .forecast-chart .divider{stroke:var(--line);stroke-width:1;stroke-dasharray:3 4}
@@ -209,6 +218,9 @@
   .forecast-chart .dot-projected{fill:var(--card);stroke:var(--accent-2);stroke-width:2}
   .forecast-chart .axis-label{fill:var(--ink-3);font-family:var(--mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase}
   .forecast-chart .proj-label{fill:var(--ink-3);font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+  .forecast-chart .zero-line{stroke:var(--line);stroke-width:1}
+  .forecast-chart .zero-label{fill:var(--ink-3);font-family:var(--mono);font-size:10px}
+  .forecast-note{margin:14px 0 0;font-size:12px;color:var(--ink-3)}
 
   /* ---- for-everyone band ---- */
   .band{margin:72px 5% 0;display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden}
@@ -235,6 +247,9 @@
     .band{grid-template-columns:repeat(2,1fr)}
   }
   @media (max-width:640px){
+    /* The corner crosses straddle the frame's edge, which on a phone is the
+       screen's edge, so half of one hung outside and the page scrolled sideways. */
+    .cross{display:none}
     .hero{padding:60px 20px 52px}
     header{padding:18px 20px}
     .trust-label span.rule{display:none}
@@ -255,7 +270,7 @@
       findash<span class="period">.</span>
     </a>
     <nav class="links">
-      <span class="nav-tag">Financial Overview</span>
+      <a class="nav-tag" href="/help">Help</a>
       <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle light and dark mode">
         <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
         <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
@@ -274,11 +289,11 @@
         <span class="line-2">Built for <span class="rotator-wrap"><em class="rotator" id="rotator">non&#8209;tech</em></span></span>
       </h1>
       <p class="lede">
-        Revenue, costs, and budget, read straight off your own CSVs. No spreadsheets to
-        rebuild, no numbers to recheck by hand, and your file is never uploaded. It is read and
-        totalled in your own browser.
+        Revenue, costs and budget from the figures you already have. Copy your monthly totals from
+        QuickBooks, Xero or your own spreadsheet into our template, drop it in, and see the month.
+        Your file is never uploaded: it is read and totalled in your own browser.
       </p>
-      <p class="example-line"><span class="example-tag">Example</span><span id="example-text">No formulas, no pivot tables, just open the file and read the month.</span></p>
+      <p class="example-line"><span class="example-tag">Example</span><span id="example-text">No formulas, no pivot tables, just your monthly totals in one simple template.</span></p>
       <div class="cta-row">
         <a class="cta" href="/dashboard">
           Open dashboard
@@ -295,7 +310,7 @@
         <div class="trust-items">
           <span>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-            Every dollar tracked
+            Every cost line itemised
           </span>
           <span>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
@@ -309,74 +324,88 @@
       </div>
     </section>
 
+    <!-- The same figures the demo dashboard opens on (September 2026, the latest
+         month in docs/data.json). A preview that disagrees with the product is
+         the first thing a visitor would catch. -->
     <section class="preview" id="preview" aria-label="Sample figures">
-      <div class="cell"><p>Revenue</p><strong>$72,000</strong><small>+12.5% vs June</small></div>
-      <div class="cell"><p>Net margin</p><strong>10.5%</strong><small>Kept after every cost</small></div>
-      <div class="cell"><p>Total costs</p><strong>$64,420</strong><small>Across 4 buckets</small></div>
-      <div class="cell"><p>Budget used</p><strong>97.6%</strong><small>$1,580 under</small></div>
+      <p class="preview-cap">From the <a href="/dashboard">demo dashboard</a> &middot; September 2026</p>
+      <div class="cell"><p>Revenue</p><strong>$33,000</strong><small class="bad">Down 48.4% on August</small></div>
+      <div class="cell"><p>Net margin</p><strong class="bad">&minus;11.0%</strong><small class="bad">A loss: costs ran past revenue</small></div>
+      <div class="cell"><p>Total costs</p><strong>$36,640</strong><small>Across 4 cost groups</small></div>
+      <div class="cell"><p>Budget used</p><strong>107.8%</strong><small class="bad">$2,640 over budget</small></div>
     </section>
 
-    <section class="forecast" aria-label="Revenue forecast example">
+    <!-- Plotted from the demo's net profit (7,580 / 5,420 / -3,640) and the same
+         straight-line trend the dashboard fits. With three months on file the
+         dashboard shows the direction without amounts, so this does too.
+         y = 30 + (7580 - v) / 26900 * 140, spanning 7,580 down to the trend's
+         December value of -19,320. -->
+    <section class="forecast" aria-label="Forecast example">
       <div class="forecast-head">
         <div>
-          <span class="tag">Prediction example</span>
-          <h3>See what's coming, not just what happened</h3>
-          <p>FinDash reads the trend in your own CSV and projects the next three months, with no spreadsheets and no extra setup.</p>
+          <span class="tag">Forecast example</span>
+          <h3>See where it's heading, not just where it's been</h3>
+          <p>FinDash draws the trend through your monthly profit. In the demo it turned down in August, a month before September's loss.</p>
         </div>
         <div class="forecast-legend">
-          <span><span class="legend-dot"></span> Actual (from your file)</span>
-          <span><span class="legend-dot proj"></span> Projected (next 3 months)</span>
+          <span><span class="legend-dot"></span> Net profit (demo)</span>
+          <span><span class="legend-dot proj"></span> Direction (next 3 months)</span>
         </div>
       </div>
-      <svg class="forecast-chart" viewBox="0 0 600 200" role="img" aria-label="Line chart showing three months of actual revenue rising from $58,000 to $65,000, followed by a projected rise to $77,000 over the next three months">
-        <line class="grid-line" x1="30" y1="170" x2="570" y2="170"/>
-        <line class="grid-line" x1="30" y1="100" x2="570" y2="100"/>
+      <svg class="forecast-chart" viewBox="0 0 600 200" role="img" aria-label="Line chart of the demo's net profit: 7,580 in July, 5,420 in August and a 3,640 loss in September, with a dashed line showing the trend continuing down through December">
         <line class="grid-line" x1="30" y1="30" x2="570" y2="30"/>
+        <line class="grid-line" x1="30" y1="170" x2="570" y2="170"/>
+        <line class="zero-line" x1="30" y1="69.4" x2="570" y2="69.4"/>
+        <text class="zero-label" x="570" y="64" text-anchor="end">$0</text>
         <line class="divider" x1="246" y1="16" x2="246" y2="178"/>
-        <text class="proj-label" x="252" y="24">Projected &#8594;</text>
-        <path class="line-actual" d="M30,133 L138,119 L246,100"/>
-        <path class="line-projected" d="M246,100 L354,81 L462,63 L570,44"/>
-        <circle class="dot-actual" cx="30" cy="133" r="4.5"/>
-        <circle class="dot-actual" cx="138" cy="119" r="4.5"/>
-        <circle class="dot-actual" cx="246" cy="100" r="4.5"/>
-        <circle class="dot-projected" cx="354" cy="81" r="4.5"/>
-        <circle class="dot-projected" cx="462" cy="63" r="4.5"/>
-        <circle class="dot-projected" cx="570" cy="44" r="4.5"/>
-        <text class="axis-label" x="30" y="190">Apr &middot; $58k</text>
-        <text class="axis-label" x="138" y="190" text-anchor="middle">May &middot; $61k</text>
-        <text class="axis-label" x="246" y="190" text-anchor="middle">Jun &middot; $65k</text>
-        <text class="axis-label" x="354" y="190" text-anchor="middle">Jul &middot; $69k</text>
-        <text class="axis-label" x="462" y="190" text-anchor="middle">Aug &middot; $73k</text>
-        <text class="axis-label" x="570" y="190" text-anchor="end">Sep &middot; $77k</text>
+        <text class="proj-label" x="252" y="22">Direction &#8594;</text>
+        <path class="line-actual" d="M30,30 L138,41.2 L246,88.4"/>
+        <path class="line-projected" d="M246,88.4 L354,111.6 L462,140.8 L570,170"/>
+        <circle class="dot-actual" cx="30" cy="30" r="4.5"/>
+        <circle class="dot-actual" cx="138" cy="41.2" r="4.5"/>
+        <circle class="dot-actual" cx="246" cy="88.4" r="4.5"/>
+        <circle class="dot-projected" cx="354" cy="111.6" r="4.5"/>
+        <circle class="dot-projected" cx="462" cy="140.8" r="4.5"/>
+        <circle class="dot-projected" cx="570" cy="170" r="4.5"/>
+        <text class="axis-label" x="30" y="18">$7.6k</text>
+        <text class="axis-label" x="138" y="29" text-anchor="middle">$5.4k</text>
+        <text class="axis-label" x="238" y="106" text-anchor="end">&minus;$3.6k</text>
+        <text class="axis-label" x="30" y="190">Jul</text>
+        <text class="axis-label" x="138" y="190" text-anchor="middle">Aug</text>
+        <text class="axis-label" x="246" y="190" text-anchor="middle">Sep</text>
+        <text class="axis-label" x="354" y="190" text-anchor="middle">Oct</text>
+        <text class="axis-label" x="462" y="190" text-anchor="middle">Nov</text>
+        <text class="axis-label" x="570" y="190" text-anchor="end">Dec</text>
       </svg>
+      <p class="forecast-note">With fewer than six months on file you see the direction only. From six months, FinDash projects the next three in dollars, with a range.</p>
     </section>
 
     <section class="band" aria-label="Who it's built for">
       <div class="item">
         <span class="tag">No jargon</span>
         <h3>Non-tech owners</h3>
-        <p>Plain labels, no pivot tables. If you can read a CSV, you can read this.</p>
+        <p>Plain labels and a ? beside every term. If you can copy a total from your Profit and Loss, you can use this.</p>
       </div>
       <div class="item">
-        <span class="tag">Any currency symbol</span>
+        <span class="tag">Your currency</span>
         <h3>International teams</h3>
-        <p>Import CSV or Excel exports from your bank or accounting system.</p>
+        <p>See your figures in euros, pounds, dollars and more. Amounts written 1.250,00 or 1,250.00 are both read correctly.</p>
       </div>
       <div class="item">
         <span class="tag">One file</span>
         <h3>Freelancers</h3>
-        <p>Drop in a single CSV and get a full month of financial clarity.</p>
+        <p>One spreadsheet, a row per month. Excel or CSV, and every month at a glance.</p>
       </div>
       <div class="item">
         <span class="tag">Zero setup</span>
         <h3>Small teams</h3>
-        <p>No accounts, no onboarding call. Open the file, see the month.</p>
+        <p>No accounts, no onboarding call. Your figures stay in your browser, ready for next time.</p>
       </div>
     </section>
   </main>
 
   <footer>
-    <span>FinDash / Financial Overview</span>
+    <a href="/help">Help and glossary</a>
     <a href="/dashboard">
       The numbers start here
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
@@ -404,12 +433,12 @@
 <script>
 (function(){
   var frames = [
-    { word: "non\u2011tech",      example: "No formulas, no pivot tables, just open the file and read the month." },
-    { word: "international",  example: "Reads the currency symbols and number formats your books use." },
-    { word: "freelancers",    example: "One invoice export in, one month of clarity out." },
+    { word: "non\u2011tech",      example: "No formulas, no pivot tables, just your monthly totals in one simple template." },
+    { word: "international",  example: "Euros, pounds, rupees or dollars: your figures, in your currency." },
+    { word: "freelancers",    example: "One spreadsheet in, every month at a glance." },
     { word: "small teams",    example: "No logins, no onboarding call, just open the file and see the numbers." },
-    { word: "founders",       example: "Watch burn and runway without hiring a finance person." },
-    { word: "anyone",         example: "If you can open a CSV, you can read this dashboard." }
+    { word: "founders",       example: "See which costs are growing faster than sales, before they eat your margin." },
+    { word: "anyone",         example: "If you can copy a total from QuickBooks or Xero, you can read this dashboard." }
   ];
   var el = document.getElementById("rotator");
   var exampleEl = document.getElementById("example-text");

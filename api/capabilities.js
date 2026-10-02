@@ -21,6 +21,7 @@ export default function handler(req, res) {
   return res.status(200).json({
     briefing: Boolean(process.env.ANTHROPIC_API_KEY),
     mapping: Boolean(process.env.ANTHROPIC_API_KEY),
+    photos: Boolean(process.env.ANTHROPIC_API_KEY),
     forecast: Boolean(process.env.FORECAST_URL),
   });
 }

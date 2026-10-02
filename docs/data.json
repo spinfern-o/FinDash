@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-30",
+  "generated": "2026-10-01",
   "months": [
     {
       "month": "july",
@@ -12,6 +12,23 @@
       "utilities": 2800.00,
       "cogs": 26000.00,
       "labor": 12000.00,
+
+      "lines": {
+        "cogs": 26000.00,
+        "labor": 12000.00,
+        "employee meals": 2500.00,
+        "tax": 5000.00,
+        "packaging": 3400.00,
+        "credit card fees": 2150.00,
+        "marketing": 2200.00,
+        "hardware": 0.00,
+        "utilities": 2800.00,
+        "maintenance": 950.00,
+        "rent": 6000.00,
+        "insurance": 1100.00,
+        "business license": 0.00,
+        "telephone": 320.00
+      },
 
       "grossProfit": 26500.00,
       "netProfit": 7580.00,
@@ -39,6 +56,23 @@
       "cogs": 21000.00,
       "labor": 9000.00,
 
+      "lines": {
+        "cogs": 21000.00,
+        "labor": 9000.00,
+        "employee meals": 2000.00,
+        "tax": 5500.00,
+        "packaging": 2600.00,
+        "credit card fees": 1760.00,
+        "marketing": 1800.00,
+        "hardware": 0.00,
+        "utilities": 3100.00,
+        "maintenance": 4200.00,
+        "rent": 6200.00,
+        "insurance": 1100.00,
+        "business license": 0.00,
+        "telephone": 320.00
+      },
+
       "grossProfit": 26500.00,
       "netProfit": 5420.00,
 
@@ -64,6 +98,23 @@
       "utilities": 1900.00,
       "cogs": 11000.00,
       "labor": 3500.00,
+
+      "lines": {
+        "cogs": 11000.00,
+        "labor": 3500.00,
+        "employee meals": 500.00,
+        "tax": 5200.00,
+        "packaging": 1350.00,
+        "credit card fees": 910.00,
+        "marketing": 900.00,
+        "hardware": 2400.00,
+        "utilities": 1900.00,
+        "maintenance": 310.00,
+        "rent": 6000.00,
+        "insurance": 1100.00,
+        "business license": 1250.00,
+        "telephone": 320.00
+      },
 
       "grossProfit": 12800.00,
       "netProfit": -3640.00,

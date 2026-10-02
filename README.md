@@ -239,7 +239,9 @@ choices, and changing one mid-year makes months incomparable.
 ## JSON output
 
 Every run writes `docs/data.json` — the same months and metrics in machine-readable
-form, for charting or a web front end. The JSON carries finished values rather than raw
+form, for charting or a web front end. `lines` carries all fourteen line items keyed by
+their CSV header, so the web report can itemise every bucket; the five top-level line
+items are kept for older readers. The JSON carries finished values rather than raw
 inputs, so a consumer never has to recompute them. (The one exception is the browser
 loader described under [Without recompiling](#without-recompiling), which runs the same
 arithmetic itself when you hand it CSVs directly.)
@@ -257,6 +259,12 @@ arithmetic itself when you hand it CSVs directly.)
       "utilities": 2800.00,
       "cogs": 26000.00,
       "labor": 12000.00,
+      "lines": {
+        "cogs": 26000.00, "labor": 12000.00, "employee meals": 2500.00, "tax": 5000.00,
+        "packaging": 3400.00, "credit card fees": 2150.00, "marketing": 2200.00,
+        "hardware": 0.00, "utilities": 2800.00, "maintenance": 950.00,
+        "rent": 6000.00, "insurance": 1100.00, "business license": 0.00, "telephone": 320.00
+      },
       "grossProfit": 26500.00,
       "netProfit": 7580.00,
       "variableOverhead": 3750.00,
@@ -274,7 +282,9 @@ arithmetic itself when you hand it CSVs directly.)
 ## Web dashboard
 
 `docs/index.html` is the public landing page; `docs/dashboard.html` renders the same
-figures as a web page. Both are published by GitHub Pages from the `/docs` folder
+figures as a web page; `docs/help.html` explains getting data in, every term, and what
+leaves the browser. The plain-language definitions behind the dashboard's **?** buttons
+and the help page's glossary both come from `docs/glossary.js`. Both are published by GitHub Pages from the `/docs` folder
 on `main`:
 
 **<https://spinfern-o.github.io/FinDash/>**
@@ -303,18 +313,58 @@ ever builds `main`, so a branch is never reachable at the public URL.
 
 ### Without recompiling
 
-The web dashboard can also read the two CSVs directly. Open the published page,
-click **Choose CSV files**, and pick `dashboard.csv` and `expenses.csv` (together
-or one at a time, in either order — each file is identified by its headers, not
-its name). The browser runs the same bucket arithmetic the Java app does and
-renders the result; **Use published figures** switches back to `data.json`.
+The web dashboard reads a spreadsheet directly. The simplest layout is **one file, one
+row per month**: press **Download Excel template** (or CSV) on the dashboard for a copy
+filled with the sample months. Its columns are `Month`, `Year`, `Revenue`, `Budget` and
+the fourteen cost lines under plain names (`Cost of goods sold`, `Payroll tax`, ...).
+Month names such as `July`, `Sept 2026` or `2026-07` are read, so no month number is
+needed. Column order does not matter, common synonyms are recognised, and a sheet laid
+out sideways (line items down, months across) is turned the right way round.
 
-Files are read locally and never uploaded anywhere. CSV is the only format read —
-PDFs and bank statements are not supported.
+The original two files still work: pick `dashboard.csv` and `expenses.csv` together or
+one at a time, in either order — each file is identified by its headers, not its name.
+The browser runs the same bucket arithmetic the Java app does and renders the result.
+
+Rows a report derives from the others (`Total costs`, `Gross profit`, `Net income`,
+`Budget used`, ...) are recognised and set aside, so they are never counted twice. That
+is also what lets the dashboard's **Export to Excel** file be dropped back on the page.
+
+Spreadsheets are read locally and never uploaded anywhere. Excel (.xlsx), CSV and photos
+are read — PDFs and bank statements are not supported. After a file loads, the computed
+months (not the file) are kept in the browser's `localStorage` so the figures are there
+on the next visit; **Forget my data** removes them along with any saved invoices and
+advice and returns to `data.json`. Four things can leave the browser, each documented on
+the help page: a photo when one is added, monthly totals when **Get advice** is pressed,
+header names when a column is not recognised, and net-profit figures if a forecast model
+is configured and its button is pressed.
+
+### Photos of invoices and receipts
+
+A JPEG, PNG or WebP of a supplier invoice, bill or receipt can be dropped on the dashboard
+like a file. The browser shrinks it (2576 px on the long edge, under 3 MB) and posts it to
+`api/read-document.js`, which asks Claude Opus 5.5 for a structured reading: supplier,
+number, date, and every charged line with its quantity, unit price, amount and one of the
+fourteen cost lines. Structured outputs fix the shape; the endpoint then re-checks the
+arithmetic itself (each line's quantity x price, and the lines against the printed total).
+A reading that fails gets one second look, at higher effort, with the failures spelled
+out. The owner then sees every line, can change any line's category and the month, and
+nothing is added until they press **Add**.
+
+Confirmed invoices are stored separately from the spreadsheet's months and added on top
+of their month, so each can be removed again and a new spreadsheet does not drop them. A
+receipt for money taken in adds to revenue. The photo itself is not kept anywhere. Photo
+reading is offered only when `ANTHROPIC_API_KEY` is set (`/api/capabilities` reports
+`photos`).
 
 Costs that don't fit an existing column should be added to the bucket that matches
 their behavior, not appended arbitrarily — the point of the structure is that the four
 totals stay meaningful.
+
+### Sharing
+
+- **Print or save as PDF** prints the period on screen through a light print stylesheet.
+- **Export to Excel** builds an .xlsx in the browser: every line for every month, with
+  a Total column, plus an About sheet naming the months, currency and source.
 
 ## Project layout
 
@@ -328,5 +378,8 @@ docs/               Published by GitHub Pages from the /docs folder on main
 docs/data.json      Generated on every run
 docs/index.html     Landing page
 docs/dashboard.html Web dashboard
+docs/help.html      Help: getting data in, glossary, privacy
+docs/glossary.js    Plain-language definitions shared by the dashboard and help page
+api/                Vercel functions: column mapping, advice, photo reading, forecast proxy, capabilities
 bin/                Compiled classes (git-ignored)
 ```

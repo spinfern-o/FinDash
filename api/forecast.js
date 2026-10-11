@@ -107,7 +107,7 @@ export default async function handler(req, res) {
     const upstream = await askForecastService(serviceUrl, series, horizon);
 
     if (!upstream.ok) {
-      console.error("forecast upstream:", upstream.status);
+      console.error("[findash-error] forecast upstream:", upstream.status);
       // A 503 is passed on rather than turned into a 502. The service answers
       // 503 when it is up but the model cannot be loaded (no torch, no
       // weights): "unavailable, keep the local trend", not "broken". Its

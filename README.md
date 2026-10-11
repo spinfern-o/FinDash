@@ -1,552 +1,369 @@
-# CFO Dashboard
+# FinDash
 
-A Java console app that turns two CSV files of monthly business financials into a
-readable dashboard of KPIs, and lets you compare any two months side by side.
+**A monthly finance dashboard for small business owners who aren't accountants.**
 
-Costs are grouped into four non-overlapping buckets — direct expenses, operating
-expenses, variable overhead, and fixed overhead — so the same structure works for a
-restaurant, a retailer, a trades business, or a service firm.
+FinDash takes the monthly totals a business already has, from QuickBooks, Xero, a
+spreadsheet or a photo of a supplier invoice, and shows them as one clear dashboard:
+revenue, costs in four groups, profit, and spending against budget. Every term has a plain
+label and a **?** beside it. Spreadsheets are read in the browser and never uploaded, and
+the dashboard works without an account.
 
-## Requirements
+It was built for a restaurant, but the cost groups work just as well for a shop, a trade
+or a service business.
 
-- JDK 21 or newer (developed against Temurin 21)
-- Maven (`brew install maven`)
-- An `ANTHROPIC_API_KEY` in the environment — **optional**. Without one, column
-  mapping falls back to reading columns in file order, exactly as before.
+- [What it does](#what-it-does)
+- [How your data is handled](#how-your-data-is-handled)
+- [How the numbers are worked out](#how-the-numbers-are-worked-out)
+- [Getting figures in](#getting-figures-in)
+- [Running your own copy](#running-your-own-copy)
+- [Working on the code](#working-on-the-code)
+- [The Java command-line app](#the-java-command-line-app)
 
-## Quick start
+## What it does
 
-Compile and run from the project root:
+- **Reads your figures.** Drop in an Excel or CSV file: the template, or a layout of
+  your own. FinDash works out which column is which, and turns a sheet that runs
+  sideways the right way round.
+- **Shows one period at a glance.** Pick a month, a quarter or the year to date to see
+  the net result, the headline numbers, spending against budget, where the revenue went,
+  and a full report with every cost line.
+- **Compares months.** Net profit by month, revenue against costs, and a "What needs
+  attention" list of losses, budget overruns and unusual costs.
+- **Looks ahead.** A budget estimator for next month, and a trend line through net
+  profit (from three months on file, with a dollar range from six).
+- **Reads invoice photos** *(with a free account)*. Take a photo of a supplier invoice or
+  receipt; Claude reads every line, FinDash checks the arithmetic, and you confirm
+  before anything is added.
+- **Writes advice** *(with a free account)*. Press **Get advice** and Claude writes
+  opportunities, risks and next steps from your monthly totals.
+- **Remembers.** Figures stay in your browser for next time. Log in and they are saved
+  to your account, so they're there on any computer.
+- **Shares.** Print or save as PDF, or export everything to Excel.
+- **Any currency.** Euros, pounds, dollars and more, and both `1.250,00` and `1,250.00`
+  are read correctly.
 
-```bash
-mvn -q compile exec:java
-```
+## How your data is handled
 
-> **Run from the project root.** The CSV paths (`data/expenses.csv`, `data/dashboard.csv`)
-> are relative to the working directory, so running from anywhere else will fail to
-> find them.
+Your spreadsheet is opened and added up by your own browser. It never leaves it. Only
+these things are ever sent anywhere, always through this site's own server (the browser
+never contacts Supabase or Claude itself). The help page lists the same seven.
 
-## Example usage
+| When | What is sent | To |
+| --- | --- | --- |
+| Logging in or creating an account | email and password | Supabase |
+| While logged in | the worked-out monthly figures and confirmed invoice lines (not the file, not photos) | Supabase (your account) |
+| Adding a photo | the photo, to be read (it isn't kept) | Claude |
+| Pressing **Get advice** | each month's totals: revenue, the four cost groups, net profit, budget | Claude |
+| A column name isn't recognised | the column names only, never the numbers | Claude |
+| Pressing the forecast model's button (if one is set up) | the net profit figure for each month | the forecast service |
+| Something on the page breaks | the error message and which file it came from | this site's own log |
 
-The app lists the months it loaded, writes `docs/data.json`, then loops on two prompts:
+Photos, advice and column matching need a free account, because each one is a paid
+request (see [Paid features and daily limits](#paid-features-and-daily-limits)).
+**Forget my data** removes everything from the browser and the account.
 
-1. **Pick a month** — enter its month number to print that month's dashboard.
-2. **Pick a month to compare against** — enter another month number for a side-by-side
-   table. Keep entering numbers to compare against more months.
+## How the numbers are worked out
 
-Enter `0` at the second prompt to pick a different month; `0` at the first prompt exits.
+### Fourteen cost lines, four groups
 
-### Example session
+Every cost line belongs to exactly one group, so the four group totals always add up to
+total costs, and revenue minus total costs is net profit. Nothing is counted twice.
 
-```
-Months on file:
-7 - july
-8 - august
-9 - september
-Which month's dashboard do you wish to see? (month num, 0 to quit)
-7
-july's financial dashboard
-Month Number                      7
-Revenue                  $72,000.00
+| Group | Cost lines | What belongs here |
+| --- | --- | --- |
+| **Direct costs** | cost of goods sold, labor, employee meals, payroll tax | Costs you can trace to what you sell. With labor, this is prime cost: usually the biggest share, and the part you can change week to week. |
+| **Operating costs** | packaging, credit card fees, marketing, hardware | Costs that grow with sales but can't be traced to one sale. |
+| **Variable overhead** | utilities, maintenance | Costs that rise with activity, but not in step with it. |
+| **Fixed overhead** | rent, insurance, business license, telephone | Costs that don't move with sales at all, and are the hardest to cut. |
 
-Maintenance                  $950.00
-Hardware                       $0.00
-Utilities                  $2,800.00
-COGS                      $26,000.00
-Labor                     $12,000.00
+A cost without a line of its own belongs in the group that matches how it behaves, so the
+four totals stay meaningful.
 
-Gross Profit                  36.8%
-Net Profit                    10.5%
+### The figures
 
-Variable Overhead              5.2%
-Fixed Overhead                10.3%
+All ratios are a percentage of revenue, except budget used.
 
-Direct Expenses               63.2%
-Operating Expenses            10.8%
+| Figure | How it's worked out |
+| --- | --- |
+| Gross profit | revenue − direct costs |
+| Net profit | revenue − total costs |
+| Each group's share | group total ÷ revenue |
+| Budget used | total costs ÷ budget (the budget is a spending limit, not a sales target) |
 
-Total Expenses                89.5%
-
-Budget                    $66,000.00
-Budget Used                   97.6%
-You used 97.61% of your budget ($1,580.00 under)
-Which month's dashboard would you like to compare it to? (month num, 0 to quit)
-9
-
-july vs september
-Metrics                        july    september     Difference
-Revenue                $  72,000.00 $  33,000.00 $  +39,000.00
-
-Gross Profit                  36.8%        38.8%        -2.0 pts
-Net Profit                    10.5%       -11.0%       +21.5 pts
-Fixed Overhead                10.3%        26.3%       -16.0 pts
-
-Variable Overhead              5.2%         6.7%        -1.5 pts
-
-Direct Expenses               63.2%        61.2%        +2.0 pts
-Operating Expenses            10.8%        16.8%        -6.1 pts
-
-Total Expenses                89.5%       111.0%       -21.6 pts
-Budget Used                   97.6%       107.8%       -10.2 pts
-```
-
-The difference column is computed as **month 1 minus month 2**, so a cost that rose
-from the first month to the second prints negative.
-
-## Data files
-
-Both files live in `data/` and are joined on the **month num** column.
-
-### `data/dashboard.csv`
-
-| Column      | Meaning                                       |
-| ----------- | --------------------------------------------- |
-| `month`     | Display name (e.g. `july`)                    |
-| `month num` | Integer key, also what you type at the prompt |
-| `revenue`   | Total revenue for the month                   |
-| `budget`    | Planned total expense budget for the month    |
-| `year`      | Optional. Without it, months are taken to be in the current year |
-
-```csv
-month,month num,revenue,budget
-july,7,72000,66000
-august,8,64000,57000
-september,9,33000,34000
-```
-
-### `data/expenses.csv`
-
-Fifteen columns. Every line item is stored individually; the four category totals are
-derived in Java rather than stored, so they cannot drift out of sync with their parts.
-
-| Column              | Bucket             |
-| ------------------- | ------------------ |
-| `month num`         | Integer key matching `dashboard.csv` |
-| `cogs`              | Direct             |
-| `packaging`         | Operating          |
-| `rent`              | Fixed overhead     |
-| `utilities`         | Variable overhead  |
-| `maintenance`       | Variable overhead  |
-| `hardware`          | Operating          |
-| `insurance`         | Fixed overhead     |
-| `marketing`         | Operating          |
-| `credit card fees`  | Operating          |
-| `business license`  | Fixed overhead     |
-| `telephone`         | Fixed overhead     |
-| `employee meals`    | Direct             |
-| `tax`               | Direct             |
-| `labor`             | Direct             |
-
-```csv
-month num,cogs,packaging,rent,utilities,maintenance,hardware,insurance,marketing,credit card fees,business license,telephone,employee meals,tax,labor
-7,26000,3400,6000,2800,950,0,1100,2200,2150,0,320,2500,5000,12000
-8,21000,2600,6200,3100,4200,0,1100,1800,1760,0,320,2000,5500,9000
-9,11000,1350,6000,1900,310,2400,1100,900,910,1250,320,500,5200,3500
-```
-
-**Every line item appears in exactly one bucket.** Fourteen costs, fourteen slots, no
-double counting — so the four category totals sum to total expenses, and revenue minus
-total expenses equals net profit.
-
-Both the Java app and the browser match columns by **header name**, so column order
-does not matter. A header the Java app cannot place by name is sent (the header text
-only) to Claude when `ANTHROPIC_API_KEY` is set; without a key, such a file is read in
-the column order shown above.
-
-Parsing notes:
-
-- The first line of each file is treated as a header and skipped.
-- Amounts may contain commas (`1,800`) — they're stripped before parsing.
-- Empty or unparseable cells fall back to `0.0` rather than crashing.
-- Trailing empty columns are preserved, so a blank final cell reads as `0`, not an error.
-- A month present in `dashboard.csv` with no matching row in `expenses.csv` is skipped
-  with a message; it won't appear in the menu.
-
-## Metrics
-
-All ratios are expressed as a percentage of revenue, except Budget Used.
-
-| Metric             | Formula                                                     |
-| ------------------ | ----------------------------------------------------------- |
-| Direct Expenses    | `(cogs + labor + employee meals + tax) / revenue`           |
-| Operating Expenses | `(packaging + credit card fees + marketing + hardware) / revenue` |
-| Variable Overhead  | `(utilities + maintenance) / revenue`                       |
-| Fixed Overhead     | `(rent + insurance + business license + telephone) / revenue` |
-| Total Expenses     | `(direct + operating + variable OH + fixed OH) / revenue`   |
-| Gross Profit       | `(revenue − direct expenses) / revenue`                     |
-| Net Profit         | `(revenue − total expenses) / revenue`                      |
-| Budget Used        | `total expenses / budget`                                   |
-
-In the comparison table, the revenue row shows a signed dollar difference and every
-percentage row shows a signed change in **percentage points** (`pts`).
-
-### What each bucket means
-
-**Direct expenses** are costs traceable to a specific unit, job, or client. If you can
-name what it was for, it belongs here. This plus direct labor is prime cost — usually
-the largest share of spend and the part management can actually change week to week.
-
-**Operating expenses** scale with volume but aren't traceable to one unit — packaging,
-processing fees, marketing.
-
-**Variable overhead** rises with activity, but not proportionally. Utilities are the
-textbook case.
-
-**Fixed overhead** doesn't move with sales at all. It's also the hardest to cut, since
-most of it is contractual.
-
-### Reading the ratios
-
-Every percentage has revenue in the denominator, so a ratio can move because the cost
-changed **or** because revenue changed. September in the sample data shows this: fixed
-overhead jumps from 10.3% to 26.3%, but those dollars barely moved — revenue halved.
-When a ratio spikes, check the dollar figure before concluding anything about spending.
-
-Watch percentages on the large, steady lines (COGS, labor) where stability is the
-signal. Watch dollars on the lumpy ones (maintenance, hardware, business license),
-where a percentage of an irregular number tells you little.
+Because revenue is in every ratio, a ratio can move because the cost changed **or**
+because revenue did. In the demo figures, fixed overhead jumps from 10.3% to 26.3% in
+September, but the dollars barely moved: revenue halved. When a ratio spikes, check the
+dollar figure first. Watch percentages on the large, steady lines (cost of goods, labor)
+and dollars on the lumpy ones (maintenance, hardware, business license).
 
 ### Benchmarks
 
-Healthy ranges are entirely industry-dependent, so the most useful comparison is
-against your own trend rather than a published figure. As a rough orientation for
-full-service food operations:
+Healthy ranges depend on the industry, so your own trend is the best comparison. As a
+rough guide for a full-service restaurant:
 
-| Metric      | Target  |
-| ----------- | ------- |
-| COGS        | 28–35%  |
-| Labor       | 28–32%  |
-| Prime cost  | 55–65%  |
-| Occupancy   | 6–10%   |
-| Net margin  | 3–6%    |
+| Figure | Typical range |
+| --- | --- |
+| Cost of goods sold | 28–35% |
+| Labor | 28–32% |
+| Prime cost | 55–65% |
+| Occupancy | 6–10% |
+| Net margin | 3–6% |
 
-## Assumptions worth knowing
+### Judgment calls
 
-A few judgment calls are baked into the categories. They're defensible, but they're
-choices, and changing one mid-year makes months incomparable.
+These are choices, not rules. Changing one partway through a year makes months hard to
+compare.
 
-- **`tax` is treated as payroll tax** and sits in direct expenses alongside labor. If
-  your figure includes property tax it belongs in fixed overhead; if it includes income
-  tax it shouldn't be in total expenses at all, since income tax comes after net profit.
-- **`hardware` is expensed, not capitalized.** Anything above your capitalization
-  threshold (commonly $2,500) is really a fixed asset that should reach the P&L as
-  depreciation instead.
-- **`maintenance` is treated as variable.** Strictly it splits: recurring service
-  contracts are fixed, unplanned breakdowns are variable.
-- **`employee meals` are compensation,** not cost of goods. If your COGS figure already
-  includes that food, credit it out or the same inventory is counted twice.
-- **`packaging` is an operating expense,** not COGS, so prime cost stays comparable to
-  published benchmarks. Heavy takeout operations may prefer it in COGS.
+- **Payroll tax** sits with labor in direct costs. Property tax belongs in fixed overhead,
+  and income tax doesn't belong in costs at all (it comes after net profit).
+- **Hardware** is treated as a cost in the month it's bought. Anything above your
+  capitalization threshold (often $2,500) is really an asset, spread over time as
+  depreciation.
+- **Maintenance** counts as variable. Strictly, service contracts are fixed and repairs
+  are variable.
+- **Employee meals** are pay, not cost of goods. If your cost-of-goods figure already
+  includes that food, take it out, or it's counted twice.
+- **Packaging** is an operating cost, so prime cost stays comparable with published
+  benchmarks. A mostly-takeout business may prefer it in cost of goods.
 
-## JSON output
+## Getting figures in
 
-Every run writes `docs/data.json` — the same months and metrics in machine-readable
-form, for charting or a web front end. `lines` carries all fourteen line items keyed by
-their CSV header, so the web report can itemise every bucket; the five top-level line
-items are kept for older readers. The JSON carries finished values rather than raw
-inputs, so a consumer never has to recompute them. (The one exception is the browser
-loader described under [Without recompiling](#without-recompiling), which runs the same
-arithmetic itself when you hand it CSVs directly.)
+### A spreadsheet
 
-```json
-{
-  "generated": "2026-09-14",
-  "months": [
-    {
-      "month": "july",
-      "monthNum": 7,
-      "year": 2026,
-      "revenue": 72000.00,
-      "maintenance": 950.00,
-      "hardware": 0.00,
-      "utilities": 2800.00,
-      "cogs": 26000.00,
-      "labor": 12000.00,
-      "lines": {
-        "cogs": 26000.00, "labor": 12000.00, "employee meals": 2500.00, "tax": 5000.00,
-        "packaging": 3400.00, "credit card fees": 2150.00, "marketing": 2200.00,
-        "hardware": 0.00, "utilities": 2800.00, "maintenance": 950.00,
-        "rent": 6000.00, "insurance": 1100.00, "business license": 0.00, "telephone": 320.00
-      },
-      "grossProfit": 26500.00,
-      "netProfit": 7580.00,
-      "variableOverhead": 3750.00,
-      "fixedOverhead": 7420.00,
-      "directExpenses": 45500.00,
-      "operatingExpenses": 7750.00,
-      "totalExpenses": 64420.00,
-      "budget": 66000.00,
-      "budgetPercent": 97.61
-    }
-  ]
-}
-```
+The simplest layout is **one row per month**. Press **Download Excel template** (or CSV)
+on the dashboard for a copy filled with sample months. Its columns:
 
-## Web dashboard
+`Month`, `Year`, `Revenue`, `Budget`, `Cost of goods sold`, `Labor`, `Employee meals`,
+`Payroll tax`, `Packaging`, `Credit card fees`, `Marketing`, `Hardware`, `Utilities`,
+`Maintenance`, `Rent`, `Insurance`, `Business license`, `Telephone`
 
-`docs/index.html` is the public landing page; `docs/dashboard.html` renders the same
-figures as a web page; `docs/help.html` explains getting data in, every term, and what
-leaves the browser. The plain-language definitions behind the dashboard's **?** buttons
-and the help page's glossary both come from `docs/js/glossary.js`. The pages are published
-by GitHub Pages from the `/docs` folder on `main`:
+Your own layout works too:
 
-**<https://spinfern-o.github.io/FinDash/>**
+- Column order doesn't matter, and common other names are recognised.
+- Months like `July`, `Sept 2026` or `2026-07` are read.
+- A sheet with cost lines down the side and months across the top is turned round.
+- Rows a report works out from the others (`Total costs`, `Gross profit`, `Net income`,
+  ...) are set aside, so nothing is counted twice. That's also why the **Export to
+  Excel** file can be dropped straight back on the page.
+- The currency is taken from the symbols in the file.
+- A column name FinDash doesn't know is matched by Claude when you're logged in (only
+  the names are sent). Logged out, the import says which columns it left out.
 
-To view it locally, serve the folder over http and open <http://localhost:8000>:
+The older two-file layout (`dashboard.csv` and `expenses.csv`, see the
+[Java app](#the-java-command-line-app)) still works: drop both, in either order.
+
+Excel (.xlsx) and CSV files are read. PDFs and bank statements are not.
+
+### A photo of an invoice or receipt
+
+Drop a JPEG, PNG or WebP of a supplier invoice, bill or receipt on the dashboard, while
+logged in. The browser shrinks it and sends it to `api/read-document.js`, which asks
+Claude for the supplier, number, date and every charged line (quantity, unit price,
+amount, and which cost line it is).
+
+The server then checks the arithmetic itself: each line's quantity × price, and the lines
+against the printed total. A reading that doesn't add up gets one more careful look. You
+see every line, can change any line's cost line and the month, and nothing is added until
+you press **Add**.
+
+Confirmed invoices are kept apart from the spreadsheet's months and added on top of their
+month, so each can be removed again and a new spreadsheet doesn't drop them. A receipt
+for money taken in adds to revenue. The photo itself is not kept.
+
+## Running your own copy
+
+The site is static pages in `docs/` plus small server functions in `api/`, hosted on
+**Vercel**. Accounts use **Supabase**, the AI features use **Claude** (Anthropic), and
+emails go through any SMTP service (these steps use **Resend**). Every service is
+optional: without its settings, the features that need it are switched off, and the
+rest of the dashboard works.
+
+### 1. Vercel
+
+Import the repository into Vercel; `vercel.json` already sets everything up. Then add
+these under **Settings → Environment Variables** and redeploy:
+
+| Variable | What it turns on |
+| --- | --- |
+| `SUPABASE_URL` and `SUPABASE_ANON_KEY` | Accounts. The Supabase integration in the Vercel Marketplace adds these for you. `SUPABASE_PUBLISHABLE_KEY` and the `NEXT_PUBLIC_` forms work too. |
+| `ANTHROPIC_API_KEY` | Photos, advice and column matching (also needs accounts) |
+| `SITE_URL` | Optional: the address used in login emails, e.g. `https://yourdomain.com` |
+| `FORECAST_URL` and `FORECAST_TOKEN` | Optional: the forecast model (see `forecast/README.md`) |
+
+The site never uses Supabase's service-role key (the integration adds one; nothing reads
+it). `/api/capabilities` says which features are on, as true or false, never the keys.
+
+### 2. Supabase (accounts)
+
+1. In Supabase open **SQL Editor**. For each file in `supabase/migrations/`, in order,
+   paste it and press **Run**:
+   - `20261011000000_account_figures.sql`: where saved figures are kept
+   - `20261012000000_ai_usage_limits.sql`: the daily limits on paid features
+
+   Running a file twice does no harm. Until the first is run, figures stay in the browser;
+   until the second is run, photos, advice and column matching say "not set up yet".
+2. Under **Authentication → URL Configuration**, set the Site URL to your live address
+   and add `https://yourdomain.com/login` to the redirect URLs, so the links in emails
+   come back to the login page.
+
+The browser never talks to Supabase directly: the pages call `api/auth.js` and
+`api/figures.js`, which keep the login in cookies page scripts can't read. Each person can
+only ever reach their own row (row-level security).
+
+### 3. Email (Resend)
+
+Supabase sends the sign-up and password-reset emails. Its built-in email is only for
+testing: it sends just a few an hour, and **only to members of your Supabase
+organization**, so customers can't sign up until a real email service is connected.
+
+1. **Resend → Domains:** add your domain and add the DNS records it shows wherever your
+   domain is managed. Wait until it says **Verified**.
+2. **Resend → API Keys:** create a key with **Sending access** for that domain. Copy it
+   (it starts with `re_` and is shown once).
+3. **Supabase → Authentication → Emails → SMTP Settings:** turn on custom SMTP:
+
+   | Field | Value |
+   | --- | --- |
+   | Sender email | an address on the verified domain, e.g. `no-reply@yourdomain.com` |
+   | Sender name | `FinDash` |
+   | Host | `smtp.resend.com` |
+   | Port | `465` (or `587`) |
+   | Username | `resend` |
+   | Password | the `re_...` API key |
+
+4. **Supabase → Authentication → Rate Limits:** raise the emails-per-hour limit.
+
+The API key goes only into Supabase. Vercel and the code never send email.
+
+If creating an account fails, the login page says why:
+
+| The page says | Fix |
+| --- | --- |
+| This site can't send emails to that address yet | Connect an email service (the steps above) |
+| The confirmation email couldn't be sent | Check the SMTP settings: domain verified, username `resend`, password the API key, sender on that domain |
+| This site has sent all the emails it can for now | Raise the email rate limit in Supabase |
+| This site isn't taking new accounts at the moment | Supabase → Authentication → Sign In / Providers: allow new sign-ups, with Email on |
+
+### Paid features and daily limits
+
+Reading a photo, writing advice and matching column names each cost money, paid from
+your Anthropic account. So each needs someone logged in, and each person has a daily
+allowance (days run midnight to midnight UTC):
+
+| Feature | Requests per person per day |
+| --- | --- |
+| Reading photos | 40 (a photo is one request, or two when it gets a second look) |
+| Advice | 10 |
+| Matching column names | 60 |
+
+Change them in `DAILY_LIMITS` in `lib/ai-access.js`. The counts are kept in Supabase by
+the second migration; without it, the three features stay off rather than run without a
+limit. Set a monthly spending limit in the Anthropic Console as well.
+
+### Deleting an account
+
+**Delete my account** on the login page removes that person's saved figures (from the
+account and the browser), logs them out, and opens an email to the site's owner
+(`OWNER_EMAIL` in `docs/js/login.js`) asking for the login to be deleted. Deleting a login
+needs Supabase admin rights, which the site deliberately never has, so the owner finishes
+it: **Supabase → Authentication → Users**, find the email, **Delete user**. Their daily
+usage counts go with it.
+
+### When something goes wrong
+
+Every problem the server functions run into, and every error in a visitor's browser, is
+logged with the tag `findash-error`. In Vercel, open the project, then **Logs**, and
+search for `findash-error`. Only the error and where it happened are logged, never
+anyone's figures.
+
+### Before taking customers
+
+1. **Anthropic:** a monthly spending limit.
+2. **Supabase:** both migrations run, and a real test: create an account, add a file,
+   log in on another device.
+3. **Email:** Resend (or another service) connected, as above.
+4. **Plans:** Vercel's free Hobby plan is for non-commercial use, and Supabase's free
+   plan pauses after a week without activity. Check both.
+5. **Legal:** a privacy policy and terms of service. The help page explains how data is
+   handled, but it isn't a legal policy.
+
+## Working on the code
+
+### Running it locally
 
 ```bash
 python3 -m http.server 8000 --directory docs
 ```
 
-Opening the file directly (a `file://` URL) will not work: browsers block `fetch()`
-there, so `data.json` never loads and the page falls back to built-in sample figures
-with a notice in the footer.
+Then open <http://localhost:8000>. This serves the pages only: the dashboard and
+spreadsheets work, and the features that need a server stay hidden. To run the server
+functions too, use the Vercel CLI (`npx vercel dev`), which uses your Vercel project's
+settings.
 
-The local server reads files off disk, so whatever branch is checked out is what it
-serves. That is how a branch gets tested before it reaches `main` — GitHub Pages only
-ever builds `main`, so a branch is never reachable at the public URL.
+Opening the files straight from disk won't work: browsers don't run the page's scripts
+from a `file://` address, so always serve the folder.
 
-## Using your own numbers
-
-1. Replace the rows in `data/dashboard.csv` and `data/expenses.csv`, keeping the
-   headers intact.
-2. Make sure every `month num` in `dashboard.csv` has a matching row in `expenses.csv`.
-   A month with no revenue row will divide by zero and print `NaN` in every cell.
-3. Recompile and run — the menu is built from whatever loaded.
-
-### Without recompiling
-
-The web dashboard reads a spreadsheet directly. The simplest layout is **one file, one
-row per month**: press **Download Excel template** (or CSV) on the dashboard for a copy
-filled with the sample months. Its columns are `Month`, `Year`, `Revenue`, `Budget` and
-the fourteen cost lines under plain names (`Cost of goods sold`, `Payroll tax`, ...).
-Month names such as `July`, `Sept 2026` or `2026-07` are read, so no month number is
-needed. Column order does not matter, common synonyms are recognised, and a sheet laid
-out sideways (line items down, months across) is turned the right way round.
-
-The original two files still work: pick `dashboard.csv` and `expenses.csv` together or
-one at a time, in either order — each file is identified by its headers, not its name.
-The browser runs the same bucket arithmetic the Java app does and renders the result.
-
-Rows a report derives from the others (`Total costs`, `Gross profit`, `Net income`,
-`Budget used`, ...) are recognised and set aside, so they are never counted twice. That
-is also what lets the dashboard's **Export to Excel** file be dropped back on the page.
-
-Spreadsheets are read locally and never uploaded anywhere. Excel (.xlsx), CSV and photos
-are read — PDFs and bank statements are not supported. After a file loads, the computed
-months (not the file) are kept in the browser's `localStorage` so the figures are there
-on the next visit; **Forget my data** removes them along with any saved invoices and
-advice and returns to `data.json`. Without an account, four things can leave the browser,
-each documented on the help page: a photo when one is added, monthly totals when **Get
-advice** is pressed, header names when a column is not recognised, and net-profit figures
-if a forecast model is configured and its button is pressed. With an account, the figures
-are also saved to it (see [Accounts](#accounts-optional-supabase)).
-
-### Photos of invoices and receipts
-
-A JPEG, PNG or WebP of a supplier invoice, bill or receipt can be dropped on the dashboard
-like a file. The browser shrinks it (2576 px on the long edge, under 3 MB) and posts it to
-`api/read-document.js`, which asks Claude Opus 5.5 for a structured reading: supplier,
-number, date, and every charged line with its quantity, unit price, amount and one of the
-fourteen cost lines. Structured outputs fix the shape; the endpoint then re-checks the
-arithmetic itself (each line's quantity x price, and the lines against the printed total).
-A reading that fails gets one second look, at higher effort, with the failures spelled
-out. The owner then sees every line, can change any line's category and the month, and
-nothing is added until they press **Add**.
-
-Confirmed invoices are stored separately from the spreadsheet's months and added on top
-of their month, so each can be removed again and a new spreadsheet does not drop them. A
-receipt for money taken in adds to revenue. The photo itself is not kept anywhere. Photo
-reading is offered only when `ANTHROPIC_API_KEY` is set and accounts are switched on
-(`/api/capabilities` reports `photos`), and only to someone logged in; see
-[Paid features and daily limits](#paid-features-and-daily-limits).
-
-Costs that don't fit an existing column should be added to the bucket that matches
-their behavior, not appended arbitrarily — the point of the structure is that the four
-totals stay meaningful.
-
-### Accounts (optional, Supabase)
-
-`docs/login.html` (served at `/login`) lets people create an account, log in, reset a
-password, and log out. The dashboard's masthead shows **Log in**, or the logged-in email
-and **Log out**. Accounts are optional: the dashboard works without one, but reading
-photos, advice and matching unusual column names need one (see below).
-
-**While someone is logged in, their figures are saved to their account**, so the same
-months and invoices are there on any computer they log in on. What is saved is what the
-browser keeps anyway: the worked-out monthly totals and the invoice lines the owner
-confirmed. Never the spreadsheet, never a photo.
-
-- **Logging in** loads the account's figures. If the account has none, the browser's
-  figures are saved to it. If both have figures and they differ, the dashboard asks
-  which to keep rather than guessing.
-- **Every change** (a file, an invoice added or removed) is saved to the account too.
-- **Forget my data** asks first, then removes the figures from the account as well.
-- **Logging out** removes the figures from that browser, since they are safe in the
-  account. If a change never reached the account, they are kept instead.
-
-The browser never talks to Supabase. Account actions go to `api/auth.js?action=...` and
-figures to `api/figures.js`; both call Supabase with `@supabase/supabase-js` and keep the
-session in two cookies: `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/api`. That keeps the
-site's Content-Security-Policy unchanged (scripts and requests are only allowed to this
-site, so a CDN copy of supabase-js and direct calls to `*.supabase.co` would both be
-blocked) and means no page script can read the tokens. Cross-site writes are refused by an
-`Origin` check.
-
-The figures sit in one table, `account_figures`, one row per person. Requests reach the
-database as the logged-in person (the public key plus their own token), and the table's
-row-level security only lets anyone read or change their own row. The service-role key is
-never used.
-
-To switch accounts on:
-
-1. Connect the Supabase project to the Vercel project (Vercel Marketplace, Supabase
-   integration) or add the variables by hand. The functions read `SUPABASE_URL` (or
-   `NEXT_PUBLIC_SUPABASE_URL`) and the public key from `SUPABASE_PUBLISHABLE_KEY`,
-   `SUPABASE_ANON_KEY` or their `NEXT_PUBLIC_` forms.
-2. Create the tables: in Supabase open **SQL Editor**, and for each file in
-   `supabase/migrations/`, in order (`20261011…_account_figures.sql`, then
-   `20261012…_ai_usage_limits.sql`), paste it and press **Run** (or run `supabase db push`
-   with the Supabase CLI). Running a file twice does no harm. Until the first is run,
-   figures simply stay in the browser; until the second is run, photos, advice and column
-   matching answer "not set up yet".
-3. In Supabase, under Authentication, URL Configuration, set the Site URL to the live
-   site and add `https://<your domain>/login` to the redirect URLs, so confirmation and
-   reset emails come back to the login page. Optionally set `SITE_URL` in Vercel to pin
-   the address used in those emails.
-4. Redeploy. `/api/capabilities` then reports `accounts: true` and the login form turns
-   on; until then it explains that accounts aren't switched on.
-
-### Paid features and daily limits
-
-Reading a photo, writing advice and matching unusual column names each send a request to
-Claude, paid from this site's Anthropic account. So `lib/ai-access.js` lets them through
-only for someone logged in, and only up to a daily allowance per person (days run midnight
-to midnight UTC):
-
-| Feature                  | Requests per person per day |
-| ------------------------ | --------------------------- |
-| Reading photos           | 40 (a photo is one request, or two when it gets a second look) |
-| Advice                   | 10                          |
-| Matching column names    | 60                          |
-
-Change them in `DAILY_LIMITS` in `lib/ai-access.js`. The counts are kept in Supabase
-(`ai_usage`, through the `claim_ai_use` function in the second migration). If that SQL
-hasn't been run, the three features stay off rather than run without limits. Without an
-account, the dashboard still reads spreadsheets in full; it just can't send photos, ask
-for advice, or ask about column names it doesn't recognise (it says which columns it left
-out). The spending limit set in the Anthropic Console is the final backstop.
-
-### Deleting an account
-
-Logged-in people can press **Delete my account** on the login page. Their saved figures
-are removed at once, from the account and from that browser, they are logged out, and an
-email asking for the login itself to be deleted opens addressed to the site's owner
-(`OWNER_EMAIL` in `docs/js/login.js`). Deleting a login needs Supabase's admin rights,
-which this site deliberately never holds, so the owner finishes it by hand: Supabase
-dashboard, **Authentication**, **Users**, find the email, **Delete user**. Anything else
-stored for that person (their daily usage counts) is removed with it.
-
-### When something goes wrong
-
-Every failure in the server functions is logged with the tag `[findash-error]`, and
-`docs/js/error-reporter.js` sends errors from visitors' browsers to `api/report-error.js`,
-which logs them with the same tag (only the message and where it happened, never anyone's
-figures). In Vercel, open the project, **Logs**, and search for `findash-error`.
-
-### Sharing
-
-- **Print or save as PDF** prints the period on screen through a light print stylesheet.
-- **Export to Excel** builds an .xlsx in the browser: every line for every month, with
-  a Total column, plus an About sheet naming the months, currency and source.
-
-## Tests
+### Tests
 
 ```bash
 npm install
+npx playwright install chromium   # the first time only
 npm test
 ```
 
-`npm test` runs everything in `tests/` (about 80 checks, half a minute) against stand-ins
-for Supabase and Claude, so no keys are needed and nothing is spent:
+80 tests, in about half a minute, against stand-ins for Supabase and Claude, so no keys
+are needed and nothing is spent:
 
-- `tests/unit/`: the arithmetic and file reading, without a browser
-- `tests/api/`: the server functions: saved figures, the login and daily limits on the
-  paid features, what is sent to Claude, error reports
+- `tests/unit/`: the arithmetic and file reading
+- `tests/api/`: the server functions: logins, saved figures, daily limits, what is sent
+  to Claude, error reports
 - `tests/browser/`: the pages in a real (headless) Chromium: the dashboard, photos,
-  logging in, saving to an account, deleting an account
+  accounts, saving, deleting an account
 
-`tests/support/` has the stand-ins and a local copy of the site that serves `docs/` with
-the same security headers as `vercel.json`. The first run needs the test browser:
-`npx playwright install chromium`. GitHub runs the same tests, and builds the Java app,
-on every pull request (`.github/workflows/tests.yml`).
+GitHub runs the same tests, and builds the Java app, on every pull request
+(`.github/workflows/tests.yml`).
 
-## Before going live
+### Reading the code
 
-Code alone can't do these; they are settings in the services the site uses.
+The code is written to be read by someone who isn't a programmer by trade:
 
-1. **Anthropic:** set a monthly spending limit in the Anthropic Console.
-2. **Supabase:** run both files in `supabase/migrations/` (see Accounts above), then try
-   it for real: create an account, add a file, log in on another device.
-3. **Email:** Supabase's built-in email is meant for testing. Connect an email service
-   (for example Resend) under Supabase **Authentication**, SMTP settings, so confirmation
-   and reset emails reach customers.
-4. **Plans:** Vercel's Hobby plan is for personal, non-commercial use, and Supabase's
-   free plan pauses after a week without activity. Check both before taking customers.
-5. **Legal:** a privacy policy and terms of service; the help page explains how data is
-   handled but is not a legal policy.
-
-## Reading the code
-
-The code is written to be read by someone who is not a programmer by trade:
-
-- Every function is an ordinary named `function` (no arrow functions), with a comment
-  above it saying what it is for.
+- Every function is an ordinary named `function`, with a comment above it saying what
+  it's for.
 - Names are whole words: `month`, `revenue`, `formatMoney`, not `m`, `rev`, `fmt`.
-- One step per line. `if` and `else` with braces instead of `? :` chains, and loops
-  instead of long chains of `.map().filter().reduce()`.
-- Small files, each about one thing. The dashboard is split into about forty of them.
+- One step per line: `if` and `else` instead of `? :` chains, and loops instead of long
+  chains of `.map().filter().reduce()`.
+- Small files, each about one thing.
 
 Where to start:
 
-| To understand...                         | Read                                              |
-| ---------------------------------------- | ------------------------------------------------- |
-| How the dashboard starts up              | `docs/js/dashboard/main.js`                       |
-| What the page keeps track of             | `docs/js/dashboard/state.js`                      |
-| How the cards are drawn                  | `docs/js/dashboard/draw-dashboard.js`, `cards/`   |
-| How a spreadsheet becomes months         | `import/sheet-import.js`, `import/months-from-sheet.js` |
-| How a photo becomes an invoice           | `photos/photo-import.js`, `photos/photo-review.js`, `api/read-document.js` |
-| How figures are remembered               | `saved-figures.js` (this browser), `account-figures.js` (the account) |
-| How logging in works                     | `api/auth.js`, `lib/session.js`, `docs/js/login.js` |
-| Who may use the paid features            | `lib/ai-access.js`                                |
-| What the tests check                     | `tests/browser/dashboard.test.mjs`, then the rest of `tests/` |
-| The arithmetic in Java                   | `MonthlyFigures.java`, `Expenses.java`            |
+| To understand... | Read |
+| --- | --- |
+| How the dashboard starts | `docs/js/dashboard/main.js` |
+| What the page keeps track of | `docs/js/dashboard/state.js` |
+| How the cards are drawn | `docs/js/dashboard/draw-dashboard.js`, then `cards/` |
+| How a spreadsheet becomes months | `import/sheet-import.js`, `import/months-from-sheet.js` |
+| How a photo becomes an invoice | `photos/photo-import.js`, `photos/photo-review.js`, `api/read-document.js` |
+| How figures are remembered | `saved-figures.js` (this browser), `account-figures.js` (the account) |
+| How logging in works | `api/auth.js`, `lib/session.js`, `docs/js/login.js` |
+| Who may use the paid features | `lib/ai-access.js` |
+| The cost groups | `docs/js/dashboard/cost-groups.js` |
+| What the tests check | `tests/browser/dashboard.test.mjs`, then the rest of `tests/` |
 
-## Project layout
+### Project layout
 
 ```
-pom.xml                  Maven build; pulls in the Anthropic Java SDK
-src/main/java/
-  CFODashboard.java      The command-line app: reads the CSVs, writes data.json, menus
-  MonthlyFigures.java    One month and the figures worked out from it
-  Expenses.java          One month's fourteen cost lines and their four groups
-  ColumnMapper.java      Which column holds which field (asks Claude about the rest)
-  CsvFile.java           Reading cells out of a CSV file
-  DataJsonWriter.java    Writing docs/data.json
-  ConsoleReport.java     Printing a month, or two side by side
-data/                    Input CSVs
-docs/                    The website, published from the /docs folder on main
+docs/                    The website (Vercel serves this folder)
   index.html             Landing page
   dashboard.html         The dashboard
-  help.html              Help: getting data in, glossary, privacy
-  login.html             Log in, create an account, reset a password
+  help.html              Getting data in, glossary, how data is handled
+  login.html             Log in, create an account, reset a password, delete an account
   data.json              The demo figures, written by the Java app
   css/                   One stylesheet per page
   js/
-    glossary.js          Plain-language definitions for the dashboard and help page
-    theme-init.js        Light or dark mode before the page is drawn
-    theme-toggle.js      The sun and moon button
+    glossary.js          Plain-language definitions for the ? buttons and the help page
     error-reporter.js    Sends errors on the page to the site's log
-    landing.js, help.js, login.js   Each page's own script
+    theme-init.js, theme-toggle.js   Light and dark mode
+    landing.js, help.js, login.js    Each page's own script
     dashboard/
       main.js            Starts the dashboard
       state.js           Everything the dashboard keeps track of
@@ -556,13 +373,93 @@ docs/                    The website, published from the /docs folder on main
       photos/            Reading photos of invoices and checking them
       export/            The template and Export to Excel
       saved-figures.js   Remembering figures in this browser
-      account-figures.js Saving them to the owner's account
-api/                     Vercel functions: accounts, saved figures, column matching,
-                         advice, photo reading, forecast, capabilities, error reports
-lib/                     Code the functions share: the Supabase client, the session
-                         cookies, who may use the paid features
-supabase/migrations/     The SQL for the account_figures table and the daily limits
-tests/                   The tests (npm test); see Tests above
+      account-figures.js Saving them to the account
+api/                     Server functions: accounts, saved figures, photo reading, advice,
+                         column matching, forecast, capabilities, error reports
+lib/                     Shared by the functions: Supabase, login cookies, daily limits
+supabase/migrations/     The SQL for saved figures and daily limits
+tests/                   The tests (npm test)
 .github/workflows/       Runs the tests on every pull request
-forecast/                The optional Chronos forecasting service (Python)
+forecast/                The optional forecast service (Python, Chronos)
+src/main/java/           The Java command-line app
+data/                    The Java app's input CSVs
+```
+
+## The Java command-line app
+
+The project began as a Java console app, and it still works: it reads two CSV files from
+`data/`, prints a month's figures, compares any two months, and writes `docs/data.json`
+(the demo figures the website opens on).
+
+You'll need JDK 21 or newer and Maven. Run it from the project root, since the CSV paths
+are relative to it:
+
+```bash
+mvn -q compile exec:java
+```
+
+It lists the months it loaded, then asks for a month number to show, and another to
+compare it with. `0` goes back, and `0` at the first question quits. A comparison
+(shortened):
+
+```
+july vs september
+Metrics                        july    september     Difference
+Revenue                $  72,000.00 $  33,000.00 $  +39,000.00
+Gross Profit                  36.8%        38.8%        -2.0 pts
+Net Profit                    10.5%       -11.0%       +21.5 pts
+Total Expenses                89.5%       111.0%       -21.6 pts
+Budget Used                   97.6%       107.8%       -10.2 pts
+```
+
+The difference is the first month minus the second, in dollars for revenue and in
+percentage points (`pts`) for everything else.
+
+### Its two files
+
+`data/dashboard.csv` has one row per month: `month` (a name), `month num` (the number you
+type, and the key that joins the two files), `revenue`, `budget`, and optionally `year`.
+
+```csv
+month,month num,revenue,budget
+july,7,72000,66000
+august,8,64000,57000
+september,9,33000,34000
+```
+
+`data/expenses.csv` has `month num` and the fourteen cost lines. The group totals are
+always worked out from the lines, never stored, so they can't drift apart.
+
+```csv
+month num,cogs,packaging,rent,utilities,maintenance,hardware,insurance,marketing,credit card fees,business license,telephone,employee meals,tax,labor
+7,26000,3400,6000,2800,950,0,1100,2200,2150,0,320,2500,5000,12000
+```
+
+- Columns are matched by name, so their order doesn't matter. A name the app can't place
+  is sent to Claude (the name only) when `ANTHROPIC_API_KEY` is set; without a key, the
+  file is read in the order above.
+- Amounts may contain commas (`1,800`). Empty or unreadable cells count as `0`.
+- A month in `dashboard.csv` with no row in `expenses.csv` is skipped, with a message.
+  A month with no revenue prints `NaN`, since every ratio divides by revenue.
+
+### `docs/data.json`
+
+Each run writes every month with its finished figures (revenue, all fourteen lines under
+`lines`, the four group totals, gross and net profit, budget and budget used), so whatever
+reads it never has to redo the arithmetic. One month, shortened:
+
+```json
+{
+  "generated": "2026-09-14",
+  "months": [
+    {
+      "month": "july", "monthNum": 7, "year": 2026, "revenue": 72000.00,
+      "lines": { "cogs": 26000.00, "labor": 12000.00, "rent": 6000.00, "...": "..." },
+      "directExpenses": 45500.00, "operatingExpenses": 7750.00,
+      "variableOverhead": 3750.00, "fixedOverhead": 7420.00, "totalExpenses": 64420.00,
+      "grossProfit": 26500.00, "netProfit": 7580.00,
+      "budget": 66000.00, "budgetPercent": 97.61
+    }
+  ]
+}
 ```

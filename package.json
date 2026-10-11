@@ -3,10 +3,19 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Serverless dependencies for the FinDash column-mapping endpoint. The dashboard page itself has no runtime dependencies.",
+  "description": "Server functions for FinDash (accounts, saved figures, Claude features). The pages in docs/ have no runtime dependencies.",
+  "scripts": {
+    "test": "node --test \"tests/**/*.test.mjs\"",
+    "test:unit": "node --test \"tests/unit/*.test.mjs\"",
+    "test:api": "node --test \"tests/api/*.test.mjs\"",
+    "test:browser": "node --test \"tests/browser/*.test.mjs\""
+  },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
     "@supabase/supabase-js": "^2.117.3",
     "@vercel/analytics": "^2.0.1"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1"
   }
 }

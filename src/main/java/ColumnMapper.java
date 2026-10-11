@@ -126,9 +126,11 @@ public class ColumnMapper {
     }
 
     private static String askClaude(String prompt) {
+        // Room for the model's thinking as well as the small reply: Claude
+        // Opus 5.5 always thinks before it answers.
         MessageCreateParams request = MessageCreateParams.builder()
-            .model("claude-opus-5")
-            .maxTokens(1024L)
+            .model("claude-opus-5-5")
+            .maxTokens(16000L)
             .addUserMessage(prompt)
             .build();
         Message response = anthropic().messages().create(request);

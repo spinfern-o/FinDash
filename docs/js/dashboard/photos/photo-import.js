@@ -5,6 +5,7 @@
 
 import { state } from "../state.js";
 import { loadCapabilities } from "../capabilities.js";
+import { loggedInUser } from "../account.js";
 import { showBusy, showStatus } from "../status-line.js";
 import { preparePhotoForUpload, readDocument, howBadly } from "./photo-reader.js";
 import { showReview, updateReview, closeReview, addReviewedInvoice } from "./photo-review.js";
@@ -74,6 +75,14 @@ async function readNextPhoto() {
       dropWaitingPhotos();
       showStatus("Photos can't be read here",
         "Reading a photo needs this site's AI service, which isn't set up. Use the template instead.", true);
+      return;
+    }
+    // Each reading costs money, so it is only for someone logged in, within a
+    // daily allowance (lib/ai-access.js on the server checks both).
+    if (!(await loggedInUser())) {
+      dropWaitingPhotos();
+      showStatus("Log in to read photos",
+        "Reading a photo of an invoice needs a free account. Log in (top right), then add the photo again.", true);
       return;
     }
 

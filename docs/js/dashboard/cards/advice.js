@@ -13,6 +13,7 @@ import { state } from "../state.js";
 import { escapeHtml, unescapeHtml, formatLocalDate } from "../format.js";
 import { monthLabel, describeMonths, allMonthsLabel } from "../months.js";
 import { cardHtml } from "./card.js";
+import { loggedInUser } from "../account.js";
 
 export const ADVICE_KEY = "findash-briefing";
 const MAXIMUM_MONTHS_SENT = 36;   // the advice service's own limit
@@ -130,6 +131,23 @@ function showAdvice(output, advice, monthsName) {
      Saved here, so you don't need to ask again.</p>`;
 }
 
+const NEEDS_LOGIN_HTML = `<p class="brief-note">Advice needs a free account.
+  <a href="/login?next=/dashboard">Log in or create one</a>, then press the button again.</p>`;
+
+/* The reason the server gave for a failed request, without its full stop
+   (one is added where it is shown), or the status when it gave none. */
+async function errorFrom(response) {
+  try {
+    const body = await response.json();
+    if (body && typeof body.error === "string" && body.error) {
+      return body.error.replace(/\.$/, "");
+    }
+  } catch {
+    // Not JSON: an error page. The status says enough.
+  }
+  return "the advice service returned " + response.status;
+}
+
 function markAsAnswered(button) {
   button.textContent = "Ask again";
   button.classList.remove("primary");
@@ -154,6 +172,13 @@ export function wireAdviceButton() {
   }
 
   button.addEventListener("click", async function () {
+    // Each request costs money, so advice is only for someone logged in,
+    // within a daily allowance (lib/ai-access.js on the server checks both).
+    if (!(await loggedInUser())) {
+      output.innerHTML = NEEDS_LOGIN_HTML;
+      return;
+    }
+
     button.disabled = true;
     button.textContent = "Reading…";
     output.innerHTML = "";
@@ -162,10 +187,16 @@ export function wireAdviceButton() {
       const response = await fetch("/api/briefing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: requestBody
+        body: requestBody,
+        credentials: "same-origin"
       });
+      if (response.status === 401) {
+        output.innerHTML = NEEDS_LOGIN_HTML;
+        button.textContent = "Try again";
+        return;
+      }
       if (!response.ok) {
-        throw new Error("the advice service returned " + response.status);
+        throw new Error(await errorFrom(response));
       }
 
       const answer = await response.json();

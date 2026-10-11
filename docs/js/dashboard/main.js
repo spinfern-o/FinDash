@@ -24,7 +24,7 @@ import { wireToolbar } from "./toolbar.js";
 import { wireImportBox } from "./import-box.js";
 import { wireHelpTips } from "./help-tips.js";
 import { loadCapabilities } from "./capabilities.js";
-import { whoIsLoggedIn, showLoggedIn } from "./account.js";
+import { loggedInUser, showLoggedIn } from "./account.js";
 import { startSavingToAccount, stopSavingToAccount } from "./account-figures.js";
 import { showStatus } from "./status-line.js";
 
@@ -36,12 +36,10 @@ async function showWhatThisSiteCanDo() {
   for (const element of document.querySelectorAll(".photo-only")) {
     element.hidden = !capabilities.photos;
   }
-  if (capabilities.accounts) {
-    const user = await whoIsLoggedIn();
-    if (user) {
-      showLoggedIn(user, stopSavingToAccount);
-      await startSavingToAccount(user);
-    }
+  const user = await loggedInUser();
+  if (user) {
+    showLoggedIn(user, stopSavingToAccount);
+    await startSavingToAccount(user);
   }
 }
 

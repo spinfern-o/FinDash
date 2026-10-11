@@ -155,14 +155,14 @@
           are saved to your account with Supabase, so they are there on any computer you log in on. Not your
           file, not your photos, and nobody else can read them. <b>Forget my data</b> removes them from your
           account too.</li>
-      <li><b>When you add a photo:</b> the photo is sent to Claude, Anthropic's AI model, to be read. FinDash
-          does not store it; only the lines you confirm are kept, in this browser.</li>
-      <li><b>When you press Get advice:</b> each month's totals (revenue, the four cost groups, net profit
-          and budget) are sent to Claude, Anthropic's AI model, which writes the advice. No line items, no
-          names, not your file. FinDash does not store them.</li>
-      <li><b>When a column name isn't recognised:</b> the column names from your file, never the numbers,
-          are sent so the unfamiliar ones can be matched to the right cost group. Files that use the
-          template's names never need this.</li>
+      <li><b>When you add a photo</b> (while logged in): the photo is sent to Claude, Anthropic's AI model, to
+          be read. FinDash does not store it; only the lines you confirm are kept.</li>
+      <li><b>When you press Get advice</b> (while logged in): each month's totals (revenue, the four cost
+          groups, net profit and budget) are sent to Claude, Anthropic's AI model, which writes the advice. No
+          line items, no names, not your file. FinDash does not store them.</li>
+      <li><b>When a column name isn't recognised</b> (while logged in): the column names from your file, never
+          the numbers, are sent so the unfamiliar ones can be matched to the right cost group. Files that use
+          the template's names never need this.</li>
       <li><b>If a forecasting model is offered:</b> once you have six months on file, a button may appear
           under the forecast. Pressing it sends the net profit figure for each month, nothing else.</li>
     </ul>
@@ -176,6 +176,11 @@
        removes your figures from that browser; they stay safe in your account.</p>
     <p><b>If this browser and your account disagree</b> (say you added a file before logging in), the
        dashboard asks which set of figures to keep, rather than guessing.</p>
+    <p><b>Why photos and advice need an account:</b> each one is a paid request to Claude, so each account
+       has a daily allowance. Everything else on the dashboard works without one.</p>
+    <p><b>To delete your account:</b> log in, open the <a href="/login">Log in</a> page and press
+       <b>Delete my account</b>. Your saved figures are removed straight away, and an email asking for your
+       login to be deleted opens for you to send; you'll get a reply once it's done.</p>
   </section>
 
   <section id="sharing">
@@ -198,6 +203,7 @@
   <footer>FinDash &middot; <a href="/dashboard">Back to the dashboard</a></footer>
 </main>
 
+<script type="module" src="js/error-reporter.js"></script>
 <script type="module" src="js/theme-toggle.js"></script>
 <script type="module" src="js/help.js"></script>
 </body>

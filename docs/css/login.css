@@ -436,6 +436,15 @@ input:disabled {
 .signed-in .submit {
   margin-top: 0;
 }
+.delete-account {
+  margin: 18px 0 0;
+}
+.text-link.quiet {
+  color: var(--ink-3);
+}
+.text-link.quiet:hover {
+  color: var(--critical);
+}
 
 /* ---- beside the form ---- */
 .aside {

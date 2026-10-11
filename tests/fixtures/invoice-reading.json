@@ -1,0 +1,82 @@
+{
+  "kind": "purchase",
+  "legible": true,
+  "supplier": "Harbour Fresh Seafood",
+  "customer": "Corner Bistro",
+  "document_number": "INV-1042",
+  "date": "2026-09-26",
+  "currency": "USD",
+  "lines": [
+    {
+      "description": "Fresh salmon fillet",
+      "original": null,
+      "quantity": 2,
+      "unit": "case",
+      "billed_quantity": 20,
+      "unit_price": 9.5,
+      "amount": 190.0,
+      "amount_source": "printed",
+      "category": "cogs"
+    },
+    {
+      "description": "Tiger prawns 16/20",
+      "original": null,
+      "quantity": 1,
+      "unit": "case",
+      "billed_quantity": 10,
+      "unit_price": 12.25,
+      "amount": 122.5,
+      "amount_source": "printed",
+      "category": "cogs"
+    },
+    {
+      "description": "Jasmine rice, 50 lb bag",
+      "original": null,
+      "quantity": 2,
+      "unit": "bag",
+      "billed_quantity": 2,
+      "unit_price": 38.0,
+      "amount": 76.0,
+      "amount_source": "printed",
+      "category": "cogs"
+    },
+    {
+      "description": "Takeout containers, 32 oz",
+      "original": null,
+      "quantity": 1,
+      "unit": "case",
+      "billed_quantity": 1,
+      "unit_price": 43.45,
+      "amount": 43.45,
+      "amount_source": "printed",
+      "category": "packaging"
+    },
+    {
+      "description": "Lemons",
+      "original": null,
+      "quantity": 1,
+      "unit": "case",
+      "billed_quantity": 1,
+      "unit_price": 28.0,
+      "amount": 28.0,
+      "amount_source": "computed",
+      "category": "cogs"
+    },
+    {
+      "description": "Parsley (no charge)",
+      "original": null,
+      "quantity": 2,
+      "unit": "bunch",
+      "billed_quantity": 2,
+      "unit_price": 0,
+      "amount": 0,
+      "amount_source": "printed",
+      "category": "cogs"
+    }
+  ],
+  "subtotal_printed": 459.95,
+  "total_printed": 459.95,
+  "notes": [
+    "Made-up invoice for FinDash's tests."
+  ]
+}

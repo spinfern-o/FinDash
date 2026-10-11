@@ -20,6 +20,7 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
+import { allowAiUse } from "../lib/ai-access.js";
 
 const client = new Anthropic(); // reads ANTHROPIC_API_KEY from the environment
 
@@ -174,12 +175,30 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "nothing to map: send unplaced fields or unclaimed headers" });
   }
 
+  // Only for a logged-in person within today's allowance (lib/ai-access.js).
+  if (!(await allowAiUse(req, res, "columns"))) {
+    return;
+  }
+
   try {
-    const response = await client.messages.create({
-      model: "claude-opus-5",
-      max_tokens: 1024,
+    const response = await client.beta.messages.create({
+      model: "claude-opus-5-5",
+      // Room for the model's thinking as well as the small reply.
+      max_tokens: 16000,
+      // A safety classifier can decline a request; "default" runs a declined
+      // one again on the model Anthropic recommends for that case.
+      betas: ["server-side-fallback-2026-07-01"],
+      fallbacks: "default",
+      thinking: { type: "adaptive" },
+      // Matching names is a simple job: little thinking needed.
+      output_config: { effort: "low" },
       messages: [{ role: "user", content: buildPrompt(headers, fields, unclaimedHeaders) }]
     });
+
+    if (response.stop_reason === "refusal" || response.stop_reason === "max_tokens") {
+      console.error("[findash-error] map-columns stopped:", response.stop_reason);
+      return res.status(502).json({ error: "column mapping unavailable" });
+    }
 
     let text = "";
     for (const block of response.content) {
@@ -199,7 +218,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ mapping: mapping, other: other });
   } catch (error) {
     // Never repeat the upstream error word for word: it can carry request details.
-    console.error("map-columns failed:", error);
+    console.error("[findash-error] map-columns failed:", error);
     return res.status(502).json({ error: "column mapping unavailable" });
   }
 }

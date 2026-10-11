@@ -8,12 +8,13 @@
 import { state } from "../state.js";
 import { showBusy, showStatus } from "../status-line.js";
 import { keepOwnerFigures } from "../keep-figures.js";
+import { loggedInUser } from "../account.js";
 import { showOwnerFigures } from "../figures-on-screen.js";
 import { readCsvGrid } from "./csv-reader.js";
 import { readXlsxGrid } from "./xlsx-reader.js";
 import { withHeadersOnTop } from "./sheet-orientation.js";
 import { fieldNamesOfColumns, rowsAsRecords, kindOfFile, isCombinedFile } from "./column-names.js";
-import { needsColumnMatching, resolveColumnNames } from "./column-mapping.js";
+import { needsColumnMatching, resolveColumnNames, unrecognisedColumns } from "./column-mapping.js";
 import { monthsFromCombinedSheet, monthsFromTwoFiles } from "./months-from-sheet.js";
 import { collectCurrencySymbols, adoptCurrency } from "./currency-from-file.js";
 
@@ -56,10 +57,14 @@ function letThePagePaint() {
   });
 }
 
-/* Reads one file into { fieldNames, rows, leftovers }. Throws when the file
-   cannot be opened at all. `progressNote` is " (1 of 2)" or "". Currency
-   symbols seen in the file are added to `foundSymbols`. */
-async function readSpreadsheet(file, progressNote, foundSymbols) {
+/* Reads one file into { fieldNames, rows, leftovers, unrecognised }. Throws
+   when the file cannot be opened at all. `progressNote` is " (1 of 2)" or "".
+   Currency symbols seen in the file are added to `foundSymbols`.
+
+   canAskClaude says whether column names the page cannot match may be sent
+   to the column-matching service, which is only for someone logged in.
+   Without it, those columns are listed in `unrecognised` instead. */
+async function readSpreadsheet(file, progressNote, foundSymbols, canAskClaude) {
   showBusy("Reading", file.name + progressNote);
   await letThePagePaint();
 
@@ -76,6 +81,14 @@ async function readSpreadsheet(file, progressNote, foundSymbols) {
   // rows are built from them: once built, the names are baked in.
   let fieldNames = fieldNamesOfColumns(grid);
   let leftovers = {};
+  if (!canAskClaude) {
+    return {
+      fieldNames: fieldNames,
+      rows: rowsAsRecords(grid, fieldNames),
+      leftovers: leftovers,
+      unrecognised: unrecognisedColumns(fieldNames)
+    };
+  }
   try {
     // Only this step can wait on the network, so only it gets its own message.
     if (needsColumnMatching(fieldNames)) {
@@ -89,7 +102,7 @@ async function readSpreadsheet(file, progressNote, foundSymbols) {
     console.warn("column mapping unavailable:", matchingError.message);
   }
 
-  return { fieldNames: fieldNames, rows: rowsAsRecords(grid, fieldNames), leftovers: leftovers };
+  return { fieldNames: fieldNames, rows: rowsAsRecords(grid, fieldNames), leftovers: leftovers, unrecognised: [] };
 }
 
 function plural(count, word) {
@@ -132,6 +145,16 @@ function monthsFromHeldFiles() {
   };
 }
 
+/* Said when some columns could not be matched and nobody is logged in to
+   have them matched by the column-matching service. */
+function unrecognisedNote(columnNames) {
+  if (!columnNames.length) {
+    return "";
+  }
+  return " Not counted, because the column names weren't recognised: " + columnNames.join(", ") + ". " +
+    "Log in to have unusual column names matched automatically, or rename them to the template's names.";
+}
+
 /* The sentence shown once the months are on screen. */
 function addedMessage(months, skipped, from, savedSentence, currencyNote) {
   let skippedNote = "";
@@ -165,6 +188,8 @@ export async function handleSpreadsheets(files) {
 
   const unrecognised = [];
   const unreadable = [];
+  const unmatchedColumns = [];
+  const canAskClaude = Boolean(await loggedInUser());
   const foundSymbols = new Set();
   const kindsRead = new Set();
 
@@ -177,7 +202,7 @@ export async function handleSpreadsheets(files) {
 
     let table;
     try {
-      table = await readSpreadsheet(file, progressNote, foundSymbols);
+      table = await readSpreadsheet(file, progressNote, foundSymbols, canAskClaude);
     } catch (error) {
       // A file that could not be opened at all is a different problem from
       // one whose columns were not recognised: no column advice for a
@@ -191,6 +216,11 @@ export async function handleSpreadsheets(files) {
     let kind = kindOfFile(table.fieldNames);
     if (isCombinedFile(table.fieldNames)) {
       kind = "combined";
+    }
+    for (const columnName of table.unrecognised) {
+      if (!unmatchedColumns.includes(columnName)) {
+        unmatchedColumns.push(columnName);
+      }
     }
     if (kind) {
       table.fileName = file.name;
@@ -247,5 +277,6 @@ export async function handleSpreadsheets(files) {
   state.ownerMonths = result.months;
   state.ownerSourceName = result.from;
   const savedSentence = keepOwnerFigures();
-  showOwnerFigures(addedMessage(result.months, result.skipped, result.from, savedSentence, currencyNote));
+  showOwnerFigures(addedMessage(result.months, result.skipped, result.from, savedSentence, currencyNote) +
+    unrecognisedNote(unmatchedColumns));
 }

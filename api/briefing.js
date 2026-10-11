@@ -22,6 +22,7 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
+import { allowAiUse } from "../lib/ai-access.js";
 
 const client = new Anthropic();
 
@@ -136,22 +137,38 @@ export default async function handler(req, res) {
     currencyCode = body.currency;
   }
 
+  // Only for a logged-in person within today's allowance (lib/ai-access.js).
+  if (!(await allowAiUse(req, res, "advice"))) {
+    return;
+  }
+
   const prompt = buildPrompt(months.map(cleanMonth), currencyCode);
 
   try {
-    const response = await client.messages.create({
-      model: "claude-opus-5",
-      // 12 months of figures produced a reply that overran 2048 and was cut
-      // off mid-JSON, surfacing as "did not return JSON". The server caps the
-      // list lengths anyway, so a larger ceiling costs nothing when unused.
-      max_tokens: 8192,
+    const response = await client.beta.messages.create({
+      model: "claude-opus-5-5",
+      // Room for the model's thinking as well as the reply. 12 months of
+      // figures once overran a 2048 ceiling and was cut off mid-JSON; the
+      // server caps the list lengths anyway, so unused room costs nothing.
+      max_tokens: 16000,
+      // A safety classifier can decline a request; "default" runs a declined
+      // one again on the model Anthropic recommends for that case.
+      betas: ["server-side-fallback-2026-07-01"],
+      fallbacks: "default",
+      thinking: { type: "adaptive" },
+      output_config: { effort: "medium" },
       messages: [{ role: "user", content: prompt }]
     });
+
+    if (response.stop_reason === "refusal") {
+      console.error("[findash-error] briefing refused:", response.stop_details?.category ?? "unknown");
+      return res.status(422).json({ error: "advice couldn't be written for these figures" });
+    }
 
     // Cut off is not the same as malformed: say which it is, or the next
     // person debugging this chases a JSON bug that is really a length limit.
     if (response.stop_reason === "max_tokens") {
-      console.error("briefing truncated: hit max_tokens");
+      console.error("[findash-error] briefing truncated: hit max_tokens");
       return res.status(502).json({ error: "the briefing ran long and was cut off - try a shorter period" });
     }
 
@@ -173,7 +190,7 @@ export default async function handler(req, res) {
       actions: shortStrings(reply.value.actions, 4)
     });
   } catch (error) {
-    console.error("briefing failed:", error);
+    console.error("[findash-error] briefing failed:", error);
     return res.status(502).json({ error: "briefing unavailable" });
   }
 }

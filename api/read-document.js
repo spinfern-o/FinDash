@@ -24,6 +24,7 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
+import { allowAiUse } from "../lib/ai-access.js";
 
 const client = new Anthropic();
 
@@ -369,6 +370,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "mediaType must be one of " + MEDIA_TYPES.join(", ") });
   }
 
+  // Only for a logged-in person within today's allowance (lib/ai-access.js).
+  if (!(await allowAiUse(req, res, "photo"))) {
+    return;
+  }
+
   const content = [
     { type: "image", source: { type: "base64", media_type: body.mediaType, data: body.image } }
   ];
@@ -398,11 +404,11 @@ export default async function handler(req, res) {
     });
 
     if (response.stop_reason === "refusal") {
-      console.error("read-document refused:", response.stop_details?.category ?? "unknown");
+      console.error("[findash-error] read-document refused:", response.stop_details?.category ?? "unknown");
       return res.status(422).json({ error: "this photo could not be read" });
     }
     if (response.stop_reason === "max_tokens") {
-      console.error("read-document truncated: hit max_tokens");
+      console.error("[findash-error] read-document truncated: hit max_tokens");
       return res.status(502).json({ error: "the document was too long to read in one go" });
     }
 
@@ -424,7 +430,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ document: document, checks: checkDocument(document), model: response.model });
   } catch (error) {
     // Never repeat the upstream error word for word: it can carry request details.
-    console.error("read-document failed:", error);
+    console.error("[findash-error] read-document failed:", error);
     return res.status(502).json({ error: "photo reading unavailable" });
   }
 }

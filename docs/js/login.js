@@ -11,6 +11,17 @@
 
 const MINIMUM_PASSWORD_LENGTH = 8;
 
+/* Where account deletion requests go: whoever runs this copy of FinDash. */
+const OWNER_EMAIL = "larrywzh59@gmail.com";
+
+const DELETE_QUESTION = "Delete your FinDash account?\n\n" +
+  "Your saved figures are removed from your account and from this browser straight away, " +
+  "and you'll be logged out. An email asking FinDash to delete your login is then opened " +
+  "for you to send. This can't be undone.";
+
+// The email of whoever is logged in on this page, for the deletion request.
+let loggedInEmail = null;
+
 const ACCOUNTS_OFF_MESSAGE = "<b>Accounts aren't switched on for this site yet.</b> Everything on the " +
   'dashboard works without one: <a href="/dashboard">open the dashboard</a>.';
 
@@ -201,6 +212,7 @@ async function callAuth(action, body) {
 }
 
 function showLoggedIn(user, note) {
+  loggedInEmail = user.email;
   form.hidden = true;
   switchLine.hidden = true;
   element("signed-in").hidden = false;
@@ -354,6 +366,58 @@ async function readEmailLink() {
   return true;
 }
 
+/* The saved figures in the account, removed. True when they are gone (or
+   there was nowhere to keep them). */
+async function removeFiguresFromAccount() {
+  try {
+    const response = await fetch("/api/figures", { method: "DELETE", credentials: "same-origin" });
+    // 503: saving to accounts isn't set up here, so nothing was ever saved.
+    return response.ok || response.status === 503;
+  } catch {
+    return false;
+  }
+}
+
+function removeFiguresFromThisBrowser() {
+  try {
+    localStorage.removeItem("findash-data");
+    localStorage.removeItem("findash-briefing");
+  } catch {
+    // Storage is blocked; nothing was saved here to remove.
+  }
+}
+
+/* The person's figures can be removed from here, but deleting the login
+   itself needs Supabase's admin rights, which this site deliberately never
+   holds. So the figures go now, and an email asks whoever runs FinDash to
+   delete the login (Supabase dashboard -> Authentication -> Users). */
+async function deleteAccount() {
+  const email = loggedInEmail;
+  if (!email || !window.confirm(DELETE_QUESTION)) {
+    return;
+  }
+
+  const removed = await removeFiguresFromAccount();
+  if (!removed) {
+    showMessage("Your figures couldn't be removed from your account just now, so nothing was deleted. " +
+      "Try again in a moment.", "bad");
+    return;
+  }
+  removeFiguresFromThisBrowser();
+  await callAuth("logout", {});
+  loggedInEmail = null;
+
+  const subject = encodeURIComponent("Delete my FinDash account");
+  const body = encodeURIComponent("Please delete the FinDash account for " + email + ".\n\n" +
+    "(My saved figures were already removed from the dashboard.)");
+  location.href = "mailto:" + OWNER_EMAIL + "?subject=" + subject + "&body=" + body;
+
+  setMode("login");
+  showMessage("Your saved figures were removed and you're logged out. To finish, send the email that " +
+    "just opened, from <b>" + escapeHtml(email) + "</b>: your login is then deleted and you'll get a reply. " +
+    "If no email opened, write to <b>" + OWNER_EMAIL + "</b> yourself.", "good");
+}
+
 async function accountsAreOn() {
   try {
     const response = await fetch("/api/capabilities");
@@ -409,9 +473,12 @@ function wireControls() {
 
   element("logout").addEventListener("click", async function () {
     await callAuth("logout", {});
+    loggedInEmail = null;
     setMode("login");
     showMessage("You're logged out.", "good");
   });
+
+  element("delete-account").addEventListener("click", deleteAccount);
 
   // An email link opened in a tab already on /login only changes the
   // #fragment, which does not reload the page.

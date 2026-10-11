@@ -356,8 +356,9 @@ nothing is added until they press **Add**.
 Confirmed invoices are stored separately from the spreadsheet's months and added on top
 of their month, so each can be removed again and a new spreadsheet does not drop them. A
 receipt for money taken in adds to revenue. The photo itself is not kept anywhere. Photo
-reading is offered only when `ANTHROPIC_API_KEY` is set (`/api/capabilities` reports
-`photos`).
+reading is offered only when `ANTHROPIC_API_KEY` is set and accounts are switched on
+(`/api/capabilities` reports `photos`), and only to someone logged in; see
+[Paid features and daily limits](#paid-features-and-daily-limits).
 
 Costs that don't fit an existing column should be added to the bucket that matches
 their behavior, not appended arbitrarily — the point of the structure is that the four
@@ -367,7 +368,8 @@ totals stay meaningful.
 
 `docs/login.html` (served at `/login`) lets people create an account, log in, reset a
 password, and log out. The dashboard's masthead shows **Log in**, or the logged-in email
-and **Log out**. Accounts are optional: everything works without one.
+and **Log out**. Accounts are optional: the dashboard works without one, but reading
+photos, advice and matching unusual column names need one (see below).
 
 **While someone is logged in, their figures are saved to their account**, so the same
 months and invoices are there on any computer they log in on. What is saved is what the
@@ -401,10 +403,12 @@ To switch accounts on:
    integration) or add the variables by hand. The functions read `SUPABASE_URL` (or
    `NEXT_PUBLIC_SUPABASE_URL`) and the public key from `SUPABASE_PUBLISHABLE_KEY`,
    `SUPABASE_ANON_KEY` or their `NEXT_PUBLIC_` forms.
-2. Create the table: in Supabase open **SQL Editor**, paste
-   `supabase/migrations/20261011000000_account_figures.sql` and press **Run** (or run
-   `supabase db push` with the Supabase CLI). Until then logging in works, and figures
-   simply stay in the browser.
+2. Create the tables: in Supabase open **SQL Editor**, and for each file in
+   `supabase/migrations/`, in order (`20261011…_account_figures.sql`, then
+   `20261012…_ai_usage_limits.sql`), paste it and press **Run** (or run `supabase db push`
+   with the Supabase CLI). Running a file twice does no harm. Until the first is run,
+   figures simply stay in the browser; until the second is run, photos, advice and column
+   matching answer "not set up yet".
 3. In Supabase, under Authentication, URL Configuration, set the Site URL to the live
    site and add `https://<your domain>/login` to the redirect URLs, so confirmation and
    reset emails come back to the login page. Optionally set `SITE_URL` in Vercel to pin
@@ -412,11 +416,84 @@ To switch accounts on:
 4. Redeploy. `/api/capabilities` then reports `accounts: true` and the login form turns
    on; until then it explains that accounts aren't switched on.
 
+### Paid features and daily limits
+
+Reading a photo, writing advice and matching unusual column names each send a request to
+Claude, paid from this site's Anthropic account. So `lib/ai-access.js` lets them through
+only for someone logged in, and only up to a daily allowance per person (days run midnight
+to midnight UTC):
+
+| Feature                  | Requests per person per day |
+| ------------------------ | --------------------------- |
+| Reading photos           | 40 (a photo is one request, or two when it gets a second look) |
+| Advice                   | 10                          |
+| Matching column names    | 60                          |
+
+Change them in `DAILY_LIMITS` in `lib/ai-access.js`. The counts are kept in Supabase
+(`ai_usage`, through the `claim_ai_use` function in the second migration). If that SQL
+hasn't been run, the three features stay off rather than run without limits. Without an
+account, the dashboard still reads spreadsheets in full; it just can't send photos, ask
+for advice, or ask about column names it doesn't recognise (it says which columns it left
+out). The spending limit set in the Anthropic Console is the final backstop.
+
+### Deleting an account
+
+Logged-in people can press **Delete my account** on the login page. Their saved figures
+are removed at once, from the account and from that browser, they are logged out, and an
+email asking for the login itself to be deleted opens addressed to the site's owner
+(`OWNER_EMAIL` in `docs/js/login.js`). Deleting a login needs Supabase's admin rights,
+which this site deliberately never holds, so the owner finishes it by hand: Supabase
+dashboard, **Authentication**, **Users**, find the email, **Delete user**. Anything else
+stored for that person (their daily usage counts) is removed with it.
+
+### When something goes wrong
+
+Every failure in the server functions is logged with the tag `[findash-error]`, and
+`docs/js/error-reporter.js` sends errors from visitors' browsers to `api/report-error.js`,
+which logs them with the same tag (only the message and where it happened, never anyone's
+figures). In Vercel, open the project, **Logs**, and search for `findash-error`.
+
 ### Sharing
 
 - **Print or save as PDF** prints the period on screen through a light print stylesheet.
 - **Export to Excel** builds an .xlsx in the browser: every line for every month, with
   a Total column, plus an About sheet naming the months, currency and source.
+
+## Tests
+
+```bash
+npm install
+npm test
+```
+
+`npm test` runs everything in `tests/` (about 80 checks, half a minute) against stand-ins
+for Supabase and Claude, so no keys are needed and nothing is spent:
+
+- `tests/unit/`: the arithmetic and file reading, without a browser
+- `tests/api/`: the server functions: saved figures, the login and daily limits on the
+  paid features, what is sent to Claude, error reports
+- `tests/browser/`: the pages in a real (headless) Chromium: the dashboard, photos,
+  logging in, saving to an account, deleting an account
+
+`tests/support/` has the stand-ins and a local copy of the site that serves `docs/` with
+the same security headers as `vercel.json`. The first run needs the test browser:
+`npx playwright install chromium`. GitHub runs the same tests, and builds the Java app,
+on every pull request (`.github/workflows/tests.yml`).
+
+## Before going live
+
+Code alone can't do these; they are settings in the services the site uses.
+
+1. **Anthropic:** set a monthly spending limit in the Anthropic Console.
+2. **Supabase:** run both files in `supabase/migrations/` (see Accounts above), then try
+   it for real: create an account, add a file, log in on another device.
+3. **Email:** Supabase's built-in email is meant for testing. Connect an email service
+   (for example Resend) under Supabase **Authentication**, SMTP settings, so confirmation
+   and reset emails reach customers.
+4. **Plans:** Vercel's Hobby plan is for personal, non-commercial use, and Supabase's
+   free plan pauses after a week without activity. Check both before taking customers.
+5. **Legal:** a privacy policy and terms of service; the help page explains how data is
+   handled but is not a legal policy.
 
 ## Reading the code
 
@@ -440,6 +517,8 @@ Where to start:
 | How a photo becomes an invoice           | `photos/photo-import.js`, `photos/photo-review.js`, `api/read-document.js` |
 | How figures are remembered               | `saved-figures.js` (this browser), `account-figures.js` (the account) |
 | How logging in works                     | `api/auth.js`, `lib/session.js`, `docs/js/login.js` |
+| Who may use the paid features            | `lib/ai-access.js`                                |
+| What the tests check                     | `tests/browser/dashboard.test.mjs`, then the rest of `tests/` |
 | The arithmetic in Java                   | `MonthlyFigures.java`, `Expenses.java`            |
 
 ## Project layout
@@ -466,6 +545,7 @@ docs/                    The website, published from the /docs folder on main
     glossary.js          Plain-language definitions for the dashboard and help page
     theme-init.js        Light or dark mode before the page is drawn
     theme-toggle.js      The sun and moon button
+    error-reporter.js    Sends errors on the page to the site's log
     landing.js, help.js, login.js   Each page's own script
     dashboard/
       main.js            Starts the dashboard
@@ -478,8 +558,11 @@ docs/                    The website, published from the /docs folder on main
       saved-figures.js   Remembering figures in this browser
       account-figures.js Saving them to the owner's account
 api/                     Vercel functions: accounts, saved figures, column matching,
-                         advice, photo reading, forecast, capabilities
-lib/                     Code the functions share: the Supabase client, the session cookies
-supabase/migrations/     The SQL that creates the account_figures table
+                         advice, photo reading, forecast, capabilities, error reports
+lib/                     Code the functions share: the Supabase client, the session
+                         cookies, who may use the paid features
+supabase/migrations/     The SQL for the account_figures table and the daily limits
+tests/                   The tests (npm test); see Tests above
+.github/workflows/       Runs the tests on every pull request
 forecast/                The optional Chronos forecasting service (Python)
 ```

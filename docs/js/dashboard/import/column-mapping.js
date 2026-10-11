@@ -66,6 +66,13 @@ function openQuestions(fieldNames) {
   return { unplacedFields: unplacedFields, unclaimedColumns: unclaimedColumns };
 }
 
+/* The columns the page could not match to any field, by their (normalised)
+   names. Their money only reaches a total once the column-matching service
+   has said which cost group each belongs to. */
+export function unrecognisedColumns(fieldNames) {
+  return openQuestions(fieldNames).unclaimedColumns;
+}
+
 /* True when resolveColumnNames will actually make a request. */
 export function needsColumnMatching(fieldNames) {
   const questions = openQuestions(fieldNames);
@@ -93,6 +100,7 @@ export async function resolveColumnNames(fieldNames) {
     headers: { "Content-Type": "application/json" },
     // Say which columns are still free. Without that the model happily puts
     // columns already matched into a group, and their money would count twice.
+    credentials: "same-origin",
     body: JSON.stringify({
       headers: fieldNames,
       fields: questions.unplacedFields,

@@ -20,12 +20,16 @@ export default function handler(req, res) {
   // settings change, which means a redeploy anyway.
   res.setHeader("Cache-Control", "public, max-age=60");
 
-  const hasClaude = Boolean(process.env.ANTHROPIC_API_KEY);
+  // The features that call Claude need a key, and accounts too: they are
+  // only for logged-in people, so each person's daily use can be capped
+  // (lib/ai-access.js).
+  const hasAccounts = accountsAreSetUp();
+  const hasClaude = Boolean(process.env.ANTHROPIC_API_KEY) && hasAccounts;
   return res.status(200).json({
     briefing: hasClaude,
     mapping: hasClaude,
     photos: hasClaude,
-    accounts: accountsAreSetUp(),
+    accounts: hasAccounts,
     forecast: Boolean(process.env.FORECAST_URL)
   });
 }

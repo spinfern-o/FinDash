@@ -138,7 +138,7 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     // Never repeat the upstream error: it can carry the service's address.
-    console.error("forecast failed:", error);
+    console.error("[findash-error] forecast failed:", error);
     if (error?.name === "AbortError") {
       return res.status(502).json({ error: "forecast timed out" });
     }

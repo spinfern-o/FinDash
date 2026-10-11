@@ -36,7 +36,7 @@ function isMissingTable(error) {
 }
 
 function storageFailed(res, error, message) {
-  console.error("figures:", error.code || "", error.message);
+  console.error("[findash-error] figures:", error.code || "", error.message);
   if (isMissingTable(error)) {
     return res.status(503).json({ error: "saving to accounts isn't set up on this site yet" });
   }

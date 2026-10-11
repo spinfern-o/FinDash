@@ -6,10 +6,33 @@
    than look for itself. */
 
 import { escapeHtml } from "./format.js";
+import { loadCapabilities } from "./capabilities.js";
 
 const LOGGED_OUT_HTML = '<a class="account-link" href="/login">Log in</a>';
 
-/* { email } for the person logged in, or null. */
+// The answer to "who is logged in?", asked once per visit and shared by
+// everything that needs it (photos, advice and column matching only work
+// for someone logged in).
+let loginCheck = null;
+
+/* { email } for the person logged in, or null when nobody is, or when this
+   site has no accounts. */
+export function loggedInUser() {
+  if (!loginCheck) {
+    loginCheck = askWhoIsLoggedIn();
+  }
+  return loginCheck;
+}
+
+async function askWhoIsLoggedIn() {
+  const capabilities = await loadCapabilities();
+  if (!capabilities.accounts) {
+    return null;
+  }
+  return whoIsLoggedIn();
+}
+
+/* { email } for the person logged in, or null. Asks the server every time. */
 export async function whoIsLoggedIn() {
   try {
     const response = await fetch("/api/auth?action=me", { credentials: "same-origin" });
@@ -50,6 +73,7 @@ export function showLoggedIn(user, onLogOut) {
 
   document.getElementById("logout").addEventListener("click", async function () {
     await logOut();
+    loginCheck = Promise.resolve(null);
     corner.innerHTML = LOGGED_OUT_HTML;
     if (onLogOut) {
       onLogOut();

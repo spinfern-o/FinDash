@@ -67,11 +67,15 @@ function loginPageUrl(req) {
 }
 
 /* Supabase's error codes, said the way an owner would want to hear them.
-   The raw message goes to the log, not the page. */
+   The raw message goes to the log, not the page.
+
+   The first group is the person's own mistake (a wrong password, say).
+   Everything after it is something in the site's settings, so it is logged
+   with the tag the owner searches for in Vercel's logs: findash-error. */
 function fail(res, error, fallbackMessage) {
-  const code = error && error.code;
-  const status = error && error.status;
-  console.error("auth:", code || "", status || "", error && error.message);
+  const code = (error && error.code) || "";
+  const status = (error && error.status) || "";
+  const message = (error && error.message) || "";
 
   if (code === "invalid_credentials") {
     return res.status(401).json({ error: "That email and password don't match an account." });
@@ -88,7 +92,36 @@ function fail(res, error, fallbackMessage) {
   if (code === "same_password") {
     return res.status(400).json({ error: "Choose a password you haven't used for this account before." });
   }
-  if (status === 429 || /rate_limit/.test(code || "")) {
+  if (code === "email_address_invalid") {
+    return res.status(400).json({ error: "That email address can't be used. Try a different one." });
+  }
+  if (code === "over_request_rate_limit") {
+    return res.status(429).json({ error: "Too many tries. Wait a minute and try again." });
+  }
+
+  console.error("[findash-error] auth:", code, status, message);
+
+  // Supabase's own email service, used until another one is connected,
+  // only sends to the people in the Supabase organization.
+  if (code === "email_address_not_authorized") {
+    return res.status(503).json({
+      error: "This site can't send emails to that address yet, so it can't create the account. Try again later."
+    });
+  }
+  // The email service is connected but the email didn't go: usually its
+  // settings in Supabase (Authentication, SMTP) are wrong.
+  if (/sending .*email/i.test(message) || /smtp/i.test(message)) {
+    return res.status(503).json({
+      error: "The confirmation email couldn't be sent, so the account wasn't created. Try again later."
+    });
+  }
+  if (code === "over_email_send_rate_limit") {
+    return res.status(429).json({ error: "This site has sent all the emails it can for now. Try again in an hour." });
+  }
+  if (code === "signup_disabled" || code === "email_provider_disabled") {
+    return res.status(503).json({ error: "This site isn't taking new accounts at the moment." });
+  }
+  if (status === 429 || /rate_limit/.test(code)) {
     return res.status(429).json({ error: "Too many tries. Wait a minute and try again." });
   }
   return res.status(502).json({ error: fallbackMessage });
@@ -158,7 +191,7 @@ async function sendPasswordReset(req, res, body) {
     return fail(res, error, "");
   }
   if (error) {
-    console.error("auth reset:", error.code, error.message);
+    console.error("[findash-error] auth reset:", error.code, error.message);
   }
   return res.status(200).json({ ok: true });
 }
@@ -221,7 +254,7 @@ async function logOut(req, res) {
   if (tokens.accessToken) {
     const { error } = await supabaseClient().auth.admin.signOut(tokens.accessToken, "local");
     if (error) {
-      console.error("auth logout:", error.code, error.message);
+      console.error("[findash-error] auth logout:", error.code, error.message);
     }
   }
   clearSessionCookies(res);

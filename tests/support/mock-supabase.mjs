@@ -38,12 +38,14 @@ export async function startMockSupabase() {
     options: {
       confirmEmails: false,    // true: sign-ups need the emailed link first
       missingTables: false,    // true: answer as if the SQL was never run
+      signupError: null,       // { status, code, message }: refuse sign-ups with it
       tokenLifetimeSeconds: 3600
     },
     reset: function () {
       mock.figures.clear();
       mock.usage.clear();
       mock.options.missingTables = false;
+      mock.options.signupError = null;
     },
     userId: function (email) {
       return mock.users.get(email).id;
@@ -137,6 +139,10 @@ export async function startMockSupabase() {
 
   function handleAuth(request, response, url, body, bearer) {
     if (url.pathname === "/auth/v1/signup" && request.method === "POST") {
+      const refusal = mock.options.signupError;
+      if (refusal) {
+        return authError(response, refusal.status, refusal.code, refusal.message);
+      }
       if (mock.users.has(body.email)) {
         return authError(response, 422, "user_already_exists", "User already registered");
       }

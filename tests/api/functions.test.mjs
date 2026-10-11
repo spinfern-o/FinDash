@@ -161,6 +161,43 @@ test("a bad request is refused before it is counted", async function () {
   assert.equal(site.anthropic.requests.length, 0);
 });
 
+test("sign-up problems in Supabase's settings are named on the page and logged for the owner", async function () {
+  const cases = [
+    { status: 400, code: "email_address_not_authorized",
+      message: "Email address \"someone@example.com\" cannot be used as it is not authorized",
+      page: /can't send emails to that address/ },
+    { status: 500, code: "unexpected_failure", message: "Error sending confirmation email",
+      page: /confirmation email couldn't be sent/ },
+    { status: 429, code: "over_email_send_rate_limit", message: "email rate limit exceeded",
+      page: /sent all the emails it can/ },
+    { status: 422, code: "signup_disabled", message: "Signups not allowed for this instance",
+      page: /isn't taking new accounts/ }
+  ];
+  for (const refusal of cases) {
+    site.supabase.options.signupError = refusal;
+    const before = site.serverLogs.length;
+    const response = await httpClient(site).post("/api/auth?action=signup", { email: newEmail("refused"), password: PASSWORD });
+    assert.match(response.json.error, refusal.page, refusal.code);
+    const logged = site.serverLogs.slice(before).some(function (line) {
+      // Supabase's library keeps only the message of a 5xx answer, not its code.
+      return line.includes("[findash-error] auth:") && line.includes(refusal.message);
+    });
+    assert.ok(logged, refusal.code + " reached the log");
+  }
+});
+
+test("a person's own mistake is told to them, not logged as a site problem", async function () {
+  const client = httpClient(site);
+  const email = newEmail("mistake");
+  await client.post("/api/auth?action=signup", { email: email, password: PASSWORD });
+  const before = site.serverLogs.length;
+  const response = await httpClient(site).post("/api/auth?action=login", { email: email, password: "wrong password" });
+  assert.equal(response.status, 401);
+  assert.ok(!site.serverLogs.slice(before).some(function (line) {
+    return line.includes("[findash-error]");
+  }));
+});
+
 test("error reports are written to the log, one line each, and cut short", async function () {
   const client = httpClient(site);
   const before = site.serverLogs.length;

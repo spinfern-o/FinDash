@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/png" href="favicon.png">
+<title>FinDash &middot; Log in</title>
+<meta name="description" content="Log in to FinDash, or create an account. Accounts are optional: the dashboard works without one.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+(function(){
+  try{
+    var saved = localStorage.getItem("findash-theme");
+    var theme = saved || (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    if(theme === "light") document.documentElement.setAttribute("data-theme","light");
+  }catch(e){ /* localStorage/matchMedia unavailable (privacy mode, old browser); default theme stands */ }
+})();
+</script>
+<style>
+  /* The landing page's tokens and frame, so the login page reads as the same site. */
+  :root{
+    color-scheme:dark;
+    --ground:#050505;
+    --card:#121212;
+    --card-2:#161616;
+    --line:rgba(245,245,245,0.1);
+    --line-soft:rgba(245,245,245,0.06);
+    --ink:#f5f5f5;
+    --ink-2:#b3b3b3;
+    --ink-3:#8c8c8c;
+    --accent:#8b93f8;
+    --accent-2:#a5b4fc;
+    --accent-ink:#0b0b14;
+    --positive:#94dc00;
+    --critical:#e5484d;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  html[data-theme="light"]{
+    color-scheme:light;
+    --ground:#f6f6f7;
+    --card:#ffffff;
+    --card-2:#f1f1f2;
+    --line:rgba(10,10,10,0.12);
+    --line-soft:rgba(10,10,10,0.06);
+    --ink:#0a0a0a;
+    --ink-2:#4b4b50;
+    --ink-3:#6e6e74;
+    --accent:#4f46e5;
+    --accent-2:#6366f1;
+    --accent-ink:#ffffff;
+    --positive:#1f7a2e;
+    --critical:#d6333b;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;
+    background:var(--ground);
+    background-image:radial-gradient(var(--line) .7px, transparent .7px);
+    background-size:26px 26px;
+    color:var(--ink);
+    font-family:Inter,ui-sans-serif,system-ui,sans-serif;
+    line-height:1.5;
+  }
+  a{color:inherit}
+  [hidden]{display:none !important}
+  .frame{max-width:1180px;margin:0 auto;border-inline:1px solid var(--line);min-height:100vh;position:relative;
+         display:flex;flex-direction:column}
+
+  .cross{position:absolute;width:13px;height:13px;color:var(--line);pointer-events:none;z-index:2}
+  .cross::before,.cross::after{content:"";position:absolute;background:currentColor}
+  .cross::before{left:50%;top:0;width:1px;height:100%;transform:translateX(-50%)}
+  .cross::after{top:50%;left:0;height:1px;width:100%;transform:translateY(-50%)}
+  .cross.tl{top:92px;left:-6.5px}
+  .cross.tr{top:92px;right:-6.5px}
+
+  /* ---- header (as on the landing page) ---- */
+  header{
+    min-height:92px;padding:22px 5%;
+    display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    border-bottom:1px solid var(--line);
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:16px;font-weight:700;letter-spacing:.02em;text-decoration:none;text-transform:uppercase}
+  .brand svg{flex:none;color:var(--accent)}
+  .brand .period{color:var(--accent)}
+  nav.links{display:flex;align-items:center;gap:20px}
+  .nav-tag{
+    font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--ink-3);text-decoration:none;
+  }
+  .nav-tag:hover{color:var(--ink)}
+  .enter-link{
+    display:inline-flex;align-items:center;gap:10px;
+    font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    text-decoration:none;color:var(--accent-ink);
+    background:var(--accent);border:1px solid var(--accent);border-radius:8px;padding:11px 20px;
+    transition:filter .15s,transform .15s;
+  }
+  .enter-link:hover{filter:brightness(1.1);transform:translateY(-1px)}
+  .theme-toggle{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:32px;height:32px;border-radius:8px;flex:none;
+    background:var(--card);border:1px solid var(--line);color:var(--ink-2);
+    cursor:pointer;transition:border-color .12s,color .12s;
+  }
+  .theme-toggle:hover{border-color:var(--ink-3);color:var(--ink)}
+  .theme-toggle svg{display:none}
+  html:not([data-theme="light"]) .theme-toggle svg.icon-sun{display:block}
+  html[data-theme="light"] .theme-toggle svg.icon-moon{display:block}
+
+  /* ---- the form ---- */
+  main{flex:1;display:grid;grid-template-columns:minmax(0,440px) minmax(0,340px);gap:40px;
+       justify-content:center;align-items:start;padding:72px 24px 64px}
+  .auth-card{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;padding:30px 28px 26px;
+  }
+  .tag{display:block;margin-bottom:12px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+  h1{margin:0;font-size:clamp(26px,4vw,34px);font-weight:800;letter-spacing:-0.035em;line-height:1.12}
+  .lede{margin:10px 0 0;font-size:14px;line-height:1.6;color:var(--ink-2)}
+
+  form{margin-top:24px;display:flex;flex-direction:column;gap:6px}
+  .label-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:10px}
+  label{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+  input[type=email],input[type=password],input[type=text]{
+    width:100%;font:inherit;font-size:15px;color:var(--ink);
+    background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;
+    transition:border-color .12s,box-shadow .12s;
+  }
+  input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent)}
+  input[aria-invalid="true"]{border-color:var(--critical)}
+  input:disabled{opacity:.55}
+  .pw-wrap{position:relative}
+  .pw-wrap input{padding-right:70px}
+  .show-pw{
+    position:absolute;right:6px;top:50%;transform:translateY(-50%);
+    font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--ink-3);background:none;border:0;border-radius:6px;padding:8px 10px;cursor:pointer;
+  }
+  .show-pw:hover{color:var(--ink)}
+  .text-link{background:none;border:0;padding:0;font:inherit;font-size:13px;color:var(--accent);cursor:pointer;text-decoration:none}
+  .text-link:hover{text-decoration:underline}
+  .hint{margin:2px 0 0;font-size:12px;color:var(--ink-3)}
+
+  .submit{
+    margin-top:18px;display:inline-flex;align-items:center;justify-content:center;gap:10px;
+    font:inherit;font-size:15px;font-weight:700;color:var(--accent-ink);
+    background:var(--accent);border:1px solid var(--accent);border-radius:10px;padding:14px 20px;cursor:pointer;
+    transition:filter .15s,transform .15s;
+  }
+  .submit:hover{filter:brightness(1.08);transform:translateY(-1px)}
+  .submit:disabled{opacity:.55;cursor:default;transform:none;filter:none}
+  .ghost{
+    display:inline-flex;align-items:center;justify-content:center;
+    font:inherit;font-size:14px;font-weight:600;color:var(--ink);text-decoration:none;
+    background:transparent;border:1px solid var(--line);border-radius:10px;padding:12px 18px;cursor:pointer;
+  }
+  .ghost:hover{border-color:var(--accent);color:var(--accent)}
+
+  .spin{display:inline-block;width:13px;height:13px;border-radius:50%;
+        border:2px solid color-mix(in srgb, var(--accent-ink) 35%, transparent);border-top-color:var(--accent-ink);
+        animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){ .spin{animation-duration:2.4s} }
+
+  .message{margin:18px 0 0;padding:12px 14px;border-radius:10px;font-size:13px;line-height:1.55;
+           border:1px solid var(--line);background:var(--card-2);color:var(--ink-2)}
+  .message b{color:var(--ink)}
+  .message.bad{border-color:color-mix(in srgb, var(--critical) 55%, transparent);color:var(--ink)}
+  .message.good{border-color:color-mix(in srgb, var(--positive) 55%, transparent);color:var(--ink)}
+  .switch{margin:22px 0 0;padding-top:18px;border-top:1px solid var(--line-soft);font-size:14px;color:var(--ink-2)}
+  .signed-in .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+  .signed-in .submit{margin-top:0}
+
+  /* ---- beside the form ---- */
+  .aside{padding-top:8px}
+  .aside h2{margin:0 0 12px;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+  .aside ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+  .aside li{display:flex;gap:12px;font-size:14px;line-height:1.55;color:var(--ink-2)}
+  .aside li b{display:block;color:var(--ink);font-weight:700}
+  .aside svg{flex:none;margin-top:3px;color:var(--accent)}
+  .aside .no-account{margin-top:24px;padding:16px;border:1px dashed var(--line);border-radius:12px;font-size:13px;color:var(--ink-2)}
+  .aside .no-account a{color:var(--accent);font-weight:600;text-decoration:none}
+  .aside .no-account a:hover{text-decoration:underline}
+
+  footer{
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;
+    padding:26px 5%;border-top:1px solid var(--line);
+    font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);
+  }
+  footer a{text-decoration:none;color:var(--ink-2)}
+  footer a:hover{color:var(--accent)}
+
+  a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+  @media (max-width:900px){
+    main{grid-template-columns:minmax(0,480px);gap:28px;padding-top:48px}
+    .aside{padding-top:0}
+  }
+  @media (max-width:640px){
+    .cross{display:none}
+    header{padding:18px 20px}
+    nav.links{gap:12px}
+    .nav-tag{display:none}
+    .enter-link{padding:9px 14px;font-size:12px}
+    main{padding:32px 16px 40px}
+    .auth-card{padding:24px 20px 22px}
+    footer{flex-direction:column;text-align:center}
+  }
+</style>
+</head>
+<body>
+<div class="frame">
+  <span class="cross tl" aria-hidden="true"></span>
+  <span class="cross tr" aria-hidden="true"></span>
+
+  <header>
+    <a class="brand" href="/" aria-label="FinDash home">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 19V11"/><path d="M12 19V5"/><path d="M20 19V15"/></svg>
+      findash<span class="period">.</span>
+    </a>
+    <nav class="links">
+      <a class="nav-tag" href="/help">Help</a>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle light and dark mode">
+        <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+        <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+      </button>
+      <a class="enter-link" href="/dashboard">
+        Open dashboard
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+      </a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="auth-card" aria-labelledby="title">
+      <span class="tag" id="tag">Account</span>
+      <h1 id="title">Log in to FinDash</h1>
+      <p class="lede" id="lede">Welcome back. Log in with the email you signed up with.</p>
+
+      <p class="message" id="message" role="status" aria-live="polite" hidden></p>
+
+      <!-- Submitted by script: the site's security policy (form-action 'none')
+           blocks ordinary form posts, and the request goes to /api/auth. -->
+      <form id="form" novalidate>
+        <div class="label-row" id="email-row"><label for="email">Email</label></div>
+        <input type="email" id="email" name="email" autocomplete="email" inputmode="email" required>
+
+        <div class="label-row" id="pw-row">
+          <label for="password" id="pw-label">Password</label>
+          <button type="button" class="text-link" id="to-reset">Forgot password?</button>
+        </div>
+        <div class="pw-wrap" id="pw-wrap">
+          <input type="password" id="password" name="password" autocomplete="current-password" required>
+          <button type="button" class="show-pw" id="show-pw" aria-controls="password" aria-pressed="false">Show</button>
+        </div>
+        <p class="hint" id="pw-hint" hidden>At least 8 characters.</p>
+
+        <button type="submit" class="submit" id="submit">Log in</button>
+      </form>
+
+      <p class="switch" id="switch"></p>
+
+      <div class="signed-in" id="signed-in" hidden>
+        <div class="actions">
+          <a class="submit" href="/dashboard">Open dashboard</a>
+          <button type="button" class="ghost" id="logout">Log out</button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="aside" aria-label="About accounts">
+      <h2>About accounts</h2>
+      <ul>
+        <li>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          <span><b>Optional</b>The dashboard works fully without an account. Nothing on it is locked behind one.</span>
+        </li>
+        <li>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span><b>Just your email and a password</b>Kept by Supabase, the service FinDash uses for logins. Your password is never stored by FinDash.</span>
+        </li>
+        <li>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+          <span><b>Your figures stay put</b>Logging in doesn't send your spreadsheet or figures anywhere. They stay in this browser, as before.</span>
+        </li>
+      </ul>
+      <p class="no-account">Just want to see your numbers? <a href="/dashboard">Open the dashboard</a> without an account.</p>
+    </aside>
+  </main>
+
+  <footer>
+    <a href="/help#privacy">How we handle your data</a>
+    <a href="/dashboard">The numbers start here</a>
+    <span>Accounts are optional</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  var toggle = document.getElementById("theme-toggle");
+  if(!toggle) return;
+  toggle.addEventListener("click", function(){
+    var isLight = document.documentElement.getAttribute("data-theme") === "light";
+    if(isLight){
+      document.documentElement.removeAttribute("data-theme");
+      try{ localStorage.setItem("findash-theme","dark"); }catch(e){ /* storage blocked; theme still applies for this session */ }
+    }else{
+      document.documentElement.setAttribute("data-theme","light");
+      try{ localStorage.setItem("findash-theme","light"); }catch(e){ /* storage blocked; theme still applies for this session */ }
+    }
+  });
+})();
+</script>
+<script>
+/* One page, five states: log in, create an account, reset a password, choose a
+   new password (after a reset link), and already logged in. Every request goes
+   to /api/auth on this site; the session lives in cookies scripts can't read. */
+(function(){
+  const $ = id => document.getElementById(id);
+  const form = $("form"), email = $("email"), password = $("password"), submit = $("submit");
+  const MIN_PASSWORD = 8;
+  let mode = "login";
+
+  // Where to go once logged in: a path on this site, never another one.
+  const next = (() => {
+    const n = new URLSearchParams(location.search).get("next") || "";
+    return /^\/(?!\/)[\w\-./?=&#%]*$/.test(n) ? n : "/dashboard";
+  })();
+
+  const MODES = {
+    login:   {tag: "Account", title: "Log in to FinDash", lede: "Welcome back. Log in with the email you signed up with.",
+              submit: "Log in", password: true, autocomplete: "current-password", hint: false, forgot: true,
+              switchHtml: 'New to FinDash? <button type="button" class="text-link" data-mode="signup">Create an account</button>'},
+    signup:  {tag: "New account", title: "Create your account", lede: "All you need is an email address and a password.",
+              submit: "Create account", password: true, autocomplete: "new-password", hint: true, forgot: false,
+              switchHtml: 'Already have an account? <button type="button" class="text-link" data-mode="login">Log in</button>'},
+    reset:   {tag: "Password", title: "Reset your password", lede: "Enter your email and we'll send you a link to choose a new password.",
+              submit: "Send reset link", password: false, hint: false, forgot: false,
+              switchHtml: 'Remembered it? <button type="button" class="text-link" data-mode="login">Back to log in</button>'},
+    newpass: {tag: "Password", title: "Choose a new password", lede: "Pick a password you haven't used here before.",
+              submit: "Save new password", password: true, autocomplete: "new-password", hint: true, forgot: false,
+              email: false, switchHtml: ""}
+  };
+
+  function setMode(m, keepMessage) {
+    mode = m;
+    const c = MODES[m];
+    $("tag").textContent = c.tag;
+    $("title").textContent = c.title;
+    $("lede").textContent = c.lede;
+    submit.textContent = c.submit;
+    const showEmail = c.email !== false;
+    $("email-row").hidden = email.hidden = !showEmail;
+    $("pw-row").hidden = $("pw-wrap").hidden = !c.password;
+    $("to-reset").hidden = !c.forgot;
+    $("pw-hint").hidden = !c.hint;
+    $("pw-label").textContent = m === "newpass" ? "New password" : "Password";
+    password.setAttribute("autocomplete", c.autocomplete || "off");
+    $("switch").innerHTML = c.switchHtml;
+    $("switch").hidden = !c.switchHtml;
+    form.hidden = false;
+    $("signed-in").hidden = true;
+    if (!keepMessage) say("");
+    for (const el of [email, password]) el.removeAttribute("aria-invalid");
+    if (location.hash !== "#" + m && (m === "signup" || m === "reset")) history.replaceState(null, "", "#" + m);
+    // Only our own #signup / #reset markers are tidied away. An email link's
+    // fragment carries the session and must survive until fromEmailLink reads it.
+    if (m === "login" && (location.hash === "#signup" || location.hash === "#reset")) {
+      history.replaceState(null, "", location.pathname + location.search);
+    }
+  }
+
+  function say(html, kind) {
+    const el = $("message");
+    el.hidden = !html;
+    el.className = "message" + (kind ? " " + kind : "");
+    el.innerHTML = html;
+  }
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+
+  function busy(on) {
+    submit.disabled = on;
+    submit.innerHTML = on ? '<span class="spin" aria-hidden="true"></span> Working…' : esc(MODES[mode].submit);
+  }
+
+  async function call(action, body) {
+    let res;
+    try {
+      res = await fetch("/api/auth?action=" + action, {
+        method: body ? "POST" : "GET",
+        headers: body ? {"Content-Type": "application/json"} : {},
+        body: body ? JSON.stringify(body) : undefined,
+        credentials: "same-origin"
+      });
+    } catch {
+      return {ok: false, status: 0, data: {error: "Couldn't reach FinDash. Check your connection and try again."}};
+    }
+    let data = {};
+    try { data = await res.json(); } catch { /* an error page, not JSON; the status says enough */ }
+    return {ok: res.ok, status: res.status, data};
+  }
+
+  function showSignedIn(user, note) {
+    form.hidden = true;
+    $("switch").hidden = true;
+    $("signed-in").hidden = false;
+    $("tag").textContent = "Account";
+    $("title").textContent = "You're logged in";
+    $("lede").innerHTML = "Logged in as <b>" + esc(user.email) + "</b>.";
+    say(note || "", note ? "good" : "");
+  }
+
+  function disableForm(html) {
+    for (const el of form.querySelectorAll("input,button")) el.disabled = true;
+    $("switch").hidden = true;
+    say(html);
+  }
+
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const em = email.value.trim(), pw = password.value;
+    for (const el of [email, password]) el.removeAttribute("aria-invalid");
+
+    if (MODES[mode].email !== false && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) {
+      email.setAttribute("aria-invalid", "true");
+      email.focus();
+      return say("Enter a valid email address.", "bad");
+    }
+    if (MODES[mode].password && !pw) {
+      password.setAttribute("aria-invalid", "true");
+      password.focus();
+      return say("Enter your password.", "bad");
+    }
+    if ((mode === "signup" || mode === "newpass") && pw.length < MIN_PASSWORD) {
+      password.setAttribute("aria-invalid", "true");
+      password.focus();
+      return say(`Choose a password of at least ${MIN_PASSWORD} characters.`, "bad");
+    }
+
+    busy(true);
+    const action = {login: "login", signup: "signup", reset: "reset", newpass: "password"}[mode];
+    const body = mode === "reset" ? {email: em} : mode === "newpass" ? {password: pw} : {email: em, password: pw};
+    const r = await call(action, body);
+    busy(false);
+
+    if (!r.ok) {
+      if (r.status === 503) return disableForm(NOT_ON);
+      if (r.status === 401 && mode === "login") password.setAttribute("aria-invalid", "true");
+      return say(esc(r.data.error || "Something went wrong. Try again."), "bad");
+    }
+    if (mode === "reset") {
+      password.value = "";
+      setMode("login", true);
+      email.value = em;
+      return say("If there's an account for <b>" + esc(em) + "</b>, a link to choose a new password is on its way. " +
+                 "Check your inbox (and spam folder).", "good");
+    }
+    if (r.data.confirm) {
+      password.value = "";
+      setMode("login", true);
+      email.value = em;
+      return say("Almost there. We sent a link to <b>" + esc(em) + "</b>: open it to confirm your email, " +
+                 "then log in here.", "good");
+    }
+    location.assign(next);
+  });
+
+  $("show-pw").addEventListener("click", e => {
+    const show = password.type === "password";
+    password.type = show ? "text" : "password";
+    e.currentTarget.textContent = show ? "Hide" : "Show";
+    e.currentTarget.setAttribute("aria-pressed", String(show));
+  });
+  $("to-reset").addEventListener("click", () => { setMode("reset"); email.focus(); });
+  $("switch").addEventListener("click", e => {
+    const b = e.target.closest("[data-mode]");
+    if (b) { setMode(b.dataset.mode); email.focus(); }
+  });
+  $("logout").addEventListener("click", async () => {
+    await call("logout", {});
+    setMode("login");
+    say("You're logged out.", "good");
+  });
+
+  const NOT_ON = "<b>Accounts aren't switched on for this site yet.</b> Everything on the dashboard works " +
+                 'without one: <a href="/dashboard">open the dashboard</a>.';
+
+  /* Supabase's confirmation and reset emails come back here with the session
+     in the URL fragment (or an error). The tokens are handed to /api/auth once,
+     then wiped from the address bar so they don't linger in history. */
+  async function fromEmailLink() {
+    const h = new URLSearchParams(location.hash.slice(1));
+    if (!h.has("access_token") && !h.has("error") && !h.has("error_code")) return false;
+    history.replaceState(null, "", location.pathname + location.search);
+    if (h.has("error") || h.has("error_code")) {
+      setMode(h.get("type") === "recovery" ? "reset" : "login", true);
+      say(h.get("error_code") === "otp_expired"
+        ? "That link has expired or was already used. Request a new one below."
+        : "That link didn't work. Request a new one below.", "bad");
+      return true;
+    }
+    const r = await call("session", {access_token: h.get("access_token"), refresh_token: h.get("refresh_token") || ""});
+    if (!r.ok) {
+      setMode(h.get("type") === "recovery" ? "reset" : "login", true);
+      say(esc(r.data.error || "That link didn't work. Request a new one."), "bad");
+      return true;
+    }
+    if (h.get("type") === "recovery") {
+      setMode("newpass", true);
+      say("Logged in as <b>" + esc(r.data.user.email) + "</b>. Now choose a new password.");
+      password.focus();
+      return true;
+    }
+    showSignedIn(r.data.user, "Your email is confirmed. Welcome to FinDash.");
+    return true;
+  }
+
+  async function start() {
+    const initial = location.hash === "#signup" ? "signup" : location.hash === "#reset" ? "reset" : "login";
+    setMode(initial);
+    let caps = {};
+    try { const r = await fetch("/api/capabilities"); caps = r.ok ? await r.json() : {}; }
+    catch { /* no capabilities endpoint (a plain static server): treated as accounts off */ }
+    if (!caps.accounts) return disableForm(NOT_ON);
+    if (await fromEmailLink()) return;
+    const me = await call("me");
+    if (me.ok && me.data.user) showSignedIn(me.data.user);
+  }
+  start();
+  // An email link opened in a tab already on /login only changes the fragment,
+  // which does not reload the page.
+  addEventListener("hashchange", () => {
+    if (/access_token=|error_code=/.test(location.hash)) fromEmailLink();
+    else if (location.hash === "#signup" || location.hash === "#reset") setMode(location.hash.slice(1));
+  });
+})();
+</script>
+</body>
+</html>

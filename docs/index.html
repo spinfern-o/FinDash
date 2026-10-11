@@ -102,6 +102,16 @@
     transition:filter .15s,transform .15s;
   }
   .enter-link:hover{filter:brightness(1.1);transform:translateY(-1px)}
+  /* Log in sits beside Open dashboard as the quieter of the two: accounts are
+     optional, and the dashboard should stay the obvious first click. */
+  .login-link{
+    display:inline-flex;align-items:center;gap:8px;
+    font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    text-decoration:none;color:var(--ink);
+    background:transparent;border:1px solid var(--line);border-radius:8px;padding:11px 18px;
+    transition:border-color .15s,color .15s;
+  }
+  .login-link:hover{border-color:var(--accent);color:var(--accent)}
 
   /* ---- hero ---- */
   .hero{
@@ -247,6 +257,9 @@
     .band{grid-template-columns:repeat(2,1fr)}
   }
   @media (max-width:640px){
+    nav.links{gap:10px}
+    .login-link{padding:9px 12px;font-size:12px}
+    .enter-link{padding:9px 14px;font-size:12px}
     /* The corner crosses straddle the frame's edge, which on a phone is the
        screen's edge, so half of one hung outside and the page scrolled sideways. */
     .cross{display:none}
@@ -275,6 +288,7 @@
         <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
         <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
       </button>
+      <a class="login-link" href="/login">Log in</a>
       <a class="enter-link" href="/dashboard">
         Open dashboard
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
@@ -298,6 +312,9 @@
         <a class="cta" href="/dashboard">
           Open dashboard
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+        </a>
+        <a class="cta ghost" href="/login">
+          Log in
         </a>
         <a class="cta ghost" href="#preview">
           See sample figures
@@ -399,7 +416,7 @@
       <div class="item">
         <span class="tag">Zero setup</span>
         <h3>Small teams</h3>
-        <p>No accounts, no onboarding call. Your figures stay in your browser, ready for next time.</p>
+        <p>No account needed, no onboarding call. Your figures stay in your browser, ready for next time.</p>
       </div>
     </section>
   </main>
@@ -436,7 +453,7 @@
     { word: "non\u2011tech",      example: "No formulas, no pivot tables, just your monthly totals in one simple template." },
     { word: "international",  example: "Euros, pounds, rupees or dollars: your figures, in your currency." },
     { word: "freelancers",    example: "Snap a photo of a receipt; it's read, sorted and added to the month." },
-    { word: "small teams",    example: "No logins, no onboarding call, just open the file and see the numbers." },
+    { word: "small teams",    example: "No login needed, no onboarding call, just open the file and see the numbers." },
     { word: "founders",       example: "See which costs are growing faster than sales, before they eat your margin." },
     { word: "anyone",         example: "If you can copy a total from QuickBooks or Xero, you can read this dashboard." }
   ];

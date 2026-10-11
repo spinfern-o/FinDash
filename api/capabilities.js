@@ -22,6 +22,12 @@ export default function handler(req, res) {
     briefing: Boolean(process.env.ANTHROPIC_API_KEY),
     mapping: Boolean(process.env.ANTHROPIC_API_KEY),
     photos: Boolean(process.env.ANTHROPIC_API_KEY),
+    // Accounts need the Supabase project's URL and public key, whichever names
+    // the Vercel integration gave them (api/auth.js reads the same list).
+    accounts: Boolean(
+      (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) &&
+      (process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY ||
+       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)),
     forecast: Boolean(process.env.FORECAST_URL),
   });
 }

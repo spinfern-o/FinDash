@@ -588,7 +588,7 @@
   .trend .below .mark{border-radius:0 0 4px 4px}
   .trend .col.on .mark{background:var(--positive)}
   .trend .col.on.neg .mark{background:var(--critical)}
-  .trend .zero{position:absolute;left:0;right:0;height:1px;background:var(--line)}
+  .trend .zero{position:absolute;left:0;right:0;height:1px;background:var(--line);pointer-events:none}
   .trend-labels{display:flex;gap:12px;margin-top:8px;min-width:max-content}
   .trend-labels div{
     flex:1 0 var(--colw);min-width:0;white-space:nowrap;
@@ -3633,8 +3633,11 @@ function wireLoader() {
 
   // #sheet is never replaced, only refilled, so one listener covers every redraw
   document.getElementById("sheet").addEventListener("click", e => {
-    const hit = e.target.closest("[data-month]");
-    if (hit) { select(Number(hit.dataset.month)); return; }
+    // Chart bars and month labels carry their position in data.months as
+    // data-idx (two Julys on file have the same month number, so a number
+    // cannot identify one).
+    const hit = e.target.closest("[data-idx]");
+    if (hit) { select(Number(hit.dataset.idx)); return; }
     const pt = e.target.closest("[data-fan-pt]");
     if (pt) {
       const lbl = document.getElementById("fan-lbl-" + pt.dataset.fanPt);

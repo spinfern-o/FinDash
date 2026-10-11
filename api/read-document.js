@@ -1,39 +1,41 @@
 /**
  * POST /api/read-document
  *
- * Reads a photo of a business document - a supplier invoice, a bill, a
- * receipt - and returns its lines as structured data, each line assigned to
- * one of the dashboard's fourteen cost lines.
+ * Reads a photo of a business document (a supplier invoice, a bill, a
+ * receipt) and returns its lines as structured data, each line given one of
+ * the dashboard's fourteen cost lines.
  *
- * Unlike the spreadsheet path, which never leaves the browser, this sends the
- * photo itself: reading a picture needs the model. The page says so before a
- * photo is added, and nothing is stored here - the image exists for the one
+ * Unlike a spreadsheet, which never leaves the browser, this sends the photo
+ * itself: reading a picture needs the model. The page says so before a photo
+ * is added, and nothing is stored here: the image exists for the one
  * request. Nothing is added to anyone's figures either: the page shows the
- * reading back to the owner, who checks it and decides.
+ * reading to the owner, who checks it and decides.
  *
  * Request:  { "image": "<base64 JPEG/PNG/WebP/GIF>", "mediaType": "image/jpeg",
- *             "review": { "previous": {...}, "problems": ["..."] } }   (review optional)
+ *             "review": { "previous": {...}, "problems": ["..."] } }   (review is optional)
  * Response: { "document": {...}, "checks": {...}, "model": "..." }
  *
  * "review" is the second look. When a first reading fails its own arithmetic
  * (the lines do not add up to the printed total, or a line's quantity times
  * price is not its amount), the page sends the photo again with that reading
- * and the failures, and the model re-reads the lines it got wrong. A separate
- * request rather than a loop in here, so each look gets its own time budget.
+ * and what failed, and the model reads the lines it got wrong again. A
+ * separate request rather than a loop in here, so each look gets its own
+ * time limit.
  */
 
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic();
 
-// Public and unauthenticated, like the other endpoints: these caps bound what
-// one request can cost. A spend limit in the Anthropic console is the hard stop.
-// Vercel refuses request bodies over 4.5 MB before this code runs; the page
-// shrinks photos well under that.
-const MAX_BASE64 = 6_000_000;
+// Public and needs no login, like the other functions: these limits bound
+// what one request can cost. A spending limit in the Anthropic console is the
+// hard stop. Vercel refuses request bodies over 4.5 MB before this code runs;
+// the page shrinks photos well under that.
+const MAXIMUM_BASE64_LENGTH = 6_000_000;
 const MEDIA_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const DOCUMENT_KINDS = ["purchase", "sale", "other"];
 
-/** The dashboard's cost lines, keyed as data/expenses.csv names them. */
+/* The dashboard's cost lines, named as data/expenses.csv names them. */
 const CATEGORIES = [
   "cogs", "labor", "employee meals", "tax",
   "packaging", "credit card fees", "marketing", "hardware",
@@ -41,7 +43,10 @@ const CATEGORIES = [
   "rent", "insurance", "business license", "telephone"
 ];
 
-const nullable = schema => ({ anyOf: [schema, { type: "null" }] });
+/* A schema that also allows null. */
+function nullable(schema) {
+  return { anyOf: [schema, { type: "null" }] };
+}
 
 /* Every field required, nulls allowed: structured outputs then guarantee the
    shape, and "not on the document" is an explicit null rather than a guess. */
@@ -148,75 +153,207 @@ check each line's billed_quantity x unit_price against its amount. If something 
 match, look at the photo again: a misread digit or a continuation row read as its own line
 is the usual cause. If it still does not match, keep what is printed and explain in notes.`;
 
-const round2 = n => Math.round(n * 100) / 100;
-const finite = v => typeof v === "number" && Number.isFinite(v);
-const text = (v, cap) => (typeof v === "string" && v.trim() ? v.trim().slice(0, cap) : null);
+const AMOUNT_TOLERANCE = 0.015;   // a cent and a half, for rounding on the paper
 
-/* Re-checks the model's arithmetic here, where it cannot be talked out of.
-   A line passes when either quantity times the unit price gives its amount -
-   invoices bill some lines by weight and others by count. */
+function roundToCents(amount) {
+  return Math.round(amount * 100) / 100;
+}
+
+function isFiniteNumber(value) {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function numberOrNull(value) {
+  if (isFiniteNumber(value)) {
+    return value;
+  }
+  return null;
+}
+
+/* Trimmed text no longer than maximumLength, or null when there is none. */
+function textOrNull(value, maximumLength) {
+  if (typeof value === "string" && value.trim()) {
+    return value.trim().slice(0, maximumLength);
+  }
+  return null;
+}
+
+/* Whether a line's quantity times its unit price gives its amount. Returns
+   null when it adds up (or cannot be checked), otherwise what it should be.
+   Either quantity may be the one the price applies to: invoices bill some
+   lines by weight and others by count. */
+function expectedAmountIfWrong(line) {
+  if (!isFiniteNumber(line.unit_price)) {
+    return null;
+  }
+  const quantities = [line.billed_quantity, line.quantity].filter(isFiniteNumber);
+  if (!quantities.length) {
+    return null;
+  }
+  const addsUp = quantities.some(function (quantity) {
+    return Math.abs(roundToCents(quantity * line.unit_price) - line.amount) <= AMOUNT_TOLERANCE;
+  });
+  if (addsUp) {
+    return null;
+  }
+  return { quantity: quantities[0], expected: roundToCents(quantities[0] * line.unit_price) };
+}
+
+/* Checks the model's arithmetic again here, where it cannot be talked out of. */
 export function checkDocument(doc) {
   const problems = [];
   const lineIssues = [];
-  doc.lines.forEach((l, i) => {
-    if (!finite(l.unit_price)) return;
-    const candidates = [l.billed_quantity, l.quantity].filter(finite);
-    if (!candidates.length) return;
-    const ok = candidates.some(q => Math.abs(round2(q * l.unit_price) - l.amount) <= 0.015);
-    if (!ok) {
-      const expected = round2(candidates[0] * l.unit_price);
-      lineIssues.push({ index: i, expected });
-      problems.push(`Line ${i + 1} ("${l.description}"): ${candidates[0]} x ${l.unit_price} = ` +
-                    `${expected}, but the amount read is ${l.amount}.`);
+
+  doc.lines.forEach(function (line, index) {
+    const wrong = expectedAmountIfWrong(line);
+    if (wrong) {
+      lineIssues.push({ index: index, expected: wrong.expected });
+      problems.push(`Line ${index + 1} ("${line.description}"): ${wrong.quantity} x ${line.unit_price} = ` +
+        `${wrong.expected}, but the amount read is ${line.amount}.`);
     }
   });
 
-  const lineSum = round2(doc.lines.reduce((t, l) => t + l.amount, 0));
-  const total = finite(doc.total_printed) ? doc.total_printed : null;
-  const difference = total === null ? null : round2(lineSum - total);
-  if (difference !== null && Math.abs(difference) > 0.015) {
-    problems.push(`The lines add up to ${lineSum.toFixed(2)} but the printed total is ` +
-                  `${total.toFixed(2)} (a difference of ${difference.toFixed(2)}).`);
+  let linesTotal = 0;
+  for (const line of doc.lines) {
+    linesTotal += line.amount;
   }
+  const lineSum = roundToCents(linesTotal);
+
+  let total = null;
+  let difference = null;
+  if (isFiniteNumber(doc.total_printed)) {
+    total = doc.total_printed;
+    difference = roundToCents(lineSum - total);
+  }
+  if (difference !== null && Math.abs(difference) > AMOUNT_TOLERANCE) {
+    problems.push(`The lines add up to ${lineSum.toFixed(2)} but the printed total is ` +
+      `${total.toFixed(2)} (a difference of ${difference.toFixed(2)}).`);
+  }
+
+  const computedLines = doc.lines.filter(function (line) {
+    return line.amount_source === "computed";
+  }).length;
+
   return {
     ok: problems.length === 0,
-    lineSum, total, difference,
+    lineSum: lineSum,
+    total: total,
+    difference: difference,
     totalReadable: total !== null,
-    lineIssues, problems,
-    computedLines: doc.lines.filter(l => l.amount_source === "computed").length
+    lineIssues: lineIssues,
+    problems: problems,
+    computedLines: computedLines
   };
 }
 
-/* The model's reply is schema-valid, but it is still model output: rebuild it
-   field by field so nothing unexpected reaches the page. */
-export function normalise(raw) {
-  const lines = (Array.isArray(raw.lines) ? raw.lines : [])
-    .filter(l => l && finite(l.amount))
-    .slice(0, 200)
-    .map(l => ({
-      description: text(l.description, 160) || "Item",
-      original: text(l.original, 160),
-      quantity: finite(l.quantity) ? l.quantity : null,
-      unit: text(l.unit, 40),
-      billed_quantity: finite(l.billed_quantity) ? l.billed_quantity : null,
-      unit_price: finite(l.unit_price) ? l.unit_price : null,
-      amount: round2(l.amount),
-      amount_source: l.amount_source === "computed" ? "computed" : "printed",
-      category: CATEGORIES.includes(l.category) ? l.category : "cogs"
-    }));
-  const date = typeof raw.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.date) ? raw.date : null;
-  const currency = typeof raw.currency === "string" && /^[A-Z]{3}$/.test(raw.currency) ? raw.currency : null;
+function normaliseLine(line) {
+  let amountSource = "printed";
+  if (line.amount_source === "computed") {
+    amountSource = "computed";
+  }
+  let category = "cogs";
+  if (CATEGORIES.includes(line.category)) {
+    category = line.category;
+  }
   return {
-    kind: ["purchase", "sale", "other"].includes(raw.kind) ? raw.kind : "other",
-    legible: raw.legible !== false,
-    supplier: text(raw.supplier, 120),
-    customer: text(raw.customer, 120),
-    document_number: text(raw.document_number, 60),
-    date, currency, lines,
-    subtotal_printed: finite(raw.subtotal_printed) ? round2(raw.subtotal_printed) : null,
-    total_printed: finite(raw.total_printed) ? round2(raw.total_printed) : null,
-    notes: (Array.isArray(raw.notes) ? raw.notes : []).map(n => text(n, 300)).filter(Boolean).slice(0, 12)
+    description: textOrNull(line.description, 160) || "Item",
+    original: textOrNull(line.original, 160),
+    quantity: numberOrNull(line.quantity),
+    unit: textOrNull(line.unit, 40),
+    billed_quantity: numberOrNull(line.billed_quantity),
+    unit_price: numberOrNull(line.unit_price),
+    amount: roundToCents(line.amount),
+    amount_source: amountSource,
+    category: category
   };
+}
+
+function centsOrNull(value) {
+  if (isFiniteNumber(value)) {
+    return roundToCents(value);
+  }
+  return null;
+}
+
+/* The model's reply matches the schema, but it is still model output: it is
+   rebuilt field by field so nothing unexpected reaches the page. */
+export function normalise(raw) {
+  let lines = [];
+  if (Array.isArray(raw.lines)) {
+    lines = raw.lines
+      .filter(function (line) {
+        return line && isFiniteNumber(line.amount);
+      })
+      .slice(0, 200)
+      .map(normaliseLine);
+  }
+
+  let date = null;
+  if (typeof raw.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.date)) {
+    date = raw.date;
+  }
+  let currency = null;
+  if (typeof raw.currency === "string" && /^[A-Z]{3}$/.test(raw.currency)) {
+    currency = raw.currency;
+  }
+  let kind = "other";
+  if (DOCUMENT_KINDS.includes(raw.kind)) {
+    kind = raw.kind;
+  }
+
+  let notes = [];
+  if (Array.isArray(raw.notes)) {
+    notes = raw.notes
+      .map(function (note) {
+        return textOrNull(note, 300);
+      })
+      .filter(Boolean)
+      .slice(0, 12);
+  }
+
+  return {
+    kind: kind,
+    legible: raw.legible !== false,
+    supplier: textOrNull(raw.supplier, 120),
+    customer: textOrNull(raw.customer, 120),
+    document_number: textOrNull(raw.document_number, 60),
+    date: date,
+    currency: currency,
+    lines: lines,
+    subtotal_printed: centsOrNull(raw.subtotal_printed),
+    total_printed: centsOrNull(raw.total_printed),
+    notes: notes
+  };
+}
+
+function isValidImage(image) {
+  return typeof image === "string" && image.length > 0 && image.length <= MAXIMUM_BASE64_LENGTH &&
+    /^[A-Za-z0-9+/]+=*$/.test(image);
+}
+
+function isReviewRequest(review) {
+  return Boolean(review && typeof review === "object" && review.previous && Array.isArray(review.problems));
+}
+
+/* The words sent with the photo for a second look. The first reading comes
+   back from this function's own earlier answer, but it passes through the
+   browser, so it is rebuilt before it goes anywhere near the prompt. */
+function reviewInstructions(review) {
+  const previous = normalise(review.previous);
+  const problems = review.problems
+    .filter(function (problem) {
+      return typeof problem === "string";
+    })
+    .map(function (problem) {
+      return problem.slice(0, 300);
+    })
+    .slice(0, 20);
+
+  return "A first reading of this photo is below, but it fails these checks:\n- " +
+    problems.join("\n- ") +
+    "\n\nLook at the photo again, line by line, and return a corrected reading of the whole " +
+    "document. If the printed total itself cannot be read, say so in notes rather than " +
+    "forcing the lines to match it.\n\nFirst reading:\n" + JSON.stringify(previous);
 }
 
 export default async function handler(req, res) {
@@ -224,33 +361,21 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "POST only" });
   }
 
-  const { image, mediaType, review } = req.body ?? {};
-  if (typeof image !== "string" || !image || image.length > MAX_BASE64 ||
-      !/^[A-Za-z0-9+/]+=*$/.test(image)) {
+  const body = req.body ?? {};
+  if (!isValidImage(body.image)) {
     return res.status(400).json({ error: "image must be base64, under about 4 MB" });
   }
-  if (!MEDIA_TYPES.includes(mediaType)) {
+  if (!MEDIA_TYPES.includes(body.mediaType)) {
     return res.status(400).json({ error: "mediaType must be one of " + MEDIA_TYPES.join(", ") });
   }
 
   const content = [
-    { type: "image", source: { type: "base64", media_type: mediaType, data: image } }
+    { type: "image", source: { type: "base64", media_type: body.mediaType, data: body.image } }
   ];
   let effort = "medium";
-  if (review && typeof review === "object" && review.previous && Array.isArray(review.problems)) {
-    // Echoed back from our own earlier response, but it passes through the
-    // browser, so it is rebuilt before it goes anywhere near the prompt.
-    const previous = normalise(review.previous);
-    const problems = review.problems.filter(p => typeof p === "string").map(p => p.slice(0, 300)).slice(0, 20);
-    content.push({
-      type: "text",
-      text: "A first reading of this photo is below, but it fails these checks:\n- " +
-        problems.join("\n- ") +
-        "\n\nLook at the photo again, line by line, and return a corrected reading of the whole " +
-        "document. If the printed total itself cannot be read, say so in notes rather than " +
-        "forcing the lines to match it.\n\nFirst reading:\n" + JSON.stringify(previous)
-    });
-    // The second look only happens when the first one went wrong; it is worth
+  if (isReviewRequest(body.review)) {
+    content.push({ type: "text", text: reviewInstructions(body.review) });
+    // The second look only happens when the first went wrong; it is worth
     // the extra thinking.
     effort = "high";
   } else {
@@ -261,15 +386,15 @@ export default async function handler(req, res) {
     const response = await client.beta.messages.create({
       model: "claude-opus-5-5",
       max_tokens: 16000,
-      // A safety classifier can decline a request; "default" re-runs a declined
-      // one on the model Anthropic recommends for that category instead of
+      // A safety classifier can decline a request; "default" runs a declined
+      // one again on the model Anthropic recommends for that case, instead of
       // failing the owner's upload.
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default",
       thinking: { type: "adaptive" },
-      output_config: { effort, format: { type: "json_schema", schema: SCHEMA } },
+      output_config: { effort: effort, format: { type: "json_schema", schema: SCHEMA } },
       system: SYSTEM,
-      messages: [{ role: "user", content }]
+      messages: [{ role: "user", content: content }]
     });
 
     if (response.stop_reason === "refusal") {
@@ -281,10 +406,13 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: "the document was too long to read in one go" });
     }
 
-    const reply = response.content
-      .filter(b => b.type === "text")
-      .map(b => b.text)
-      .join("");
+    let reply = "";
+    for (const block of response.content) {
+      if (block.type === "text") {
+        reply += block.text;
+      }
+    }
+
     let raw;
     try {
       raw = JSON.parse(reply);
@@ -293,10 +421,10 @@ export default async function handler(req, res) {
     }
 
     const document = normalise(raw);
-    return res.status(200).json({ document, checks: checkDocument(document), model: response.model });
-  } catch (err) {
-    // Never echo the upstream error verbatim - it can carry request details.
-    console.error("read-document failed:", err);
+    return res.status(200).json({ document: document, checks: checkDocument(document), model: response.model });
+  } catch (error) {
+    // Never repeat the upstream error word for word: it can carry request details.
+    console.error("read-document failed:", error);
     return res.status(502).json({ error: "photo reading unavailable" });
   }
 }

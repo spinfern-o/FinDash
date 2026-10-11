@@ -2,9 +2,10 @@
    help page, so the two can never explain the same word differently.
 
    Written for an owner, not an accountant: say what the number is and give an
-   everyday example. The bucket names match CFODashboard.java and the README;
-   only the explanations are softened. */
-window.FINDASH_GLOSSARY = {
+   everyday example. The cost group names match CFODashboard.java and the
+   README; only the explanations are softened. */
+
+export const GLOSSARY = {
   revenue: {
     term: "Revenue",
     text: "Everything that came in from sales in the period, before any costs are taken off."

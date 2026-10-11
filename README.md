@@ -104,6 +104,7 @@ Both files live in `data/` and are joined on the **month num** column.
 | `month num` | Integer key, also what you type at the prompt |
 | `revenue`   | Total revenue for the month                   |
 | `budget`    | Planned total expense budget for the month    |
+| `year`      | Optional. Without it, months are taken to be in the current year |
 
 ```csv
 month,month num,revenue,budget
@@ -146,10 +147,10 @@ month num,cogs,packaging,rent,utilities,maintenance,hardware,insurance,marketing
 double counting — so the four category totals sum to total expenses, and revenue minus
 total expenses equals net profit.
 
-Column order matters **to the Java app**: it reads fields by index, not by header name,
-so reordering columns silently loads values into the wrong fields rather than throwing
-an error. The browser loader is the opposite — it matches on header names, so it
-tolerates reordering but needs the headers spelled exactly as above.
+Both the Java app and the browser match columns by **header name**, so column order
+does not matter. A header the Java app cannot place by name is sent (the header text
+only) to Claude when `ANTHROPIC_API_KEY` is set; without a key, such a file is read in
+the column order shown above.
 
 Parsing notes:
 
@@ -253,6 +254,7 @@ arithmetic itself when you hand it CSVs directly.)
     {
       "month": "july",
       "monthNum": 7,
+      "year": 2026,
       "revenue": 72000.00,
       "maintenance": 950.00,
       "hardware": 0.00,
@@ -284,8 +286,8 @@ arithmetic itself when you hand it CSVs directly.)
 `docs/index.html` is the public landing page; `docs/dashboard.html` renders the same
 figures as a web page; `docs/help.html` explains getting data in, every term, and what
 leaves the browser. The plain-language definitions behind the dashboard's **?** buttons
-and the help page's glossary both come from `docs/glossary.js`. Both are published by GitHub Pages from the `/docs` folder
-on `main`:
+and the help page's glossary both come from `docs/js/glossary.js`. The pages are published
+by GitHub Pages from the `/docs` folder on `main`:
 
 **<https://spinfern-o.github.io/FinDash/>**
 
@@ -306,7 +308,7 @@ ever builds `main`, so a branch is never reachable at the public URL.
 ## Using your own numbers
 
 1. Replace the rows in `data/dashboard.csv` and `data/expenses.csv`, keeping the
-   headers and column order intact.
+   headers intact.
 2. Make sure every `month num` in `dashboard.csv` has a matching row in `expenses.csv`.
    A month with no revenue row will divide by zero and print `NaN` in every cell.
 3. Recompile and run — the menu is built from whatever loaded.
@@ -333,10 +335,11 @@ Spreadsheets are read locally and never uploaded anywhere. Excel (.xlsx), CSV an
 are read — PDFs and bank statements are not supported. After a file loads, the computed
 months (not the file) are kept in the browser's `localStorage` so the figures are there
 on the next visit; **Forget my data** removes them along with any saved invoices and
-advice and returns to `data.json`. Four things can leave the browser, each documented on
-the help page: a photo when one is added, monthly totals when **Get advice** is pressed,
-header names when a column is not recognised, and net-profit figures if a forecast model
-is configured and its button is pressed.
+advice and returns to `data.json`. Without an account, four things can leave the browser,
+each documented on the help page: a photo when one is added, monthly totals when **Get
+advice** is pressed, header names when a column is not recognised, and net-profit figures
+if a forecast model is configured and its button is pressed. With an account, the figures
+are also saved to it (see [Accounts](#accounts-optional-supabase)).
 
 ### Photos of invoices and receipts
 
@@ -363,29 +366,50 @@ totals stay meaningful.
 ### Accounts (optional, Supabase)
 
 `docs/login.html` (served at `/login`) lets people create an account, log in, reset a
-password, and log out. The dashboard's masthead shows **Log in**, or the signed-in email
-and **Log out**. Accounts are optional and, for now, only identify the person: figures
-still live in the browser.
+password, and log out. The dashboard's masthead shows **Log in**, or the logged-in email
+and **Log out**. Accounts are optional: everything works without one.
 
-The browser never talks to Supabase. Every account action is a `POST` (or, for `me`, a
-`GET`) to `api/auth.js?action=...`, which calls Supabase Auth with
-`@supabase/supabase-js` and keeps the session in two cookies: `HttpOnly`, `Secure`,
-`SameSite=Lax`, `Path=/api`. That keeps the site's Content-Security-Policy unchanged
-(scripts and requests are only allowed to this site, so a CDN copy of supabase-js and
-direct calls to `*.supabase.co` would both be blocked) and means no page script can read
-the tokens. Cross-site `POST`s are refused by an `Origin` check.
+**While someone is logged in, their figures are saved to their account**, so the same
+months and invoices are there on any computer they log in on. What is saved is what the
+browser keeps anyway: the worked-out monthly totals and the invoice lines the owner
+confirmed. Never the spreadsheet, never a photo.
+
+- **Logging in** loads the account's figures. If the account has none, the browser's
+  figures are saved to it. If both have figures and they differ, the dashboard asks
+  which to keep rather than guessing.
+- **Every change** (a file, an invoice added or removed) is saved to the account too.
+- **Forget my data** asks first, then removes the figures from the account as well.
+- **Logging out** removes the figures from that browser, since they are safe in the
+  account. If a change never reached the account, they are kept instead.
+
+The browser never talks to Supabase. Account actions go to `api/auth.js?action=...` and
+figures to `api/figures.js`; both call Supabase with `@supabase/supabase-js` and keep the
+session in two cookies: `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/api`. That keeps the
+site's Content-Security-Policy unchanged (scripts and requests are only allowed to this
+site, so a CDN copy of supabase-js and direct calls to `*.supabase.co` would both be
+blocked) and means no page script can read the tokens. Cross-site writes are refused by an
+`Origin` check.
+
+The figures sit in one table, `account_figures`, one row per person. Requests reach the
+database as the logged-in person (the public key plus their own token), and the table's
+row-level security only lets anyone read or change their own row. The service-role key is
+never used.
 
 To switch accounts on:
 
 1. Connect the Supabase project to the Vercel project (Vercel Marketplace, Supabase
-   integration) or add the variables by hand. `api/auth.js` reads `SUPABASE_URL` (or
+   integration) or add the variables by hand. The functions read `SUPABASE_URL` (or
    `NEXT_PUBLIC_SUPABASE_URL`) and the public key from `SUPABASE_PUBLISHABLE_KEY`,
-   `SUPABASE_ANON_KEY` or their `NEXT_PUBLIC_` forms. The service-role key is not used.
-2. In Supabase, under Authentication, URL Configuration, set the Site URL to the live
+   `SUPABASE_ANON_KEY` or their `NEXT_PUBLIC_` forms.
+2. Create the table: in Supabase open **SQL Editor**, paste
+   `supabase/migrations/20261011000000_account_figures.sql` and press **Run** (or run
+   `supabase db push` with the Supabase CLI). Until then logging in works, and figures
+   simply stay in the browser.
+3. In Supabase, under Authentication, URL Configuration, set the Site URL to the live
    site and add `https://<your domain>/login` to the redirect URLs, so confirmation and
    reset emails come back to the login page. Optionally set `SITE_URL` in Vercel to pin
    the address used in those emails.
-3. Redeploy. `/api/capabilities` then reports `accounts: true` and the login form turns
+4. Redeploy. `/api/capabilities` then reports `accounts: true` and the login form turns
    on; until then it explains that accounts aren't switched on.
 
 ### Sharing
@@ -394,21 +418,68 @@ To switch accounts on:
 - **Export to Excel** builds an .xlsx in the browser: every line for every month, with
   a Total column, plus an About sheet naming the months, currency and source.
 
+## Reading the code
+
+The code is written to be read by someone who is not a programmer by trade:
+
+- Every function is an ordinary named `function` (no arrow functions), with a comment
+  above it saying what it is for.
+- Names are whole words: `month`, `revenue`, `formatMoney`, not `m`, `rev`, `fmt`.
+- One step per line. `if` and `else` with braces instead of `? :` chains, and loops
+  instead of long chains of `.map().filter().reduce()`.
+- Small files, each about one thing. The dashboard is split into about forty of them.
+
+Where to start:
+
+| To understand...                         | Read                                              |
+| ---------------------------------------- | ------------------------------------------------- |
+| How the dashboard starts up              | `docs/js/dashboard/main.js`                       |
+| What the page keeps track of             | `docs/js/dashboard/state.js`                      |
+| How the cards are drawn                  | `docs/js/dashboard/draw-dashboard.js`, `cards/`   |
+| How a spreadsheet becomes months         | `import/sheet-import.js`, `import/months-from-sheet.js` |
+| How a photo becomes an invoice           | `photos/photo-import.js`, `photos/photo-review.js`, `api/read-document.js` |
+| How figures are remembered               | `saved-figures.js` (this browser), `account-figures.js` (the account) |
+| How logging in works                     | `api/auth.js`, `lib/session.js`, `docs/js/login.js` |
+| The arithmetic in Java                   | `MonthlyFigures.java`, `Expenses.java`            |
+
 ## Project layout
 
 ```
-pom.xml             Maven build; pulls in the Anthropic Java SDK
+pom.xml                  Maven build; pulls in the Anthropic Java SDK
 src/main/java/
-  CFODashboard.java Main class: CSV loading, metrics, prompts, display, comparison
-  Expenses.java     Per-month expense record with getters and derived sums
-data/               Input CSVs
-docs/               Published by GitHub Pages from the /docs folder on main
-docs/data.json      Generated on every run
-docs/index.html     Landing page
-docs/dashboard.html Web dashboard
-docs/help.html      Help: getting data in, glossary, privacy
-docs/glossary.js    Plain-language definitions shared by the dashboard and help page
-docs/login.html     Log in, create an account, reset a password
-api/                Vercel functions: accounts, column mapping, advice, photo reading, forecast proxy, capabilities
-bin/                Compiled classes (git-ignored)
+  CFODashboard.java      The command-line app: reads the CSVs, writes data.json, menus
+  MonthlyFigures.java    One month and the figures worked out from it
+  Expenses.java          One month's fourteen cost lines and their four groups
+  ColumnMapper.java      Which column holds which field (asks Claude about the rest)
+  CsvFile.java           Reading cells out of a CSV file
+  DataJsonWriter.java    Writing docs/data.json
+  ConsoleReport.java     Printing a month, or two side by side
+data/                    Input CSVs
+docs/                    The website, published from the /docs folder on main
+  index.html             Landing page
+  dashboard.html         The dashboard
+  help.html              Help: getting data in, glossary, privacy
+  login.html             Log in, create an account, reset a password
+  data.json              The demo figures, written by the Java app
+  css/                   One stylesheet per page
+  js/
+    glossary.js          Plain-language definitions for the dashboard and help page
+    theme-init.js        Light or dark mode before the page is drawn
+    theme-toggle.js      The sun and moon button
+    landing.js, help.js, login.js   Each page's own script
+    dashboard/
+      main.js            Starts the dashboard
+      state.js           Everything the dashboard keeps track of
+      draw-dashboard.js  The month buttons, the heading and every card
+      cards/             One file per card
+      import/            Reading spreadsheets: CSV, Excel, column names, months
+      photos/            Reading photos of invoices and checking them
+      export/            The template and Export to Excel
+      saved-figures.js   Remembering figures in this browser
+      account-figures.js Saving them to the owner's account
+api/                     Vercel functions: accounts, saved figures, column matching,
+                         advice, photo reading, forecast, capabilities
+lib/                     Code the functions share: the Supabase client, the session cookies
+supabase/migrations/     The SQL that creates the account_figures table
+forecast/                The optional Chronos forecasting service (Python)
 ```

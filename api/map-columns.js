@@ -1,83 +1,67 @@
 /**
  * POST /api/map-columns
  *
- * Maps spreadsheet column headers onto canonical accounting fields.
+ * Matches spreadsheet column headers to FinDash's own field names.
  *
- * Only header TEXT is accepted and forwarded - never a row of figures. The
- * browser keeps the data, does the arithmetic, and asks this endpoint one
- * question: which header means what. That keeps the request tiny regardless
- * of file size, and keeps anyone's financials off this server.
+ * Only header TEXT is accepted and passed on, never a row of figures. The
+ * browser keeps the figures, does the arithmetic, and asks this function one
+ * question: which header means what. That keeps the request tiny whatever
+ * the size of the file, and keeps anyone's finances off this server.
  *
- * Request:  { "headers": ["Month", "Cost of Goods", ...],
- *             "fields":  ["month num", "cogs", ...] }
- * Response: { "mapping": { "cogs": "Cost of Goods", "labor": null },
+ * Request:  { "headers":   ["Month", "Cost of Goods", ...],
+ *             "fields":    ["month num", "cogs", ...],      fields no column matched
+ *             "unclaimed": ["Bank service charge", ...] }   columns that matched nothing
+ * Response: { "mapping": { "cogs": "Cost of Goods" },
  *             "other":   { "Bank service charge": "operating" } }
  *
- * "other" assigns each column that matched no field to the bucket it behaves
- * like, so its money still reaches the totals instead of silently reading zero.
+ * "other" puts each column that matched no field into the cost group it
+ * behaves like, so its money still reaches the totals instead of silently
+ * reading zero.
  */
 
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic(); // reads ANTHROPIC_API_KEY from the environment
 
-// This endpoint is public and unauthenticated - anyone who finds it can spend
-// credits through it. These caps bound the damage; a spend limit set in the
-// Anthropic console is the only hard stop.
-const MAX_HEADERS = 120;
-const MAX_FIELDS = 60;
-const MAX_LABEL = 200;
+// This function is public and needs no login: anyone who finds it can spend
+// credits through it. These limits bound the damage; a spending limit set in
+// the Anthropic console is the only hard stop.
+const MAXIMUM_HEADERS = 120;
+const MAXIMUM_FIELDS = 60;
+const MAXIMUM_LABEL_LENGTH = 200;
 
-/** The four buckets an unmatched column can be assigned to. */
-const BUCKETS = ["direct", "operating", "variable", "fixed"];
+/* The four cost groups an unmatched column can be put in. */
+const COST_GROUPS = ["direct", "operating", "variable", "fixed"];
 
-/** Domains allowed to call this. Empty list = allow any origin. */
+/* Sites allowed to call this. An empty list allows any. */
 const ALLOWED_HOSTS = [];
 
-function originAllowed(req) {
-  if (!ALLOWED_HOSTS.length) return true;
+function isAllowedOrigin(req) {
+  if (!ALLOWED_HOSTS.length) {
+    return true;
+  }
   const origin = req.headers.origin || req.headers.referer || "";
-  return ALLOWED_HOSTS.some((h) => origin.includes(h));
+  return ALLOWED_HOSTS.some(function (host) {
+    return origin.includes(host);
+  });
 }
 
-const isCleanList = (v, max, min = 1) =>
-  Array.isArray(v) &&
-  v.length >= min &&
-  v.length <= max &&
-  v.every((s) => typeof s === "string" && s.length <= MAX_LABEL);
-
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "POST only" });
+function isListOfLabels(value, minimumLength, maximumLength) {
+  if (!Array.isArray(value) || value.length < minimumLength || value.length > maximumLength) {
+    return false;
   }
-  if (!originAllowed(req)) {
-    return res.status(403).json({ error: "origin not allowed" });
-  }
+  return value.every(function (label) {
+    return typeof label === "string" && label.length <= MAXIMUM_LABEL_LENGTH;
+  });
+}
 
-  const { headers, fields, unclaimed } = req.body ?? {};
-
-  if (!isCleanList(headers, MAX_HEADERS)) {
-    return res.status(400).json({ error: `headers must be 1-${MAX_HEADERS} strings` });
-  }
-  // fields may legitimately be empty: every canonical field can already be
-  // placed locally while unknown cost columns still need bucketing. Rejecting
-  // that case made the caller drop those columns, understating expenses.
-  if (!isCleanList(fields, MAX_FIELDS, 0)) {
-    return res.status(400).json({ error: `fields must be 0-${MAX_FIELDS} strings` });
-  }
-  // Which headers are still up for grabs. Without this the model is asked to
-  // bucket columns the caller has already matched, and answers for all of them.
-  // There must be SOMETHING to ask about - either an unplaced field or an
-  // unclaimed column. Neither on its own is required.
-  const unclaimedHeaders = Array.isArray(unclaimed)
-    ? unclaimed.filter(h => typeof h === "string" && headers.includes(h))
-    : [];
-
-  if (!fields.length && !unclaimedHeaders.length) {
-    return res.status(400).json({ error: "nothing to map: send unplaced fields or unclaimed headers" });
+function buildPrompt(headers, fields, unclaimedHeaders) {
+  let unclaimedList = "(none)";
+  if (unclaimedHeaders.length) {
+    unclaimedList = unclaimedHeaders.join(", ");
   }
 
-  const prompt = `You are mapping spreadsheet column headers to canonical accounting fields.
+  return `You are mapping spreadsheet column headers to canonical accounting fields.
 
 Canonical fields needing a column: ${fields.join(", ")}
 
@@ -90,7 +74,7 @@ Reply with JSON only - no prose, no code fences - shaped like:
 "mapping": one key per canonical field listed above, whose value is the header
 text it corresponds to, or null if no header fits.
 
-Columns still unspoken for: ${unclaimedHeaders.length ? unclaimedHeaders.join(", ") : "(none)"}
+Columns still unspoken for: ${unclaimedList}
 
 "other": for each of those unspoken-for columns that is a real cost - and ONLY
 those - which of these four buckets it behaves like: direct (traceable to a unit or job),
@@ -100,62 +84,122 @@ not a cost, or that is a subtotal of other columns - counting a subtotal
 alongside its parts double-counts the money.
 
 Copy header text exactly as given.`;
+}
+
+/* The JSON object in the model's reply, from the first "{" to the last "}":
+   { value }, or { error } saying what was wrong with the reply. */
+function jsonInReply(text) {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start < 0 || end <= start) {
+    return { error: "model did not return JSON" };
+  }
+  try {
+    return { value: JSON.parse(text.slice(start, end + 1)) };
+  } catch {
+    return { error: "model returned malformed JSON" };
+  }
+}
+
+/* Drops anything made up: every key must be a field that was asked about,
+   and every value a header that was actually sent. */
+function checkedMapping(reply, headers, fields) {
+  const mapping = {};
+  for (const [field, header] of Object.entries(reply.mapping ?? {})) {
+    if (!fields.includes(field) || header === null) {
+      continue;
+    }
+    if (typeof header === "string" && headers.includes(header)) {
+      mapping[field] = header;
+    }
+  }
+  return mapping;
+}
+
+/* The same care for the cost groups: a real header, a real group, and never
+   a column already matched to a field, or its money would count twice. */
+function checkedLeftovers(reply, headers, unclaimedHeaders, mapping) {
+  const matchedHeaders = new Set(Object.values(mapping));
+  const leftovers = {};
+  for (const [header, group] of Object.entries(reply.other ?? {})) {
+    if (!headers.includes(header) || matchedHeaders.has(header)) {
+      continue;
+    }
+    // When the caller said which columns are unmatched, keep to that list: a
+    // column it has already matched must never come back as a leftover.
+    if (unclaimedHeaders.length && !unclaimedHeaders.includes(header)) {
+      continue;
+    }
+    if (COST_GROUPS.includes(group)) {
+      leftovers[header] = group;
+    }
+  }
+  return leftovers;
+}
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "POST only" });
+  }
+  if (!isAllowedOrigin(req)) {
+    return res.status(403).json({ error: "origin not allowed" });
+  }
+
+  const body = req.body ?? {};
+  const headers = body.headers;
+  const fields = body.fields;
+
+  if (!isListOfLabels(headers, 1, MAXIMUM_HEADERS)) {
+    return res.status(400).json({ error: `headers must be 1-${MAXIMUM_HEADERS} strings` });
+  }
+  // fields can rightly be empty: every field can already be matched on the
+  // page while unknown cost columns still need a group. Refusing that made
+  // the page drop those columns, understating costs.
+  if (!isListOfLabels(fields, 0, MAXIMUM_FIELDS)) {
+    return res.status(400).json({ error: `fields must be 0-${MAXIMUM_FIELDS} strings` });
+  }
+
+  // Which headers are still free. Without this the model is asked to group
+  // columns the page has already matched, and answers for all of them.
+  let unclaimedHeaders = [];
+  if (Array.isArray(body.unclaimed)) {
+    unclaimedHeaders = body.unclaimed.filter(function (header) {
+      return typeof header === "string" && headers.includes(header);
+    });
+  }
+
+  // There must be SOMETHING to ask about: an unmatched field or an unmatched
+  // column. Neither on its own is required.
+  if (!fields.length && !unclaimedHeaders.length) {
+    return res.status(400).json({ error: "nothing to map: send unplaced fields or unclaimed headers" });
+  }
 
   try {
     const response = await client.messages.create({
       model: "claude-opus-5",
       max_tokens: 1024,
-      messages: [{ role: "user", content: prompt }],
+      messages: [{ role: "user", content: buildPrompt(headers, fields, unclaimedHeaders) }]
     });
 
-    // content is a discriminated union - narrow before reading .text
-    const text = response.content
-      .filter((block) => block.type === "text")
-      .map((block) => block.text)
-      .join("");
-
-    // Be forgiving about fences or stray prose around the object.
-    const jsonStart = text.indexOf("{");
-    const jsonEnd = text.lastIndexOf("}");
-    if (jsonStart < 0 || jsonEnd <= jsonStart) {
-      return res.status(502).json({ error: "model did not return JSON" });
-    }
-
-    let mapping;
-    try {
-      mapping = JSON.parse(text.slice(jsonStart, jsonEnd + 1));
-    } catch {
-      return res.status(502).json({ error: "model returned malformed JSON" });
-    }
-
-    // Drop anything invented: every value must be a header actually sent to us,
-    // and every key must be a field that was actually asked about.
-    const clean = {};
-    for (const [field, header] of Object.entries(mapping.mapping ?? {})) {
-      if (!fields.includes(field)) continue;
-      if (header === null) continue;
-      if (typeof header === "string" && headers.includes(header)) {
-        clean[field] = header;
+    let text = "";
+    for (const block of response.content) {
+      if (block.type === "text") {
+        text += block.text;
       }
     }
 
-    // Same discipline for the bucket assignments: a real header, a real bucket,
-    // and never a column already claimed by a named field.
-    const claimed = new Set(Object.values(clean));
-    const other = {};
-    for (const [header, bucket] of Object.entries(mapping.other ?? {})) {
-      if (!headers.includes(header) || claimed.has(header)) continue;
-      // When the caller said what is unclaimed, honour it: a column it has
-      // already matched must never come back as a leftover, or its money is
-      // counted twice - once in its named field and once in a bucket.
-      if (unclaimedHeaders.length && !unclaimedHeaders.includes(header)) continue;
-      if (BUCKETS.includes(bucket)) other[header] = bucket;
+    // Forgiving about code fences or stray words around the object.
+    const reply = jsonInReply(text);
+    if (reply.error) {
+      return res.status(502).json({ error: reply.error });
     }
 
-    return res.status(200).json({ mapping: clean, other });
-  } catch (err) {
-    // Never echo the upstream error verbatim - it can carry request details.
-    console.error("map-columns failed:", err);
+    const mapping = checkedMapping(reply.value, headers, fields);
+    const other = checkedLeftovers(reply.value, headers, unclaimedHeaders, mapping);
+    return res.status(200).json({ mapping: mapping, other: other });
+  } catch (error) {
+    // Never repeat the upstream error word for word: it can carry request details.
+    console.error("map-columns failed:", error);
     return res.status(502).json({ error: "column mapping unavailable" });
   }
 }

@@ -455,6 +455,7 @@ src/main/java/
   DataJsonWriter.java    Writing docs/data.json
   ConsoleReport.java     Printing a month, or two side by side
 data/                    Input CSVs
+examples/                Sample files to drop on the dashboard (rising-revenue.csv: 12 months of steady growth)
 docs/                    The website, published from the /docs folder on main
   index.html             Landing page
   dashboard.html         The dashboard

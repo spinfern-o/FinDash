@@ -311,14 +311,14 @@ npx playwright install chromium   # the first time only
 npm test
 ```
 
-80 tests, in about half a minute, against stand-ins for Supabase and Claude, so no keys
+Over 80 tests, in under a minute, against stand-ins for Supabase and Claude, so no keys
 are needed and nothing is spent:
 
 - `tests/unit/`: the arithmetic and file reading
 - `tests/api/`: the server functions: logins, saved figures, daily limits, what is sent
   to Claude, error reports
 - `tests/browser/`: the pages in a real (headless) Chromium: the dashboard, photos,
-  accounts, saving, deleting an account
+  accounts, saving, deleting an account, and two people taking turns on one browser
 
 GitHub runs the same tests, and builds the Java app, on every pull request
 (`.github/workflows/tests.yml`).

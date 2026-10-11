@@ -35,10 +35,19 @@ export function figuresToSave() {
 }
 
 /* Returns false when the browser would not store it (a private window, or
-   storage full), so the caller can say so. */
+   storage full), so the caller can say so.
+
+   Figures saved while someone is logged in are marked as theirs. Once
+   logged out, the mark stays: whatever is left in this browser came from
+   that account. */
 export function saveOwnerFigures() {
+  if (state.account && state.account.email) {
+    state.ownerAccount = state.account.email.toLowerCase();
+  }
+  const saved = figuresToSave();
+  saved.account = state.ownerAccount;
   try {
-    localStorage.setItem(FIGURES_KEY, JSON.stringify(figuresToSave()));
+    localStorage.setItem(FIGURES_KEY, JSON.stringify(saved));
     return true;
   } catch {
     return false;
@@ -143,8 +152,9 @@ function cleanMonth(saved) {
 
 /* Saved figures, rebuilt field by field: anything that is not in the shape
    this page writes is dropped rather than drawn. Returns
-   { months, invoices, from }, or null when there is nothing usable.
-   months is null when only invoices were saved. */
+   { months, invoices, from, account }, or null when there is nothing usable.
+   months is null when only invoices were saved; account is null for figures
+   not marked as any account's. */
 export function cleanSavedFigures(saved) {
   if (!saved || !Array.isArray(saved.months)) {
     return null;
@@ -177,10 +187,15 @@ export function cleanSavedFigures(saved) {
   if (typeof saved.from === "string") {
     from = saved.from.slice(0, 200);
   }
+  let account = null;
+  if (typeof saved.account === "string" && saved.account) {
+    account = saved.account.slice(0, 254).toLowerCase();
+  }
   return {
     months: saved.months.length ? months : null,
     invoices: invoices,
-    from: from
+    from: from,
+    account: account
   };
 }
 
@@ -203,6 +218,7 @@ export function forgetSavedFigures() {
     // Storage is blocked; nothing was saved to remove.
   }
   state.savedAdvice = null;
+  state.ownerAccount = null;
 }
 
 /* The sentence that tells the owner whether their figures were kept. */

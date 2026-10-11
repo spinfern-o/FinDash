@@ -4,7 +4,9 @@
    The figures are always kept in this browser too (saved-figures.js). This
    module keeps the account's copy in step:
      - on logging in, the account's figures are loaded, or this browser's
-       are saved to the account, or the owner chooses when the two differ
+       are saved to the account, or the owner chooses when the two differ;
+       but figures this browser kept from a different account are never
+       saved to this one or offered to it: they are removed
      - after every change, the figures are saved to the account
      - on logging out, the figures are removed from this browser, since they
        are safe in the account (unless a change never reached it)
@@ -223,12 +225,20 @@ function askWhichToKeep(inAccount, accountSavedAt, inBrowser) {
   document.getElementById("keep-browser").addEventListener("click", async function () {
     hideChoice();
     state.account.isWaitingForChoice = false;
+    saveOwnerFigures();
     state.account.hasUnsavedChanges = true;
     const saved = await saveToAccountNow();
     if (saved) {
       showStatus("Your figures", "This browser's figures are now saved to your account.", false);
     }
   });
+}
+
+/* True when the figures in this browser were saved under an account other
+   than `email`: left behind by someone else, whose login ran out or who
+   logged out before their last change reached their account. */
+function belongToAnotherAccount(email) {
+  return state.ownerAccount !== null && state.ownerAccount !== String(email).toLowerCase();
 }
 
 /* Called once someone is known to be logged in. */
@@ -252,7 +262,20 @@ export async function startSavingToAccount(user) {
     inBrowser = cleanSavedFigures(figuresToSave());
   }
 
+  // Someone else's figures: never this person's to keep or to see.
+  let removedAnotherAccounts = false;
+  if (inBrowser && belongToAnotherAccount(user.email)) {
+    forgetSavedFigures();
+    showDemoFigures();
+    inBrowser = null;
+    removedAnotherAccounts = true;
+  }
+
   if (!inAccount && !inBrowser) {
+    if (removedAnotherAccounts) {
+      showStatus("Demo data", "The figures in this browser were from another account, so they were " +
+        "removed from this browser and not added to yours. Showing the demo.", false);
+    }
     return;
   }
 
@@ -262,6 +285,8 @@ export async function startSavingToAccount(user) {
   }
 
   if (!inAccount && inBrowser) {
+    // Figures added before logging in become this person's.
+    saveOwnerFigures();
     state.account.hasUnsavedChanges = true;
     const saved = await saveToAccountNow();
     if (saved) {

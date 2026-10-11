@@ -15,6 +15,35 @@ function base64Url(object) {
   return Buffer.from(JSON.stringify(object)).toString("base64url");
 }
 
+/* A value with every object's keys in the order Postgres keeps them in a
+   jsonb column (shorter keys first, then alphabetical), as the real
+   database hands saved figures back: never in the order they were sent. */
+function inJsonbKeyOrder(value) {
+  if (Array.isArray(value)) {
+    return value.map(inJsonbKeyOrder);
+  }
+  if (value && typeof value === "object") {
+    const keys = Object.keys(value).sort(function (first, second) {
+      if (first.length !== second.length) {
+        return first.length - second.length;
+      }
+      if (first < second) {
+        return -1;
+      }
+      if (first > second) {
+        return 1;
+      }
+      return 0;
+    });
+    const ordered = {};
+    for (const key of keys) {
+      ordered[key] = inJsonbKeyOrder(value[key]);
+    }
+    return ordered;
+  }
+  return value;
+}
+
 function readBody(request) {
   return new Promise(function (resolve) {
     let body = "";
@@ -226,7 +255,7 @@ export async function startMockSupabase() {
     if (request.method === "GET") {
       const row = mock.figures.get(userId);
       if (row) {
-        return sendJson(response, 200, [{ figures: row.figures, updated_at: row.updated_at }]);
+        return sendJson(response, 200, [{ figures: inJsonbKeyOrder(row.figures), updated_at: row.updated_at }]);
       }
       return sendJson(response, 200, []);
     }

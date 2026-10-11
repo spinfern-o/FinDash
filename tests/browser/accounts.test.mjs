@@ -262,6 +262,7 @@ test("delete my account: asks first, removes the saved figures, logs out, and op
   assert.equal((await me.json()).user, null);
   if (mailto) {
     assert.match(decodeURIComponent(mailto), /Delete my FinDash account/);
+    assert.match(mailto, /^mailto:support\.findash@findash\.tech\?/);
   }
 });
 

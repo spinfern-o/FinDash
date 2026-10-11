@@ -12,7 +12,7 @@
 const MINIMUM_PASSWORD_LENGTH = 8;
 
 /* Where account deletion requests go: whoever runs this copy of FinDash. */
-const OWNER_EMAIL = "larrywzh59@gmail.com";
+const OWNER_EMAIL = "support.findash@findash.tech";
 
 const DELETE_QUESTION = "Delete your FinDash account?\n\n" +
   "Your saved figures are removed from your account and from this browser straight away, " +

@@ -101,17 +101,21 @@ function fail(res, error, fallbackMessage) {
 
   console.error("[findash-error] auth:", code, status, message);
 
+  // None of these may answer 503: to the login page, 503 means accounts
+  // aren't set up at all, and it would switch the form off instead of
+  // showing the reason.
+
   // Supabase's own email service, used until another one is connected,
   // only sends to the people in the Supabase organization.
   if (code === "email_address_not_authorized") {
-    return res.status(503).json({
+    return res.status(502).json({
       error: "This site can't send emails to that address yet, so it can't create the account. Try again later."
     });
   }
   // The email service is connected but the email didn't go: usually its
   // settings in Supabase (Authentication, SMTP) are wrong.
   if (/sending .*email/i.test(message) || /smtp/i.test(message)) {
-    return res.status(503).json({
+    return res.status(502).json({
       error: "The confirmation email couldn't be sent, so the account wasn't created. Try again later."
     });
   }
@@ -119,7 +123,7 @@ function fail(res, error, fallbackMessage) {
     return res.status(429).json({ error: "This site has sent all the emails it can for now. Try again in an hour." });
   }
   if (code === "signup_disabled" || code === "email_provider_disabled") {
-    return res.status(503).json({ error: "This site isn't taking new accounts at the moment." });
+    return res.status(403).json({ error: "This site isn't taking new accounts at the moment." });
   }
   if (status === 429 || /rate_limit/.test(code)) {
     return res.status(429).json({ error: "Too many tries. Wait a minute and try again." });

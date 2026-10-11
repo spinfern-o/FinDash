@@ -154,6 +154,36 @@ test("a sign-up that needs email confirmation says so", async function () {
   await other.context().close();
 });
 
+test("a sign-up refused for an email problem shows the reason, not 'accounts are off'", async function () {
+  const other = await openPage(browser);
+  const refusals = [
+    { status: 400, code: "email_address_not_authorized", message: "Email address not authorized",
+      shown: /can't send emails to that address/ },
+    { status: 500, code: "unexpected_failure", message: "Error sending confirmation email",
+      shown: /confirmation email couldn't be sent/ },
+    { status: 422, code: "signup_disabled", message: "Signups not allowed for this instance",
+      shown: /isn't taking new accounts/ }
+  ];
+  try {
+    for (const refusal of refusals) {
+      site.supabase.options.signupError = refusal;
+      await other.goto("about:blank");
+      await other.goto(site.url + "/login#signup", { waitUntil: "networkidle" });
+      await other.fill("#email", newEmail("refused"));
+      await other.fill("#password", "a-long-password");
+      await other.click("#submit");
+      await other.waitForSelector("#message.bad");
+      const shown = await text(other, "#message");
+      assert.match(shown, refusal.shown, refusal.code);
+      assert.doesNotMatch(shown, /aren't switched on/, refusal.code);
+      assert.ok(!(await other.locator("#submit").isDisabled()), refusal.code + ": the form stays usable");
+    }
+  } finally {
+    site.supabase.options.signupError = null;
+    await other.context().close();
+  }
+});
+
 test("accounts switched off: the form explains, and the dashboard never asks who is logged in", async function () {
   const other = await openPage(browser);
   let authRequests = 0;

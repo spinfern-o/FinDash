@@ -104,6 +104,19 @@
   }
   .nav-link:hover{color:var(--ink)}
   .masthead-right{display:flex;align-items:center;gap:12px}
+  /* Accounts are optional, so the way in is a small link rather than a banner.
+     Once logged in it turns into the email and a way out. */
+  .account{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--ink-3)}
+  .account-link{
+    font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--ink);text-decoration:none;background:var(--card);
+    border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer;
+    transition:border-color .12s,color .12s;
+  }
+  .account-link:hover{border-color:var(--accent);color:var(--accent)}
+  .account-link:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .account-email{max-width:22ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  @media (max-width:560px){ .account-email{display:none} }
   .theme-toggle{
     display:inline-flex;align-items:center;justify-content:center;
     width:30px;height:30px;border-radius:8px;
@@ -718,7 +731,7 @@
     body{background:#fff;padding:0;font-size:12px;
          -webkit-print-color-adjust:exact;print-color-adjust:exact}
     main{max-width:none}
-    .loader,.toolbar,.months-row,.theme-toggle,.masthead nav,.no-print,.help,footer nav{display:none !important}
+    .loader,.toolbar,.months-row,.theme-toggle,.masthead nav,.account,.no-print,.help,footer nav{display:none !important}
     .print-only{display:block}
     .card,.pulse .stat{break-inside:avoid;box-shadow:none}
     .grid{gap:10px}
@@ -741,6 +754,9 @@
       </nav>
     </div>
     <div class="masthead-right">
+      <div class="account" id="account">
+        <a class="account-link" href="/login">Log in</a>
+      </div>
       <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle light and dark mode">
         <svg class="icon-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
         <svg class="icon-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
@@ -3729,6 +3745,31 @@ function wireLoader() {
   // Mention photos only where this deployment can read them.
   loadCapabilities().then(c => {
     document.querySelectorAll(".photo-only").forEach(el => { el.hidden = !c.photos; });
+    if (c.accounts) wireAccount();
+  });
+}
+
+/* The masthead's Log in link stays as it is unless someone is logged in, in
+   which case it shows who and offers Log out. The session is in an HttpOnly
+   cookie, so the page has to ask /api/auth rather than look for itself. */
+async function wireAccount() {
+  const box = document.getElementById("account");
+  let me;
+  try {
+    const r = await fetch("/api/auth?action=me", {credentials: "same-origin"});
+    // Read the body whatever the status: an unread 401 leaves the request open.
+    const body = await r.json().catch(() => null);
+    me = r.ok ? body : null;
+  } catch { return; /* offline: the Log in link stands */ }
+  if (!me || !me.user || !me.user.email) return;
+  box.innerHTML = `<span class="account-email" title="${esc(me.user.email)}">${esc(me.user.email)}</span>
+    <button type="button" class="account-link" id="logout">Log out</button>`;
+  document.getElementById("logout").addEventListener("click", async () => {
+    try {
+      await fetch("/api/auth?action=logout", {method: "POST", headers: {"Content-Type": "application/json"},
+                                              body: "{}", credentials: "same-origin"});
+    } catch { /* the cookies expire on their own; the link comes back either way */ }
+    box.innerHTML = '<a class="account-link" href="/login">Log in</a>';
   });
 }
 

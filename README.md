@@ -360,6 +360,34 @@ Costs that don't fit an existing column should be added to the bucket that match
 their behavior, not appended arbitrarily — the point of the structure is that the four
 totals stay meaningful.
 
+### Accounts (optional, Supabase)
+
+`docs/login.html` (served at `/login`) lets people create an account, log in, reset a
+password, and log out. The dashboard's masthead shows **Log in**, or the signed-in email
+and **Log out**. Accounts are optional and, for now, only identify the person: figures
+still live in the browser.
+
+The browser never talks to Supabase. Every account action is a `POST` (or, for `me`, a
+`GET`) to `api/auth.js?action=...`, which calls Supabase Auth with
+`@supabase/supabase-js` and keeps the session in two cookies: `HttpOnly`, `Secure`,
+`SameSite=Lax`, `Path=/api`. That keeps the site's Content-Security-Policy unchanged
+(scripts and requests are only allowed to this site, so a CDN copy of supabase-js and
+direct calls to `*.supabase.co` would both be blocked) and means no page script can read
+the tokens. Cross-site `POST`s are refused by an `Origin` check.
+
+To switch accounts on:
+
+1. Connect the Supabase project to the Vercel project (Vercel Marketplace, Supabase
+   integration) or add the variables by hand. `api/auth.js` reads `SUPABASE_URL` (or
+   `NEXT_PUBLIC_SUPABASE_URL`) and the public key from `SUPABASE_PUBLISHABLE_KEY`,
+   `SUPABASE_ANON_KEY` or their `NEXT_PUBLIC_` forms. The service-role key is not used.
+2. In Supabase, under Authentication, URL Configuration, set the Site URL to the live
+   site and add `https://<your domain>/login` to the redirect URLs, so confirmation and
+   reset emails come back to the login page. Optionally set `SITE_URL` in Vercel to pin
+   the address used in those emails.
+3. Redeploy. `/api/capabilities` then reports `accounts: true` and the login form turns
+   on; until then it explains that accounts aren't switched on.
+
 ### Sharing
 
 - **Print or save as PDF** prints the period on screen through a light print stylesheet.
@@ -380,6 +408,7 @@ docs/index.html     Landing page
 docs/dashboard.html Web dashboard
 docs/help.html      Help: getting data in, glossary, privacy
 docs/glossary.js    Plain-language definitions shared by the dashboard and help page
-api/                Vercel functions: column mapping, advice, photo reading, forecast proxy, capabilities
+docs/login.html     Log in, create an account, reset a password
+api/                Vercel functions: accounts, column mapping, advice, photo reading, forecast proxy, capabilities
 bin/                Compiled classes (git-ignored)
 ```

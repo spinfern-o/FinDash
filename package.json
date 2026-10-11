@@ -6,6 +6,7 @@
   "description": "Serverless dependencies for the FinDash column-mapping endpoint. The dashboard page itself has no runtime dependencies.",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
+    "@supabase/supabase-js": "^2.117.3",
     "@vercel/analytics": "^2.0.1"
   }
 }

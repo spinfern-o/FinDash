@@ -238,9 +238,12 @@
   <section id="privacy">
     <h2>How we handle your data</h2>
     <p><b>Your spreadsheet stays on your computer.</b> It is opened and added up by your own browser. It is never
-       uploaded, and FinDash has no accounts and no database of anyone's figures.</p>
-    <p>Four things can leave your computer, and only these:</p>
+       uploaded, and FinDash keeps no database of anyone's figures.</p>
+    <p>Five things can leave your computer, and only these:</p>
     <ul>
+      <li><b>When you log in or create an account:</b> your email and password go to Supabase, the service
+          FinDash uses for logins, to check who you are. Accounts are optional, and logging in sends none of
+          your figures.</li>
       <li><b>When you add a photo:</b> the photo is sent to Claude, Anthropic's AI model, to be read. FinDash
           does not store it; only the lines you confirm are kept, in this browser.</li>
       <li><b>When you press Get advice:</b> each month's totals (revenue, the four cost groups, net profit
@@ -257,6 +260,8 @@
        browser on this device, so they are there next time.
        They are never sent anywhere. Press <b>Forget my data</b> on the dashboard to remove them. On a shared
        computer, do that before you leave.</p>
+    <p><b>If you log in:</b> the browser keeps a login cookie that only FinDash's own server can read, not the
+       page or anything on it. It lasts up to 30 days, or until you press <b>Log out</b>.</p>
   </section>
 
   <section id="sharing">

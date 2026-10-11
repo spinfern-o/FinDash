@@ -1,33 +1,31 @@
 /**
  * GET /api/capabilities
  *
- * Says which optional, model-backed features are actually configured, so the
+ * Says which optional features are actually set up on this site, so the
  * page can offer only what exists instead of showing a button that fails.
  *
- * Returns booleans only. Never the URLs, never the tokens - knowing that a
- * forecast service is configured tells an attacker nothing useful; knowing
- * where it lives would.
+ * Returns true or false for each, never the addresses or keys behind them.
+ * Knowing that a forecast service is set up tells an attacker nothing
+ * useful; knowing where it lives would.
  */
+
+import { accountsAreSetUp } from "../lib/supabase.js";
 
 export default function handler(req, res) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "GET only" });
   }
 
-  // A minute of caching is plenty: this changes only when env vars change,
-  // which means a redeploy anyway.
+  // A minute of caching is plenty: the answer only changes when the site's
+  // settings change, which means a redeploy anyway.
   res.setHeader("Cache-Control", "public, max-age=60");
 
+  const hasClaude = Boolean(process.env.ANTHROPIC_API_KEY);
   return res.status(200).json({
-    briefing: Boolean(process.env.ANTHROPIC_API_KEY),
-    mapping: Boolean(process.env.ANTHROPIC_API_KEY),
-    photos: Boolean(process.env.ANTHROPIC_API_KEY),
-    // Accounts need the Supabase project's URL and public key, whichever names
-    // the Vercel integration gave them (api/auth.js reads the same list).
-    accounts: Boolean(
-      (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) &&
-      (process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY ||
-       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)),
-    forecast: Boolean(process.env.FORECAST_URL),
+    briefing: hasClaude,
+    mapping: hasClaude,
+    photos: hasClaude,
+    accounts: accountsAreSetUp(),
+    forecast: Boolean(process.env.FORECAST_URL)
   });
 }

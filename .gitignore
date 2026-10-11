@@ -24,3 +24,5 @@ node_modules/
 #temp files
 *.tmp
 *.log
+#python
+__pycache__/

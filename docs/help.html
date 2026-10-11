@@ -6,103 +6,11 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <title>FinDash &middot; Help</title>
 <meta name="description" content="How to get your numbers into FinDash, what each figure means, and how your data is handled.">
-<script>
-(function(){
-  try{
-    var saved = localStorage.getItem("findash-theme");
-    var theme = saved || (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
-    if(theme === "light") document.documentElement.setAttribute("data-theme","light");
-  }catch(e){ /* localStorage/matchMedia unavailable (privacy mode, old browser); default theme stands */ }
-})();
-</script>
+<script src="js/theme-init.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap" rel="stylesheet">
-<style>
-  /* Same tokens as the dashboard, so moving between the two feels like one product. */
-  :root{
-    color-scheme:dark;
-    --ground:#050505;--card:#121212;--card-2:#161616;
-    --line:rgba(245,245,245,0.1);--line-soft:rgba(245,245,245,0.06);
-    --ink:#f5f5f5;--ink-2:#b3b3b3;--ink-3:#8c8c8c;
-    --accent:#8b93f8;--accent-ink:#0b0b14;
-    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-  }
-  html[data-theme="light"]{
-    color-scheme:light;
-    --ground:#f6f6f7;--card:#ffffff;--card-2:#f1f1f2;
-    --line:rgba(10,10,10,0.12);--line-soft:rgba(10,10,10,0.06);
-    --ink:#0a0a0a;--ink-2:#4b4b50;--ink-3:#6e6e74;
-    --accent:#4f46e5;--accent-ink:#ffffff;
-  }
-  *{box-sizing:border-box}
-  html{-webkit-text-size-adjust:100%;scroll-padding-top:16px}
-  body{
-    margin:0;background:var(--ground);color:var(--ink);
-    font-family:Inter,ui-sans-serif,system-ui,sans-serif;font-size:15px;line-height:1.6;
-    padding:clamp(24px,5vw,56px) clamp(16px,4vw,32px);
-  }
-  main{max-width:780px;margin:0 auto}
-  a{color:inherit}
-  .masthead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;margin-bottom:28px}
-  .masthead-left{display:flex;align-items:baseline;gap:18px;flex-wrap:wrap}
-  .wordmark{font-size:16px;font-weight:700;letter-spacing:-0.01em;text-decoration:none}
-  .nav-link{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);text-decoration:none}
-  .nav-link:hover{color:var(--ink)}
-  .btn{
-    display:inline-block;font:inherit;font-size:13px;font-weight:600;text-decoration:none;
-    background:var(--accent);color:var(--accent-ink);border-radius:10px;padding:8px 14px;
-  }
-  .theme-toggle{
-    display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;
-    background:var(--card);border:1px solid var(--line);color:var(--ink-2);cursor:pointer;
-  }
-  .theme-toggle svg{display:none}
-  html:not([data-theme="light"]) .theme-toggle svg.icon-sun{display:block}
-  html[data-theme="light"] .theme-toggle svg.icon-moon{display:block}
-  a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
-
-  h1{font-size:clamp(28px,5vw,36px);font-weight:800;letter-spacing:-0.03em;line-height:1.15;margin:0 0 8px}
-  .lede{color:var(--ink-2);margin:0 0 22px;max-width:60ch}
-  .toc{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 30px;padding:0;list-style:none}
-  .toc a{
-    display:inline-block;font-size:13px;text-decoration:none;color:var(--ink-2);
-    border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 13px;
-  }
-  .toc a:hover{color:var(--ink);border-color:var(--ink-3)}
-  section{
-    background:var(--card);border:1px solid var(--line);border-radius:14px;
-    padding:22px 24px;margin-bottom:18px;
-  }
-  h2{font-size:19px;font-weight:700;letter-spacing:-0.01em;margin:0 0 10px}
-  h3{font-size:15px;font-weight:700;margin:20px 0 6px}
-  p,li{color:var(--ink-2)}
-  p{margin:0 0 10px}
-  b,strong{color:var(--ink)}
-  ol,ul{margin:0 0 10px;padding-left:22px}
-  li{margin:3px 0}
-  dl{margin:0;display:grid;grid-template-columns:minmax(150px,max-content) 1fr;gap:0}
-  dt,dd{padding:10px 0;border-bottom:1px solid var(--line-soft);margin:0}
-  dt{font-weight:700;color:var(--ink);padding-right:18px}
-  dd{color:var(--ink-2)}
-  dl > :nth-last-child(-n+2){border-bottom:0}
-  .group-label{
-    grid-column:1/-1;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em;
-    text-transform:uppercase;color:var(--ink-3);padding:16px 0 4px;border-bottom:1px solid var(--line);
-  }
-  .group-label:first-child{padding-top:0}
-  .note{font-size:13px;color:var(--ink-3)}
-  .faq dt{grid-column:1/-1;padding-bottom:2px;border-bottom:0}
-  .faq dd{grid-column:1/-1;padding-top:0}
-  @media (max-width:560px){
-    section{padding:18px 16px}
-    dl{grid-template-columns:1fr}
-    dt{padding-bottom:0;border-bottom:0}
-    dd{padding-top:2px}
-  }
-  footer{margin-top:24px;font-size:12px;color:var(--ink-3)}
-</style>
-<script src="glossary.js"></script>
+<link rel="stylesheet" href="css/help.css">
 </head>
 <body>
 <main>
@@ -238,12 +146,15 @@
   <section id="privacy">
     <h2>How we handle your data</h2>
     <p><b>Your spreadsheet stays on your computer.</b> It is opened and added up by your own browser. It is never
-       uploaded, and FinDash keeps no database of anyone's figures.</p>
-    <p>Five things can leave your computer, and only these:</p>
+       uploaded. Without an account, FinDash keeps none of your figures anywhere but your own browser.</p>
+    <p>Six things can leave your computer, and only these:</p>
     <ul>
       <li><b>When you log in or create an account:</b> your email and password go to Supabase, the service
-          FinDash uses for logins, to check who you are. Accounts are optional, and logging in sends none of
-          your figures.</li>
+          FinDash uses for logins, to check who you are. Accounts are optional.</li>
+      <li><b>While you are logged in:</b> your worked-out monthly figures and the invoice lines you confirmed
+          are saved to your account with Supabase, so they are there on any computer you log in on. Not your
+          file, not your photos, and nobody else can read them. <b>Forget my data</b> removes them from your
+          account too.</li>
       <li><b>When you add a photo:</b> the photo is sent to Claude, Anthropic's AI model, to be read. FinDash
           does not store it; only the lines you confirm are kept, in this browser.</li>
       <li><b>When you press Get advice:</b> each month's totals (revenue, the four cost groups, net profit
@@ -258,10 +169,13 @@
     <p><b>Saved in this browser:</b> after you add a file or a photo, the worked-out monthly figures, the
        invoice lines you confirmed and your latest advice (not the files or photos themselves) are kept in this
        browser on this device, so they are there next time.
-       They are never sent anywhere. Press <b>Forget my data</b> on the dashboard to remove them. On a shared
-       computer, do that before you leave.</p>
+       Unless you are logged in, they are never sent anywhere. Press <b>Forget my data</b> on the dashboard to
+       remove them. On a shared computer, do that before you leave.</p>
     <p><b>If you log in:</b> the browser keeps a login cookie that only FinDash's own server can read, not the
-       page or anything on it. It lasts up to 30 days, or until you press <b>Log out</b>.</p>
+       page or anything on it. It lasts up to 30 days, or until you press <b>Log out</b>. Logging out also
+       removes your figures from that browser; they stay safe in your account.</p>
+    <p><b>If this browser and your account disagree</b> (say you added a file before logging in), the
+       dashboard asks which set of figures to keep, rather than guessing.</p>
   </section>
 
   <section id="sharing">
@@ -284,44 +198,7 @@
   <footer>FinDash &middot; <a href="/dashboard">Back to the dashboard</a></footer>
 </main>
 
-<script>
-(function(){
-  var toggle = document.getElementById("theme-toggle");
-  if(!toggle) return;
-  toggle.addEventListener("click", function(){
-    var isLight = document.documentElement.getAttribute("data-theme") === "light";
-    if(isLight){
-      document.documentElement.removeAttribute("data-theme");
-      try{ localStorage.setItem("findash-theme","dark"); }catch(e){ /* storage blocked; theme still applies for this session */ }
-    }else{
-      document.documentElement.setAttribute("data-theme","light");
-      try{ localStorage.setItem("findash-theme","light"); }catch(e){ /* storage blocked; theme still applies for this session */ }
-    }
-  });
-})();
-</script>
-<script>
-/* The glossary comes from glossary.js, the same file behind the dashboard's
-   "?" buttons, so the two pages can never define a word differently. */
-(function(){
-  var g = window.FINDASH_GLOSSARY;
-  var el = document.getElementById("terms");
-  if (!g || !el) return;
-  var groups = [
-    ["The four cost groups", ["direct", "operating", "variable", "fixed", "other"]],
-    ["Results", ["revenue", "totalCosts", "grossProfit", "netProfit", "netMargin", "shortfall", "ofRevenue"]],
-    ["Budget", ["budget", "budgetUsed", "typical", "swing"]],
-    ["Forecast", ["trend", "range"]]
-  ];
-  var html = "";
-  groups.forEach(function(group){
-    html += '<div class="group-label">' + group[0] + '</div>';
-    group[1].forEach(function(k){
-      if (g[k]) html += '<dt id="term-' + k + '">' + g[k].term + '</dt><dd>' + g[k].text + '</dd>';
-    });
-  });
-  el.innerHTML = html;
-})();
-</script>
+<script type="module" src="js/theme-toggle.js"></script>
+<script type="module" src="js/help.js"></script>
 </body>
 </html>

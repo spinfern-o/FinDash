@@ -53,6 +53,7 @@ function showSavedFigures() {
   state.ownerMonths = saved.months;
   state.ownerInvoices = saved.invoices;
   state.ownerSourceName = saved.from;
+  state.ownerAccount = saved.account;
   showOwnerFigures(`Saved in this browser: ${describeOwnerSource()}.`);
 }
 

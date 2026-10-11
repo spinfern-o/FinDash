@@ -378,6 +378,56 @@ async function removeFiguresFromAccount() {
   }
 }
 
+/* The figures this browser keeps for the dashboard, or null. */
+function figuresInThisBrowser() {
+  try {
+    return JSON.parse(localStorage.getItem("findash-data"));
+  } catch {
+    return null;   // nothing saved, or storage is blocked
+  }
+}
+
+/* A value as text with every object's keys in alphabetical order, so two
+   copies compare equal however their keys are ordered: the database hands
+   saved figures back with the keys in its own order. */
+function textInKeyOrder(value) {
+  if (Array.isArray(value)) {
+    const parts = [];
+    for (const item of value) {
+      parts.push(textInKeyOrder(item));
+    }
+    return "[" + parts.join(",") + "]";
+  }
+  if (value && typeof value === "object") {
+    const parts = [];
+    for (const key of Object.keys(value).sort()) {
+      parts.push(JSON.stringify(key) + ":" + textInKeyOrder(value[key]));
+    }
+    return "{" + parts.join(",") + "}";
+  }
+  return JSON.stringify(value);
+}
+
+/* True when the account holds exactly the figures this browser has. */
+async function accountHasTheseFigures(inBrowser) {
+  let answer;
+  try {
+    const response = await fetch("/api/figures", { credentials: "same-origin" });
+    if (!response.ok) {
+      return false;
+    }
+    answer = await response.json();
+  } catch {
+    return false;
+  }
+  if (!answer || !answer.figures) {
+    return false;
+  }
+  const inAccount = answer.figures;
+  return textInKeyOrder([inAccount.months, inAccount.invoices, inAccount.from]) ===
+    textInKeyOrder([inBrowser.months, inBrowser.invoices, inBrowser.from]);
+}
+
 function removeFiguresFromThisBrowser() {
   try {
     localStorage.removeItem("findash-data");
@@ -471,11 +521,29 @@ function wireControls() {
     }
   });
 
+  // As the dashboard's Log out does: the figures leave this browser, since
+  // they are safe in the account, so the next person here can't see them.
+  // Unless the account doesn't have the latest of them; then they stay.
+  // Checked before logging out, while the account can still be asked.
   element("logout").addEventListener("click", async function () {
+    const inBrowser = figuresInThisBrowser();
+    let keptFigures = false;
+    if (inBrowser) {
+      if (await accountHasTheseFigures(inBrowser)) {
+        removeFiguresFromThisBrowser();
+      } else {
+        keptFigures = true;
+      }
+    }
     await callAuth("logout", {});
     loggedInEmail = null;
     setMode("login");
-    showMessage("You're logged out.", "good");
+    if (keptFigures) {
+      showMessage("You're logged out. Some of your figures hadn't been saved to your account, so they're " +
+        "still in this browser.", "good");
+    } else {
+      showMessage("You're logged out.", "good");
+    }
   });
 
   element("delete-account").addEventListener("click", deleteAccount);

@@ -37,9 +37,14 @@ export const state = {
   //                    [{ id, kind, supplier, number, date, year, monthNum,
   //                       total, lines }]
   //   ownerSourceName: the name of the file (or files) behind ownerMonths.
+  //   ownerAccount:    the email of the account these figures belong to, or
+  //                    null for figures that were never saved to an account.
+  //                    Kept with them in this browser, so a different person
+  //                    logging in here is never handed someone else's.
   ownerMonths: null,
   ownerInvoices: [],
   ownerSourceName: null,
+  ownerAccount: null,
 
   // Spreadsheets picked so far, by kind, until there is a full set to read.
   // The template is one "combined" file; older exports come as a "dashboard"

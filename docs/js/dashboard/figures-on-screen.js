@@ -23,6 +23,7 @@ export function showDemoFigures() {
   state.ownerMonths = null;
   state.ownerInvoices = [];
   state.ownerSourceName = null;
+  state.ownerAccount = null;
   state.heldFiles.dashboard = null;
   state.heldFiles.expenses = null;
   state.heldFiles.combined = null;

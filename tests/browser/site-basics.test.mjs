@@ -12,7 +12,7 @@ import { launchBrowser, openPage, text } from "../support/browser.mjs";
 
 const SITE = "https://findash.tech";
 // Listed by search engines, and in the sitemap.
-const LISTED_PAGES = ["/", "/dashboard", "/help", "/privacy", "/terms"];
+const LISTED_PAGES = ["/", "/dashboard", "/restaurant-profit-and-loss", "/help", "/privacy", "/terms"];
 // Kept out of search results: nothing on them is worth finding by search.
 const UNLISTED_PAGES = ["/login", "/thanks", "/no-such-page"];
 const ALL_PAGES = LISTED_PAGES.concat(UNLISTED_PAGES);
@@ -76,7 +76,7 @@ test("every page has its own title and description, a canonical address and a sh
   for (const address of LISTED_PAGES) {
     await visit(page, address);
     const tags = await headTags(page);
-    assert.ok(tags.title.startsWith("FinDash"), address);
+    assert.ok(tags.title.includes("FinDash"), address);
     assert.ok(tags.description.length >= 50 && tags.description.length <= 160,
       address + ": a description of 50 to 160 characters, as search results show");
     assert.equal(tags.canonical, SITE + address, address);
@@ -317,7 +317,7 @@ test("the privacy policy names every service that handles data, and the terms sa
   const page = await openPage(browser);
   await visit(page, "/privacy");
   const privacy = await text(page, "main");
-  for (const service of ["Vercel", "Supabase", "Anthropic", "Resend", "Google Fonts", SUPPORT, "fd_refresh"]) {
+  for (const service of ["Vercel", "Supabase", "Anthropic", "Resend", SUPPORT, "fd_refresh"]) {
     assert.ok(privacy.includes(service), "privacy policy mentions " + service);
   }
   await visit(page, "/terms");
@@ -334,10 +334,10 @@ test("the home page says what FinDash is and answers common questions in the HTM
   assert.match(home, /<h2 id="about-title">What is FinDash\?<\/h2>/);
   assert.match(home, /FinDash \(findash\.tech\) is a free web app/);
   assert.ok((home.match(/<details class="faq-item">/g) || []).length >= 6, "a list of questions");
-  assert.match(home, /<p class="eyebrow">Free profit and loss dashboard for small businesses<\/p>/);
+  assert.match(home, /<h1 class="eyebrow">Free profit and loss \(P&amp;L\) dashboard for small businesses<\/h1>/);
 
   const dashboard = await (await page.request.get(site.url + "/dashboard")).text();
-  assert.match(dashboard, /<h1 id="showing">Profit and loss dashboard<\/h1>/, "a heading before the script runs");
+  assert.match(dashboard, /<h1 class="page-title">Profit and loss \(P&amp;L\) dashboard<\/h1>/, "a heading that no script replaces");
   await page.context().close();
 });
 
@@ -387,4 +387,152 @@ test("llms.txt describes FinDash, what it doesn't do, and links its pages", asyn
     assert.ok(text.includes("(" + SITE + address + ")"), address);
   }
   await page.context().close();
+});
+
+test("every page has one h1, and its headings never skip a level", async function () {
+  const page = await openPage(browser, { ignore: /status of 404/ });
+  for (const address of ALL_PAGES) {
+    await visit(page, address);
+    const found = await page.evaluate(function () {
+      const levels = Array.from(document.querySelectorAll("h1, h2, h3, h4, h5, h6"), function (heading) {
+        return Number(heading.tagName[1]);
+      });
+      const skips = [];
+      for (let index = 1; index < levels.length; index++) {
+        if (levels[index] > levels[index - 1] + 1) {
+          skips.push("h" + levels[index - 1] + " then h" + levels[index]);
+        }
+      }
+      return { h1s: document.querySelectorAll("h1").length, first: levels[0], skips: skips };
+    });
+    assert.equal(found.h1s, 1, address + ": one h1");
+    assert.equal(found.first, 1, address + ": the h1 comes first");
+    assert.deepEqual(found.skips, [], address);
+  }
+  await page.context().close();
+});
+
+test("the help page's glossary is in the HTML itself, from glossary.js", async function () {
+  const page = await openPage(browser);
+  const help = await (await page.request.get(site.url + "/help")).text();
+  const { GLOSSARY } = await import("../../docs/js/glossary.js");
+  for (const key of ["direct", "grossProfit", "netMargin", "budgetUsed"]) {
+    assert.ok(help.includes('<dt id="term-' + key + '">' + GLOSSARY[key].term + "</dt>"), key);
+  }
+  assert.ok(!help.includes("Turn on JavaScript"), "no placeholder");
+  assert.ok(!help.includes("help.js"), "no script needed");
+  await page.context().close();
+});
+
+test("the restaurant page explains food cost, labor and prime cost, with sources and a way in", async function () {
+  const page = await openPage(browser);
+  await visit(page, "/restaurant-profit-and-loss");
+  assert.equal(await text(page, "h1"), "Free restaurant profit and loss (P&L) dashboard");
+  const body = await text(page, "main");
+  for (const phrase of ["Food cost", "Labor", "Prime cost", "Net margin", "Budget vs actual", "18.2%"]) {
+    assert.ok(body.includes(phrase), phrase);
+  }
+  const sources = await page.locator('#benchmarks a[href^="https://"]').count();
+  assert.ok(sources >= 3, "benchmarks name their sources");
+  assert.ok(await page.locator('main a[href="/dashboard"]').first().isVisible());
+  const found = await page.evaluate(function () {
+    function oneLine(value) {
+      return value.replace(/\s+/g, " ").trim();
+    }
+    const data = JSON.parse(document.querySelector('script[type="application/ld+json"]').textContent);
+    const faq = data["@graph"].find(function (item) {
+      return item["@type"] === "FAQPage";
+    });
+    return {
+      marked: faq.mainEntity.map(function (question) {
+        return question.name;
+      }),
+      visible: Array.from(document.querySelectorAll(".faq-item summary"), function (summary) {
+        return oneLine(summary.textContent);
+      })
+    };
+  });
+  assert.deepEqual(found.marked, found.visible);
+  await page.context().close();
+});
+
+test("fonts come from this site, not Google, and are cached", async function () {
+  const page = await openPage(browser, { ignore: /status of 404/ });
+  for (const address of ALL_PAGES) {
+    const html = await (await page.request.get(site.url + address)).text();
+    assert.ok(!html.includes("fonts.googleapis") && !html.includes("fonts.gstatic"), address);
+  }
+  for (const font of ["/fonts/inter.woff2", "/fonts/jetbrains-mono.woff2"]) {
+    assert.equal((await page.request.get(site.url + font)).status(), 200, font);
+  }
+  const { readFileSync } = await import("node:fs");
+  const vercel = JSON.parse(readFileSync(new URL("../../vercel.json", import.meta.url), "utf8"));
+  const csp = vercel.headers[0].headers.find(function (header) {
+    return header.key === "Content-Security-Policy";
+  }).value;
+  assert.ok(!csp.includes("google"), "the security policy no longer allows Google's font servers");
+  const fontRule = vercel.headers.find(function (rule) {
+    return rule.source === "/fonts/(.*)";
+  });
+  assert.match(fontRule.headers[0].value, /immutable/);
+  await visit(page, "/");
+  assert.ok(await page.evaluate(function () {
+    return document.fonts.check("700 16px Inter");
+  }), "Inter loaded from /fonts/");
+  await page.context().close();
+});
+
+test("the dashboard asks for every module up front, and each one exists", async function () {
+  const page = await openPage(browser);
+  const dashboard = await (await page.request.get(site.url + "/dashboard")).text();
+  const preloads = Array.from(dashboard.matchAll(/<link rel="modulepreload" href="([^"]+)">/g), function (match) {
+    return match[1];
+  });
+  assert.ok(preloads.includes("/js/dashboard/main.js"));
+  assert.ok(preloads.includes("/js/dashboard/cards/allocation.js"), "modules several imports deep too");
+  for (const address of preloads) {
+    assert.equal((await page.request.get(site.url + address)).status(), 200, address);
+  }
+  await page.context().close();
+});
+
+test("the dashboard doesn't jump about while it loads", async function () {
+  for (const width of [1350, 768, 390]) {
+    const page = await openPage(browser, { viewport: { width: width, height: 900 } });
+    await page.addInitScript(function () {
+      window.layoutShift = 0;
+      new PerformanceObserver(function (list) {
+        for (const entry of list.getEntries()) {
+          if (!entry.hadRecentInput) {
+            window.layoutShift += entry.value;
+          }
+        }
+      }).observe({ type: "layout-shift", buffered: true });
+    });
+    await visit(page, "/dashboard");
+    await page.waitForTimeout(500);
+    const shift = await page.evaluate(function () {
+      return window.layoutShift;
+    });
+    assert.ok(shift < 0.1, width + "px: layout shift " + shift.toFixed(3) + " (Google's 'good' is under 0.1)");
+    await page.context().close();
+  }
+});
+
+test("the home page slogan keeps its height whichever word is showing", async function () {
+  for (const width of [320, 360, 390, 412, 768, 1280]) {
+    const page = await openPage(browser, { viewport: { width: width, height: 800 } });
+    await visit(page, "/");
+    const heights = await page.evaluate(function () {
+      const words = ["non‑tech", "international", "freelancers", "small teams", "founders", "anyone"];
+      const rotator = document.getElementById("rotator");
+      const slogan = document.querySelector(".slogan");
+      return words.map(function (word) {
+        rotator.textContent = word;
+        return slogan.getBoundingClientRect().height;
+      });
+    });
+    assert.equal(new Set(heights).size, 1, width + "px: " + heights.join(", "));
+    await page.context().close();
+  }
 });

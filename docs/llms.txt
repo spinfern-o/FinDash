@@ -1,6 +1,6 @@
 # FinDash
 
-> FinDash (findash.tech) is a free web app that turns a small business's monthly figures, from an Excel or CSV spreadsheet or a photo of a supplier invoice, into a dashboard of revenue, costs, profit and budget vs actual, with plain-language AI advice. It is not accounting software.
+> FinDash (findash.tech) is a free web app that turns a small business's monthly figures, from an Excel or CSV spreadsheet or a photo of a supplier invoice, into a profit and loss (P&L) dashboard of revenue, costs, profit and budget vs actual, with plain-language AI advice. It is not accounting software.
 
 FinDash at findash.tech is not the household finance platform or the open-source projects that share the name.
 
@@ -22,6 +22,7 @@ FinDash does not connect to bank accounts, keep books, send invoices, take payme
 
 - [Home](https://findash.tech/): what FinDash is, and answers to common questions
 - [Dashboard](https://findash.tech/dashboard): the dashboard, with demo figures until you add your own
+- [Restaurant P&L dashboard](https://findash.tech/restaurant-profit-and-loss): food cost, labor, prime cost and rent as a share of sales, with benchmarks
 - [Help](https://findash.tech/help): getting figures in, what each number means, how data is handled
 - [Privacy policy](https://findash.tech/privacy)
 - [Terms of service](https://findash.tech/terms)

@@ -101,15 +101,16 @@ and dollars on the lumpy ones (maintenance, hardware, business license).
 ### Benchmarks
 
 Healthy ranges depend on the industry, so your own trend is the best comparison. As a
-rough guide for a full-service restaurant:
+rough guide for a full-service restaurant (the sources are on
+[the restaurant page](https://findash.tech/restaurant-profit-and-loss)):
 
 | Figure | Typical range |
 | --- | --- |
-| Cost of goods sold | 28–35% |
-| Labor | 28–32% |
-| Prime cost | 55–65% |
-| Occupancy | 6–10% |
-| Net margin | 3–6% |
+| Cost of goods sold | 25–35% |
+| Labor | 25–35% |
+| Prime cost | 60–65% |
+| Occupancy | under 8–10% |
+| Net margin | 3–5% |
 
 ### Judgment calls
 
@@ -275,6 +276,17 @@ needs Supabase admin rights, which the site deliberately never has, so the owner
 it: **Supabase → Authentication → Users**, find the email, **Delete user**. Their daily
 usage counts go with it.
 
+### Speed
+
+The fonts (Inter and JetBrains Mono, under the SIL Open Font License) are served from
+`docs/fonts/`, not Google Fonts, so a page needs no other site to draw its text and
+the Content-Security-Policy in `vercel.json` allows fonts from this site only. Fonts
+are cached for a year (their names never change), icons and images for a week. The
+dashboard's head lists every script it imports (`modulepreload`), which
+`tools/build-pages.py` works out from the imports, so the browser fetches them all at
+once instead of one after another. A test checks the dashboard doesn't jump about while
+it loads (layout shift under 0.1 on a desktop, a tablet and a phone).
+
 ### When something goes wrong
 
 Every problem the server functions run into, and every error in a visitor's browser, is
@@ -286,14 +298,14 @@ anyone's figures.
 
 Every page has its own title and description, a canonical address on
 `https://findash.tech`, and a preview for when a link is shared (`docs/og-image.png`,
-1200 × 630). `tools/page-head.py` writes those tags into every page; change a title or
-description there and run `python3 tools/page-head.py`. `tools/og-image/` redraws the
+1200 × 630). `tools/build-pages.py` writes those tags into every page; change a title or
+description there and run `python3 tools/build-pages.py`. `tools/og-image/` redraws the
 share image.
 
 `docs/robots.txt` lets search engines read every page except `/api/`, and points them at
 `docs/sitemap.xml`, which lists the pages worth finding. The log in, thank-you and 404
 pages say `noindex` and are left out. If the site moves to another address, change
-`SITE` in `tools/page-head.py`, the addresses in `robots.txt` and `sitemap.xml`, and the
+`SITE` in `tools/build-pages.py`, the addresses in `robots.txt` and `sitemap.xml`, and the
 `og:image` lines, then run the script.
 
 Google only lists a site it knows about. To get FinDash into Google:
@@ -321,14 +333,21 @@ that say plainly what something is and answer the questions people actually ask.
 
 - **Titles and descriptions** use the words people search with (free small business
   profit and loss dashboard, budget vs actual, Excel or CSV). They live in
-  `tools/page-head.py`.
+  `tools/build-pages.py`.
 - **The home page says what FinDash is** in one sentence, under "What is FinDash?", and
   answers common questions under "Questions people ask". Both are ordinary page text,
   because most AI crawlers don't run JavaScript.
 - **Structured data** (schema.org JSON-LD: the site, the organisation, the web app and the
-  questions) is written into the home page by `tools/page-head.py`, from those two
-  sections. After changing the definition or a question, run the script again; a test
-  checks the two still match word for word.
+  questions) is written into the home page by `tools/build-pages.py`, from those two
+  sections, and the questions on the restaurant page the same way. After changing the
+  definition or a question, run the script again; a test checks the two still match
+  word for word.
+- **The help page's glossary** is written into the page by the same script, from
+  `docs/js/glossary.js`, so crawlers see it too. After changing a definition, run it
+  again.
+- **`/restaurant-profit-and-loss`** is a page for the people FinDash was first built
+  for: food cost, labor and prime cost, with the demo restaurant's figures and sourced
+  benchmarks. If the demo figures change, update its example table.
 - **The dashboard's heading** has plain fallback text for crawlers that don't run its
   script.
 - **`docs/llms.txt`** describes FinDash for AI tools in plain text. Few tools read it yet;
@@ -428,6 +447,7 @@ docs/                    The website (Vercel serves this folder)
   index.html             Landing page
   dashboard.html         The dashboard
   help.html              Getting data in, glossary, how data is handled
+  restaurant-profit-and-loss.html   Food cost, labor and prime cost, for restaurants
   login.html             Log in, create an account, reset a password, delete an account
   privacy.html, terms.html   The privacy policy and terms of service
   thanks.html            After creating an account: "check your email"
@@ -435,6 +455,8 @@ docs/                    The website (Vercel serves this folder)
   robots.txt, sitemap.xml    For search engines
   llms.txt               What FinDash is, in plain text for AI tools
   og-image.png           The preview shown when a link is shared
+  screenshot-dashboard.jpg   The dashboard, for search engines' app listings
+  fonts/                 Inter and JetBrains Mono, with their licences
   favicon.ico, icon-*.png, apple-touch-icon.png, site.webmanifest   Icons
   data.json              The demo figures, written by the Java app
   css/                   One stylesheet per page, and site.css shared by all
@@ -444,7 +466,7 @@ docs/                    The website (Vercel serves this folder)
     cookie-notice.js     The one-time note that only login cookies are used
     sticky-cta.js        The landing page's Open dashboard button that follows on phones
     theme-init.js, theme-toggle.js   Light and dark mode
-    landing.js, help.js, login.js, thanks.js   Each page's own script
+    landing.js, login.js, thanks.js   Each page's own script
     dashboard/
       main.js            Starts the dashboard
       state.js           Everything the dashboard keeps track of
@@ -462,7 +484,8 @@ supabase/migrations/     The SQL for saved figures and daily limits
 tests/                   The tests (npm test)
 .github/workflows/       Runs the tests on every pull request
 forecast/                The optional forecast service (Python, Chronos)
-tools/                   page-head.py (every page's head tags), og-image/ (the share image)
+tools/                   build-pages.py (head tags, structured data, the glossary),
+                         og-image/ (the share image)
 src/main/java/           The Java command-line app
 data/                    The Java app's input CSVs
 ```

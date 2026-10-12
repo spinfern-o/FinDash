@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- page-head: start (tools/page-head.py writes this) -->
-<title>FinDash · Help: Spreadsheets, Invoice Photos, Glossary</title>
+<!-- page-head: start (tools/build-pages.py writes this) -->
+<title>Help: Spreadsheets, Invoice Photos, Glossary · FinDash</title>
 <meta name="description" content="How to copy totals from QuickBooks, Xero or your own spreadsheet, add an invoice photo, and what gross profit, net margin and budget used mean.">
 <link rel="canonical" href="https://findash.tech/help">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="FinDash">
-<meta property="og:title" content="FinDash · Help: Spreadsheets, Invoice Photos, Glossary">
+<meta property="og:title" content="Help: Spreadsheets, Invoice Photos, Glossary · FinDash">
 <meta property="og:description" content="How to copy totals from QuickBooks, Xero or your own spreadsheet, add an invoice photo, and what gross profit, net margin and budget used mean.">
 <meta property="og:url" content="https://findash.tech/help">
 <meta property="og:image" content="https://findash.tech/og-image.png">
@@ -26,13 +26,11 @@
   window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
 </script>
 <script defer src="/_vercel/insights/script.js"></script>
+<link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/css/site.css">
 <script type="module" src="/js/cookie-notice.js"></script>
 <!-- page-head: end -->
 <script src="js/theme-init.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/help.css">
 </head>
 <body>
@@ -63,7 +61,9 @@
   </ul>
 
   <section id="get-started">
-    <h2>Get your numbers in</h2>
+    <h2>Get your numbers in: Excel, CSV or an invoice photo</h2>
+    <p>Running a restaurant? The <a href="/restaurant-profit-and-loss">restaurant P&amp;L dashboard</a> page
+       shows how your lines map to FinDash's, and what food cost, labor and prime cost to expect.</p>
     <p>FinDash needs one spreadsheet with a row for each month. The quickest way is the template:
        on the <a href="/dashboard">dashboard</a>, press <b>Download Excel template</b> (or CSV). It comes filled
        in with three sample months, so you can see what goes where.</p>
@@ -163,7 +163,40 @@
     <h2>What the numbers mean</h2>
     <p>Every cost sits in exactly one of four groups, so the groups add up to your total costs and revenue
        minus total costs is your net profit. The same explanations appear behind each <b>?</b> on the dashboard.</p>
-    <dl id="terms"><dd>Turn on JavaScript to see the glossary.</dd></dl>
+    <!-- glossary: start (tools/build-pages.py writes this, from docs/js/glossary.js) -->
+    <div id="terms">
+      <h3 class="group-label">The four cost groups</h3>
+      <dl>
+        <dt id="term-direct">Direct costs</dt><dd>What it costs to make each sale or do each job: stock and ingredients (cost of goods sold), staff wages, staff meals and payroll tax.</dd>
+        <dt id="term-operating">Operating costs</dt><dd>Costs that grow when you are busier but are not tied to one sale: packaging, card fees, marketing and small equipment.</dd>
+        <dt id="term-variable">Variable overhead</dt><dd>Running costs that go up when you are busier, but not in step with sales: utilities and maintenance.</dd>
+        <dt id="term-fixed">Fixed overhead</dt><dd>Costs that don't change with sales, like rent, insurance, licences and phone. Usually the hardest to cut, because most of it is under contract.</dd>
+        <dt id="term-other">Other (uncategorised)</dt><dd>Money counted in this group's total that did not match one of the named lines, usually a column in your file with a name we did not recognise.</dd>
+      </dl>
+      <h3 class="group-label">Results</h3>
+      <dl>
+        <dt id="term-revenue">Revenue</dt><dd>Everything that came in from sales in the period, before any costs are taken off.</dd>
+        <dt id="term-totalCosts">Total costs</dt><dd>Every cost in the four groups added together.</dd>
+        <dt id="term-grossProfit">Gross profit</dt><dd>Revenue minus direct costs, before rent, marketing and the other running costs.</dd>
+        <dt id="term-netProfit">Net profit</dt><dd>What is left of revenue after every cost. A negative number is a loss.</dd>
+        <dt id="term-netMargin">Net margin</dt><dd>The share of revenue you keep after every cost. 10% means you keep 10 of every 100 that comes in.</dd>
+        <dt id="term-shortfall">Shortfall</dt><dd>How far costs ran past revenue in a month that made a loss.</dd>
+        <dt id="term-ofRevenue">% of revenue</dt><dd>Each line as a share of revenue, so a busy month and a quiet one can be compared fairly.</dd>
+      </dl>
+      <h3 class="group-label">Budget</h3>
+      <dl>
+        <dt id="term-budget">Budget</dt><dd>The most you planned to spend in total that month. It is a spending limit, not a sales target.</dd>
+        <dt id="term-budgetUsed">Budget used</dt><dd>Total costs as a share of your budget. Over 100% means you spent more than you planned.</dd>
+        <dt id="term-typical">Typical month</dt><dd>Average total costs across every month on file.</dd>
+        <dt id="term-swing">Swing</dt><dd>How much higher the worst month was than the average. “Steady” means within 10%.</dd>
+      </dl>
+      <h3 class="group-label">Forecast</h3>
+      <dl>
+        <dt id="term-trend">Trend</dt><dd>A straight line drawn through your monthly net profit and carried forward. It shows the direction things are moving, not a promise.</dd>
+        <dt id="term-range">Range</dt><dd>How far past months strayed from the trend. A wider range means the months have been less predictable.</dd>
+      </dl>
+    </div>
+    <!-- glossary: end -->
   </section>
 
   <section id="privacy">
@@ -236,6 +269,5 @@
 
 <script type="module" src="js/error-reporter.js"></script>
 <script type="module" src="js/theme-toggle.js"></script>
-<script type="module" src="js/help.js"></script>
 </body>
 </html>

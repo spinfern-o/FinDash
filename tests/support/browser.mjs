@@ -15,6 +15,18 @@ export async function openPage(browser, options = {}) {
     viewport: options.viewport || { width: 1280, height: 900 },
     acceptDownloads: true
   });
+  // The cookie notice sits along the bottom of the screen and would be in
+  // the way of clicks there, so tests start with it already dismissed, as
+  // for anyone who has visited before. options.cookieNotice: true keeps it.
+  if (!options.cookieNotice) {
+    await context.addInitScript(function () {
+      try {
+        localStorage.setItem("findash-cookie-notice", "seen");
+      } catch {
+        // A page without storage: nothing to dismiss.
+      }
+    });
+  }
   const page = await context.newPage();
   page.errors = [];
   const ignore = options.ignore || /a^/;

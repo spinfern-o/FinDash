@@ -24,7 +24,11 @@ const CONTENT_TYPES = {
   ".css": "text/css",
   ".json": "application/json",
   ".png": "image/png",
-  ".svg": "image/svg+xml"
+  ".svg": "image/svg+xml",
+  ".ico": "image/x-icon",
+  ".txt": "text/plain; charset=utf-8",
+  ".xml": "application/xml",
+  ".webmanifest": "application/manifest+json"
 };
 
 function securityHeaders() {
@@ -156,10 +160,19 @@ export async function startSite(options = {}) {
       return;
     }
 
+    // Vercel's Web Analytics script, which only exists on Vercel: an empty
+    // one here, so pages load as they do there.
+    if (url.pathname.startsWith("/_vercel/insights/")) {
+      response.setHeader("content-type", "text/javascript");
+      return response.end("");
+    }
+
+    // Like Vercel: an address with no page gets docs/404.html, as a 404.
     const file = fileFor(decodeURIComponent(url.pathname));
     if (!file) {
       response.statusCode = 404;
-      return response.end("not found");
+      response.setHeader("content-type", CONTENT_TYPES[".html"]);
+      return createReadStream(path.join(PAGES, "404.html")).pipe(response);
     }
     response.setHeader("content-type", CONTENT_TYPES[path.extname(file)] || "application/octet-stream");
     createReadStream(file).pipe(response);

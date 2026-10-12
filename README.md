@@ -46,7 +46,8 @@ or a service business.
 
 Your spreadsheet is opened and added up by your own browser. It never leaves it. Only
 these things are ever sent anywhere, always through this site's own server (the browser
-never contacts Supabase or Claude itself). The help page lists the same seven.
+never contacts Supabase or Claude itself). The help page lists the same eight, and the
+[privacy policy](docs/privacy.html) names every service involved.
 
 | When | What is sent | To |
 | --- | --- | --- |
@@ -57,6 +58,7 @@ never contacts Supabase or Claude itself). The help page lists the same seven.
 | A column name isn't recognised | the column names only, never the numbers | Claude |
 | Pressing the forecast model's button (if one is set up) | the net profit figure for each month | the forecast service |
 | Something on the page breaks | the error message and which file it came from | this site's own log |
+| Every page visit | which page, the linking site, browser, device type, country (no cookies) | Vercel Web Analytics |
 
 Photos, advice and column matching need a free account, because each one is a paid
 request (see [Paid features and daily limits](#paid-features-and-daily-limits)).
@@ -193,6 +195,10 @@ these under **Settings → Environment Variables** and redeploy:
 The site never uses Supabase's service-role key (the integration adds one; nothing reads
 it). `/api/capabilities` says which features are on, as true or false, never the keys.
 
+To count page visits, open the project in Vercel, then **Analytics**, and press
+**Enable**. Every page already loads Vercel's script; until Analytics is on, it does
+nothing.
+
 ### 2. Supabase (accounts)
 
 1. In Supabase open **SQL Editor**. For each file in `supabase/migrations/`, in order,
@@ -276,6 +282,34 @@ logged with the tag `findash-error`. In Vercel, open the project, then **Logs**,
 search for `findash-error`. Only the error and where it happened are logged, never
 anyone's figures.
 
+### Search engines and sharing
+
+Every page has its own title and description, a canonical address on
+`https://findash.tech`, and a preview for when a link is shared (`docs/og-image.png`,
+1200 × 630). `tools/page-head.py` writes those tags into every page; change a title or
+description there and run `python3 tools/page-head.py`. `tools/og-image/` redraws the
+share image.
+
+`docs/robots.txt` lets search engines read every page except `/api/`, and points them at
+`docs/sitemap.xml`, which lists the pages worth finding. The log in, thank-you and 404
+pages say `noindex` and are left out. If the site moves to another address, change
+`SITE` in `tools/page-head.py`, the addresses in `robots.txt` and `sitemap.xml`, and the
+`og:image` lines, then run the script.
+
+Google only lists a site it knows about. To get FinDash into Google:
+
+1. Open [Google Search Console](https://search.google.com/search-console), **Add
+   property**, choose **Domain**, and enter `findash.tech`.
+2. Google shows a TXT record. Add it to the domain's DNS (wherever `findash.tech` is
+   managed: the same place as Resend's records), then press **Verify**.
+3. Under **Sitemaps**, submit `https://findash.tech/sitemap.xml`.
+4. Under **URL inspection**, enter `https://findash.tech/` and press **Request
+   indexing**.
+
+Pages usually appear within a few days to a couple of weeks. To check, search Google for
+`site:findash.tech`; Search Console's **Pages** report says which pages are indexed and
+why any aren't.
+
 ### Before taking customers
 
 1. **Anthropic:** a monthly spending limit.
@@ -284,8 +318,12 @@ anyone's figures.
 3. **Email:** Resend (or another service) connected, as above.
 4. **Plans:** Vercel's free Hobby plan is for non-commercial use, and Supabase's free
    plan pauses after a week without activity. Check both.
-5. **Legal:** a privacy policy and terms of service. The help page explains how data is
-   handled, but it isn't a legal policy.
+5. **Legal:** `docs/privacy.html` and `docs/terms.html` describe what the site actually
+   does, but have them read by someone qualified where you operate. The terms name no
+   governing law yet. Some countries (Germany, for one) also require a postal address on
+   a business website.
+6. **Analytics and search:** Web Analytics enabled in Vercel, and the site added to
+   Google Search Console (see above).
 
 ## Working on the code
 
@@ -318,7 +356,9 @@ are needed and nothing is spent:
 - `tests/api/`: the server functions: logins, saved figures, daily limits, what is sent
   to Claude, error reports
 - `tests/browser/`: the pages in a real (headless) Chromium: the dashboard, photos,
-  accounts, saving, deleting an account, and two people taking turns on one browser
+  accounts, saving, deleting an account, two people taking turns on one browser, and
+  the basics of every page (titles, share previews, icons, robots.txt, the sitemap, the
+  404 page, phone layouts, the cookie notice, footers)
 
 GitHub runs the same tests, and builds the Java app, on every pull request
 (`.github/workflows/tests.yml`).
@@ -357,13 +397,21 @@ docs/                    The website (Vercel serves this folder)
   dashboard.html         The dashboard
   help.html              Getting data in, glossary, how data is handled
   login.html             Log in, create an account, reset a password, delete an account
+  privacy.html, terms.html   The privacy policy and terms of service
+  thanks.html            After creating an account: "check your email"
+  404.html               Shown for any address with no page
+  robots.txt, sitemap.xml    For search engines
+  og-image.png           The preview shown when a link is shared
+  favicon.ico, icon-*.png, apple-touch-icon.png, site.webmanifest   Icons
   data.json              The demo figures, written by the Java app
-  css/                   One stylesheet per page
+  css/                   One stylesheet per page, and site.css shared by all
   js/
     glossary.js          Plain-language definitions for the ? buttons and the help page
     error-reporter.js    Sends errors on the page to the site's log
+    cookie-notice.js     The one-time note that only login cookies are used
+    sticky-cta.js        The landing page's Open dashboard button that follows on phones
     theme-init.js, theme-toggle.js   Light and dark mode
-    landing.js, help.js, login.js    Each page's own script
+    landing.js, help.js, login.js, thanks.js   Each page's own script
     dashboard/
       main.js            Starts the dashboard
       state.js           Everything the dashboard keeps track of
@@ -381,6 +429,7 @@ supabase/migrations/     The SQL for saved figures and daily limits
 tests/                   The tests (npm test)
 .github/workflows/       Runs the tests on every pull request
 forecast/                The optional forecast service (Python, Chronos)
+tools/                   page-head.py (every page's head tags), og-image/ (the share image)
 src/main/java/           The Java command-line app
 data/                    The Java app's input CSVs
 ```

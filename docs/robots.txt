@@ -1,0 +1,7 @@
+# Search engines may read every page. The server functions under /api/
+# are not pages, so they are left out.
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://findash.tech/sitemap.xml

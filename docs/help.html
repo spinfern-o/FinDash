@@ -3,9 +3,32 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="icon" type="image/png" href="favicon.png">
-<title>FinDash &middot; Help</title>
+<!-- page-head: start (tools/page-head.py writes this) -->
+<title>FinDash · Help</title>
 <meta name="description" content="How to get your numbers into FinDash, what each figure means, and how your data is handled.">
+<link rel="canonical" href="https://findash.tech/help">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="FinDash">
+<meta property="og:title" content="FinDash · Help">
+<meta property="og:description" content="How to get your numbers into FinDash, what each figure means, and how your data is handled.">
+<meta property="og:url" content="https://findash.tech/help">
+<meta property="og:image" content="https://findash.tech/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="FinDash: revenue, costs and budget on one monthly dashboard">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#050505">
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+<link rel="stylesheet" href="/css/site.css">
+<script type="module" src="/js/cookie-notice.js"></script>
+<!-- page-head: end -->
 <script src="js/theme-init.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -147,7 +170,7 @@
     <h2>How we handle your data</h2>
     <p><b>Your spreadsheet stays on your computer.</b> It is opened and added up by your own browser. It is never
        uploaded. Without an account, FinDash keeps none of your figures anywhere but your own browser.</p>
-    <p>Seven things can leave your computer, and only these:</p>
+    <p>Eight things can leave your computer, and only these:</p>
     <ul>
       <li><b>When you log in or create an account:</b> your email and password go to Supabase, the service
           FinDash uses for logins, to check who you are. Accounts are optional.</li>
@@ -167,6 +190,9 @@
           under the forecast. Pressing it sends the net profit figure for each month, nothing else.</li>
       <li><b>If something on the page breaks:</b> the error's technical message and which part of FinDash it
           came from are sent to FinDash's own server log, so it can be fixed. Never your figures or your file.</li>
+      <li><b>Each page you visit:</b> which page it was, the site that linked to it, and your browser, device
+          type and country are counted by Vercel Web Analytics, without cookies, so we can see how FinDash is
+          used. Never your figures or your file.</li>
     </ul>
     <p><b>Saved in this browser:</b> after you add a file or a photo, the worked-out monthly figures, the
        invoice lines you confirmed and your latest advice (not the files or photos themselves) are kept in this
@@ -183,6 +209,7 @@
     <p><b>To delete your account:</b> log in, open the <a href="/login">Log in</a> page and press
        <b>Delete my account</b>. Your saved figures are removed straight away, and an email asking for your
        login to be deleted opens for you to send; you'll get a reply once it's done.</p>
+    <p>All of this, and who processes your data for us, is in the <a href="/privacy">privacy policy</a>.</p>
   </section>
 
   <section id="sharing">
@@ -202,7 +229,9 @@
        Please don't include your figures.</p>
   </section>
 
-  <footer>FinDash &middot; <a href="/dashboard">Back to the dashboard</a></footer>
+  <footer>FinDash &middot; <a href="/dashboard">Back to the dashboard</a> &middot;
+    <a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot;
+    <a href="mailto:support.findash@findash.tech?subject=FinDash">Contact</a></footer>
 </main>
 
 <script type="module" src="js/error-reporter.js"></script>

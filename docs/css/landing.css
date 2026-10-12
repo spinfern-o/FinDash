@@ -98,6 +98,15 @@ a {
   right: -6.5px;
 }
 
+/* The crosses straddle the frame's edges. Until the window is wider than
+   the frame (1180px, plus half a cross each side), those edges are the
+   screen's, so half of one hung outside and the page scrolled sideways. */
+@media (max-width: 1199px) {
+  .cross {
+    display: none;
+  }
+}
+
 /* ---- header ---- */
 header {
   min-height: 92px;
@@ -673,7 +682,22 @@ button:focus-visible {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+/* The phone-only "Open dashboard" bar (sticky-cta.js shows it once the
+   page's own buttons have scrolled away). */
+.sticky-cta {
+  display: none;
+}
 @media (max-width: 640px) {
+  .sticky-cta:not([hidden]) {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  }
+  /* Room under the footer so the bar never covers its last line. */
+  footer {
+    padding-bottom: 96px;
+  }
   nav.links {
     gap: 10px;
   }
@@ -684,11 +708,6 @@ button:focus-visible {
   .enter-link {
     padding: 9px 14px;
     font-size: 12px;
-  }
-  /* The corner crosses straddle the frame's edge, which on a phone is the
-       screen's edge, so half of one hung outside and the page scrolled sideways. */
-  .cross {
-    display: none;
   }
   .hero {
     padding: 60px 20px 52px;

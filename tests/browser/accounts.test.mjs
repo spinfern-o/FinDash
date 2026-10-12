@@ -139,7 +139,7 @@ test("a confirmation link logs you in; an expired one is explained", async funct
   assert.match(await text(page, "#message"), /expired/);
 });
 
-test("a sign-up that needs email confirmation says so", async function () {
+test("a sign-up that needs email confirmation goes to the thank-you page, which says where the link went", async function () {
   const other = await openPage(browser);
   await other.route("**/api/auth?action=signup", function (route) {
     route.fulfill({ json: { confirm: true } });
@@ -147,10 +147,12 @@ test("a sign-up that needs email confirmation says so", async function () {
   await other.goto(site.url + "/login#signup", { waitUntil: "networkidle" });
   await other.fill("#email", "new@shop.test");
   await other.fill("#password", "a-long-password");
-  await other.click("#submit");
-  await other.waitForSelector("#message.good");
-  assert.match(await text(other, "#message"), /We sent a link to new@shop\.test/);
-  assert.equal(await text(other, "#title"), "Log in to FinDash");
+  await Promise.all([other.waitForURL(site.url + "/thanks"), other.click("#submit")]);
+  await other.waitForFunction(function () {
+    return document.getElementById("signup-email").textContent === "new@shop.test";
+  });
+  assert.equal(await text(other, "h1"), "Thanks for signing up");
+  assert.ok(!other.url().includes("shop.test"), "the address stays out of the page's URL");
   await other.context().close();
 });
 

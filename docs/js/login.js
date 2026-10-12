@@ -307,9 +307,15 @@ async function handleSubmit(event) {
       "password is on its way. Check your inbox (and spam folder).");
     return;
   }
+  // The account needs its email confirmed first: the thank-you page says so,
+  // and where the link went.
   if (result.data.confirm) {
-    backToLogin(email, "Almost there. We sent a link to <b>" + escapeHtml(email) + "</b>: open it to confirm " +
-      "your email, then log in here.");
+    try {
+      sessionStorage.setItem("findash-signup-email", email);
+    } catch {
+      // Storage is blocked; the thank-you page says "your email address".
+    }
+    location.assign("/thanks");
     return;
   }
   location.assign(pageAfterLogin());

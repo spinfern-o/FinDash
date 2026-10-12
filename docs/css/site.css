@@ -1,0 +1,71 @@
+/* Shared by every page: the bar along the bottom of the screen that holds
+   the cookie notice (and, on the landing page, the sticky button on
+   phones), and the footer's Privacy / Terms / Contact links. Colours come
+   from each page's own variables, so it matches light and dark mode. */
+
+.bottom-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 12px 12px;
+  pointer-events: none;   /* only its contents take clicks */
+}
+.bottom-dock > * {
+  pointer-events: auto;
+}
+
+.cookie-notice {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  background: var(--card);
+  color: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  font: 13px/1.45 Inter, system-ui, sans-serif;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.cookie-notice p {
+  margin: 0;
+  flex: 1;
+}
+.cookie-notice a {
+  color: var(--ink);
+}
+.cookie-notice button {
+  font: inherit;
+  font-weight: 600;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 18px;
+  cursor: pointer;
+}
+.cookie-notice button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.footer-legal {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+@media print {
+  .bottom-dock {
+    display: none !important;
+  }
+}

@@ -101,6 +101,15 @@ a {
   right: -6.5px;
 }
 
+/* The crosses straddle the frame's edges. Until the window is wider than
+   the frame (1180px, plus half a cross each side), those edges are the
+   screen's, so half of one hung outside and the page scrolled sideways. */
+@media (max-width: 1199px) {
+  .cross {
+    display: none;
+  }
+}
+
 /* ---- header (as on the landing page) ---- */
 header {
   min-height: 92px;
@@ -540,9 +549,6 @@ button:focus-visible {
   }
 }
 @media (max-width: 640px) {
-  .cross {
-    display: none;
-  }
   header {
     padding: 18px 20px;
   }

@@ -326,3 +326,65 @@ test("the privacy policy names every service that handles data, and the terms sa
   assert.ok(terms.includes(SUPPORT));
   await page.context().close();
 });
+
+test("the home page says what FinDash is and answers common questions in the HTML itself", async function () {
+  // Read as most AI crawlers read it: the HTML as sent, without running scripts.
+  const page = await openPage(browser);
+  const home = await (await page.request.get(site.url + "/")).text();
+  assert.match(home, /<h2 id="about-title">What is FinDash\?<\/h2>/);
+  assert.match(home, /FinDash \(findash\.tech\) is a free web app/);
+  assert.ok((home.match(/<details class="faq-item">/g) || []).length >= 6, "a list of questions");
+  assert.match(home, /<p class="eyebrow">Free profit and loss dashboard for small businesses<\/p>/);
+
+  const dashboard = await (await page.request.get(site.url + "/dashboard")).text();
+  assert.match(dashboard, /<h1 id="showing">Profit and loss dashboard<\/h1>/, "a heading before the script runs");
+  await page.context().close();
+});
+
+test("the home page's structured data is valid and says exactly what the page shows", async function () {
+  const page = await openPage(browser);
+  await visit(page, "/");
+  const found = await page.evaluate(function () {
+    function oneLine(text) {
+      return text.replace(/\s+/g, " ").trim();
+    }
+    const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+    const questions = Array.from(document.querySelectorAll(".faq-item"), function (item) {
+      return { name: oneLine(item.querySelector("summary").textContent), text: oneLine(item.querySelector("p").textContent) };
+    });
+    return {
+      count: scripts.length,
+      data: JSON.parse(scripts[0].textContent),
+      questions: questions,
+      definition: oneLine(document.querySelector(".about-lede").textContent)
+    };
+  });
+  assert.equal(found.count, 1);
+  assert.equal(found.data["@context"], "https://schema.org");
+  const byType = {};
+  for (const item of found.data["@graph"]) {
+    byType[item["@type"]] = item;
+  }
+  assert.deepEqual(Object.keys(byType).sort(), ["FAQPage", "Organization", "WebApplication", "WebSite"]);
+  assert.equal(byType.WebSite.name, "FinDash");
+  assert.equal(byType.WebApplication.description, found.definition);
+  assert.equal(byType.WebApplication.offers.price, "0");
+  assert.equal(byType.WebApplication.isAccessibleForFree, true);
+  assert.deepEqual(byType.FAQPage.mainEntity.map(function (question) {
+    return { name: question.name, text: question.acceptedAnswer.text };
+  }), found.questions, "the marked-up questions and answers are the visible ones, word for word");
+  await page.context().close();
+});
+
+test("llms.txt describes FinDash, what it doesn't do, and links its pages", async function () {
+  const page = await openPage(browser);
+  const response = await page.request.get(site.url + "/llms.txt");
+  assert.equal(response.status(), 200);
+  const text = await response.text();
+  assert.match(text, /^# FinDash\n/);
+  assert.match(text, /## What it doesn't do/);
+  for (const address of LISTED_PAGES) {
+    assert.ok(text.includes("(" + SITE + address + ")"), address);
+  }
+  await page.context().close();
+});

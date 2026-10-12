@@ -310,6 +310,38 @@ Pages usually appear within a few days to a couple of weeks. To check, search Go
 `site:findash.tech`; Search Console's **Pages** report says which pages are indexed and
 why any aren't.
 
+Microsoft Copilot answers from Bing's index, so add the site to
+[Bing Webmaster Tools](https://www.bing.com/webmasters) too: it can import the site
+straight from Search Console.
+
+### Wording for search engines and AI answers
+
+AI answer engines (ChatGPT search, Perplexity, Google's AI Overviews, Copilot) quote pages
+that say plainly what something is and answer the questions people actually ask. So:
+
+- **Titles and descriptions** use the words people search with (free small business
+  profit and loss dashboard, budget vs actual, Excel or CSV). They live in
+  `tools/page-head.py`.
+- **The home page says what FinDash is** in one sentence, under "What is FinDash?", and
+  answers common questions under "Questions people ask". Both are ordinary page text,
+  because most AI crawlers don't run JavaScript.
+- **Structured data** (schema.org JSON-LD: the site, the organisation, the web app and the
+  questions) is written into the home page by `tools/page-head.py`, from those two
+  sections. After changing the definition or a question, run the script again; a test
+  checks the two still match word for word.
+- **The dashboard's heading** has plain fallback text for crawlers that don't run its
+  script.
+- **`docs/llms.txt`** describes FinDash for AI tools in plain text. Few tools read it yet;
+  it costs nothing.
+
+There is deliberately no meta keywords tag: Google has ignored it since 2009, and Bing may
+treat a stuffed one as spam.
+
+Keep the wording to what FinDash does. Don't describe it as accounting or bookkeeping
+software, invoicing, payments, payroll or tax, a bank connection, cash flow, a QuickBooks
+or Xero integration (people copy their totals across), or "fintech". The FAQ says plainly
+that it does none of these, which is also what people searching for them need to know.
+
 ### Before taking customers
 
 1. **Anthropic:** a monthly spending limit.
@@ -401,6 +433,7 @@ docs/                    The website (Vercel serves this folder)
   thanks.html            After creating an account: "check your email"
   404.html               Shown for any address with no page
   robots.txt, sitemap.xml    For search engines
+  llms.txt               What FinDash is, in plain text for AI tools
   og-image.png           The preview shown when a link is shared
   favicon.ico, icon-*.png, apple-touch-icon.png, site.webmanifest   Icons
   data.json              The demo figures, written by the Java app

@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- page-head: start (tools/page-head.py writes this) -->
-<title>FinDash · Everyone can manage finances</title>
-<meta name="description" content="One clear monthly dashboard for small business owners: revenue, costs and budget from the figures you already have. No signup needed.">
+<title>FinDash: Free Small Business Profit &amp; Loss Dashboard</title>
+<meta name="description" content="Turn an Excel or CSV spreadsheet into a monthly dashboard of revenue, costs, profit and budget vs actual. Free, no signup needed.">
 <link rel="canonical" href="https://findash.tech/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="FinDash">
-<meta property="og:title" content="FinDash · Everyone can manage finances">
-<meta property="og:description" content="One clear monthly dashboard for small business owners: revenue, costs and budget from the figures you already have. No signup needed.">
+<meta property="og:title" content="FinDash: Free Small Business Profit &amp; Loss Dashboard">
+<meta property="og:description" content="Turn an Excel or CSV spreadsheet into a monthly dashboard of revenue, costs, profit and budget vs actual. Free, no signup needed.">
 <meta property="og:url" content="https://findash.tech/">
 <meta property="og:image" content="https://findash.tech/og-image.png">
 <meta property="og:image:width" content="1200">
@@ -28,6 +28,137 @@
 <script defer src="/_vercel/insights/script.js"></script>
 <link rel="stylesheet" href="/css/site.css">
 <script type="module" src="/js/cookie-notice.js"></script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://findash.tech/#website",
+      "name": "FinDash",
+      "alternateName": "findash.tech",
+      "url": "https://findash.tech/"
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://findash.tech/#organization",
+      "name": "FinDash",
+      "url": "https://findash.tech/",
+      "logo": "https://findash.tech/icon-512.png",
+      "email": "support.findash@findash.tech"
+    },
+    {
+      "@type": "WebApplication",
+      "@id": "https://findash.tech/#app",
+      "name": "FinDash",
+      "url": "https://findash.tech/dashboard",
+      "description": "FinDash (findash.tech) is a free web app that turns a small business's monthly figures, from an Excel or CSV spreadsheet or a photo of a supplier invoice, into a dashboard of revenue, costs, profit and budget vs actual, with plain-language AI advice. It is not accounting software.",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Any",
+      "browserRequirements": "A modern web browser",
+      "isAccessibleForFree": true,
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "featureList": [
+        "Reads Excel and CSV spreadsheets in any layout",
+        "Reads photos of supplier invoices and receipts (with a free account)",
+        "Monthly revenue, costs in four groups, gross profit, net profit and net margin",
+        "Budget vs actual",
+        "Month, quarter and year-to-date views",
+        "Net profit trend and a budget estimator",
+        "Advice written by AI (with a free account)",
+        "Export to Excel, print or save as PDF",
+        "Works in many currencies"
+      ],
+      "screenshot": "https://findash.tech/og-image.png",
+      "publisher": {
+        "@id": "https://findash.tech/#organization"
+      }
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://findash.tech/#questions",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Is there a free profit and loss dashboard for small businesses?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. FinDash is free, and the dashboard works without an account. Add a spreadsheet of your monthly totals to see each month's revenue, costs, gross and net profit, and how much of your budget you used."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Do I need QuickBooks or Xero to use FinDash?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. Fill in FinDash's Excel or CSV template, or use your own layout: columns are matched by name, and a sheet with the months across the top is turned the right way round. If you use QuickBooks or Xero, copy each month's totals from your Profit and Loss report."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is my spreadsheet uploaded anywhere?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. Your spreadsheet is read and added up in your own browser. Only the things you ask for that need a server leave your computer: reading an invoice photo, writing advice, or saving your figures to a free account. The privacy policy lists exactly what is sent."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can FinDash read a photo of a supplier invoice or receipt?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, with a free account. Claude, an AI model, reads every line; FinDash checks the arithmetic against the printed total; and you confirm the lines before anything is added to your month."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What does budget used mean?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Your total costs as a share of the spending budget you set for the month. Over 100% means you spent more than you planned, and the month shows up under What needs attention."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is the difference between gross profit and net profit?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Gross profit is revenue minus direct costs: cost of goods sold, labor, employee meals and payroll tax. Net profit is what is left after every cost, and net margin is net profit as a share of revenue."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does FinDash show cash flow?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. It shows profit: each month's revenue minus its costs. Cash can differ, for example when customers pay late or you buy stock ahead, so a profitable month can still leave you short of cash."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does it work for restaurants, shops and trades?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. FinDash was built for a restaurant, and its four cost groups work just as well for shops, trades, service businesses and freelancers. Figures can be in dollars, euros, pounds and other currencies."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is FinDash accounting software?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. It doesn't connect to your bank, keep your books, send invoices, take payments, run payroll or file taxes. It shows the figures you already have, clearly, so you can act on them."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
 <!-- page-head: end -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -61,6 +192,7 @@
 
   <main>
     <section class="hero">
+      <p class="eyebrow">Free profit and loss dashboard for small businesses</p>
       <h1>
         Everyone can manage finances
         <span class="line-2">Built for <span class="rotator-wrap"><em class="rotator" id="rotator">non&#8209;tech</em></span></span>
@@ -181,6 +313,63 @@
         <h3>Small teams</h3>
         <p>No account needed, no onboarding call. Your figures stay in your browser, or log in to have them on any computer.</p>
       </div>
+    </section>
+
+    <section class="about" id="what-is-findash" aria-labelledby="about-title">
+      <span class="tag">About</span>
+      <h2 id="about-title">What is FinDash?</h2>
+      <p class="about-lede">FinDash (findash.tech) is a free web app that turns a small business's monthly figures, from an Excel or CSV spreadsheet or a photo of a supplier invoice, into a dashboard of revenue, costs, profit and budget vs actual, with plain-language AI advice. It is not accounting software.</p>
+      <ul class="about-list">
+        <li><b>Profit and loss, month by month:</b> revenue, 14 cost lines in four groups, gross profit, net
+          profit and net margin.</li>
+        <li><b>Budget vs actual:</b> how much of each month's spending budget you used, and where you went
+          over.</li>
+        <li><b>What needs attention:</b> losses, budget overruns and unusual costs, read straight off your
+          figures.</li>
+        <li><b>Where it's heading:</b> a trend through your net profit, and advice written by Claude when you
+          ask for it.</li>
+      </ul>
+    </section>
+
+    <section class="faq" id="questions" aria-labelledby="faq-title">
+      <span class="tag">Questions</span>
+      <h2 id="faq-title">Questions people ask</h2>
+      <details class="faq-item">
+        <summary>Is there a free profit and loss dashboard for small businesses?</summary>
+        <p>Yes. FinDash is free, and the dashboard works without an account. Add a spreadsheet of your monthly totals to see each month's revenue, costs, gross and net profit, and how much of your budget you used.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Do I need QuickBooks or Xero to use FinDash?</summary>
+        <p>No. Fill in FinDash's Excel or CSV template, or use your own layout: columns are matched by name, and a sheet with the months across the top is turned the right way round. If you use QuickBooks or Xero, copy each month's totals from your Profit and Loss report.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Is my spreadsheet uploaded anywhere?</summary>
+        <p>No. Your spreadsheet is read and added up in your own browser. Only the things you ask for that need a server leave your computer: reading an invoice photo, writing advice, or saving your figures to a free account. The privacy policy lists exactly what is sent.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Can FinDash read a photo of a supplier invoice or receipt?</summary>
+        <p>Yes, with a free account. Claude, an AI model, reads every line; FinDash checks the arithmetic against the printed total; and you confirm the lines before anything is added to your month.</p>
+      </details>
+      <details class="faq-item">
+        <summary>What does budget used mean?</summary>
+        <p>Your total costs as a share of the spending budget you set for the month. Over 100% means you spent more than you planned, and the month shows up under What needs attention.</p>
+      </details>
+      <details class="faq-item">
+        <summary>What is the difference between gross profit and net profit?</summary>
+        <p>Gross profit is revenue minus direct costs: cost of goods sold, labor, employee meals and payroll tax. Net profit is what is left after every cost, and net margin is net profit as a share of revenue.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Does FinDash show cash flow?</summary>
+        <p>No. It shows profit: each month's revenue minus its costs. Cash can differ, for example when customers pay late or you buy stock ahead, so a profitable month can still leave you short of cash.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Does it work for restaurants, shops and trades?</summary>
+        <p>Yes. FinDash was built for a restaurant, and its four cost groups work just as well for shops, trades, service businesses and freelancers. Figures can be in dollars, euros, pounds and other currencies.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Is FinDash accounting software?</summary>
+        <p>No. It doesn't connect to your bank, keep your books, send invoices, take payments, run payroll or file taxes. It shows the figures you already have, clearly, so you can act on them.</p>
+      </details>
     </section>
   </main>
 

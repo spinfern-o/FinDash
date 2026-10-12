@@ -6,9 +6,15 @@ Run it after changing a page's title or description below, or after adding
 a page:   python3 tools/page-head.py
 
 Everything between the two marker comments in each page's <head> is
-rewritten; the rest of the page is left alone."""
+rewritten; the rest of the page is left alone.
+
+The home page also gets structured data (schema.org JSON-LD): what FinDash
+is, and its questions and answers, read from the page's own "What is
+FinDash?" and "Questions people ask" sections. So after changing those,
+run this again and the two always say the same thing."""
 
 import html
+import json
 import pathlib
 import re
 
@@ -17,15 +23,15 @@ DOCS = pathlib.Path(__file__).resolve().parent.parent / "docs"
 
 # file: (address, title, description, listed by search engines?)
 PAGES = {
-    "index.html": ("/", "FinDash · Everyone can manage finances",
-                   "One clear monthly dashboard for small business owners: revenue, costs and budget from "
-                   "the figures you already have. No signup needed.", True),
-    "dashboard.html": ("/dashboard", "FinDash · Dashboard",
-                       "Your month at a glance: revenue, costs in four groups, profit and budget, with charts, "
-                       "a forecast and a full report. Works without an account.", True),
-    "help.html": ("/help", "FinDash · Help",
-                  "How to get your numbers into FinDash, what each figure means, and how your data is handled.",
-                  True),
+    "index.html": ("/", "FinDash: Free Small Business Profit & Loss Dashboard",
+                   "Turn an Excel or CSV spreadsheet into a monthly dashboard of revenue, costs, profit and "
+                   "budget vs actual. Free, no signup needed.", True),
+    "dashboard.html": ("/dashboard", "FinDash · Profit, Costs and Budget vs Actual Dashboard",
+                       "See any month, quarter or year to date: revenue, costs in four groups, gross and net "
+                       "profit, budget used and the profit trend. No account needed.", True),
+    "help.html": ("/help", "FinDash · Help: Spreadsheets, Invoice Photos, Glossary",
+                  "How to copy totals from QuickBooks, Xero or your own spreadsheet, add an invoice photo, and "
+                  "what gross profit, net margin and budget used mean.", True),
     "login.html": ("/login", "FinDash · Log in",
                    "Log in to FinDash, or create an account. Accounts are optional: the dashboard works "
                    "without one.", False),
@@ -46,7 +52,54 @@ END = "<!-- page-head: end -->"
 IMAGE_ALT = "FinDash: revenue, costs and budget on one monthly dashboard"
 
 
-def head_block(address, title, description, listed):
+FEATURES = [
+    "Reads Excel and CSV spreadsheets in any layout",
+    "Reads photos of supplier invoices and receipts (with a free account)",
+    "Monthly revenue, costs in four groups, gross profit, net profit and net margin",
+    "Budget vs actual",
+    "Month, quarter and year-to-date views",
+    "Net profit trend and a budget estimator",
+    "Advice written by AI (with a free account)",
+    "Export to Excel, print or save as PDF",
+    "Works in many currencies",
+]
+
+
+def plain_text(fragment):
+    """HTML as one line of plain text."""
+    without_tags = re.sub(r"<[^>]+>", "", fragment)
+    return html.unescape(re.sub(r"\s+", " ", without_tags)).strip()
+
+
+def structured_data(page_text):
+    """The home page's JSON-LD, or None for a page without the sections."""
+    definition = re.search(r'<p class="about-lede">(.*?)</p>', page_text, re.S)
+    questions = re.findall(r'<details class="faq-item">\s*<summary>(.*?)</summary>\s*<p>(.*?)</p>',
+                           page_text, re.S)
+    if not definition or not questions:
+        return None
+    graph = [
+        {"@type": "WebSite", "@id": SITE + "/#website", "name": "FinDash", "alternateName": "findash.tech",
+         "url": SITE + "/"},
+        {"@type": "Organization", "@id": SITE + "/#organization", "name": "FinDash", "url": SITE + "/",
+         "logo": SITE + "/icon-512.png", "email": "support.findash@findash.tech"},
+        {"@type": "WebApplication", "@id": SITE + "/#app", "name": "FinDash", "url": SITE + "/dashboard",
+         "description": plain_text(definition.group(1)), "applicationCategory": "BusinessApplication",
+         "operatingSystem": "Any", "browserRequirements": "A modern web browser",
+         "isAccessibleForFree": True, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+         "featureList": FEATURES, "screenshot": SITE + "/og-image.png",
+         "publisher": {"@id": SITE + "/#organization"}},
+        {"@type": "FAQPage", "@id": SITE + "/#questions", "mainEntity": [
+            {"@type": "Question", "name": plain_text(question),
+             "acceptedAnswer": {"@type": "Answer", "text": plain_text(answer)}}
+            for question, answer in questions]},
+    ]
+    data = json.dumps({"@context": "https://schema.org", "@graph": graph}, indent=2, ensure_ascii=False)
+    # "</" inside a script element would end it early.
+    return '<script type="application/ld+json">\n' + data.replace("</", "<\\/") + "\n</script>"
+
+
+def head_block(address, title, description, listed, extra=None):
     title = html.escape(title)
     description = html.escape(description)
     url = SITE + address
@@ -79,8 +132,10 @@ def head_block(address, title, description, listed):
         '<script defer src="/_vercel/insights/script.js"></script>',
         '<link rel="stylesheet" href="/css/site.css">',
         '<script type="module" src="/js/cookie-notice.js"></script>',
-        END,
     ]
+    if extra:
+        lines.append(extra)
+    lines.append(END)
     return "\n".join(lines)
 
 
@@ -99,7 +154,7 @@ def update(name, page):
     if not path.exists():
         return
     text = path.read_text()
-    block = head_block(*page)
+    block = head_block(*page, extra=structured_data(text))
     if START in text:
         text = re.sub(re.escape(START) + ".*?" + re.escape(END), lambda match: block, text, flags=re.S)
     else:

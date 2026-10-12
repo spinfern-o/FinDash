@@ -1,0 +1,31 @@
+# FinDash
+
+> FinDash (findash.tech) is a free web app that turns a small business's monthly figures, from an Excel or CSV spreadsheet or a photo of a supplier invoice, into a dashboard of revenue, costs, profit and budget vs actual, with plain-language AI advice. It is not accounting software.
+
+FinDash at findash.tech is not the household finance platform or the open-source projects that share the name.
+
+## What it does
+
+- Reads an Excel or CSV spreadsheet of monthly totals: FinDash's template, or the owner's own layout (columns are matched by name; sideways sheets are turned round). Spreadsheets are read in the browser, not uploaded.
+- With a free account, reads photos of supplier invoices and receipts: an AI model reads the lines, FinDash checks the arithmetic, and the owner confirms them.
+- Shows each month, quarter or year to date: revenue, 14 cost lines in four groups (direct costs, operating costs, variable overhead, fixed overhead), gross profit, net profit, net margin, and budget vs actual.
+- Flags losses, budget overruns and unusual costs; suggests next month's budget; draws a trend through net profit.
+- With a free account, writes advice (opportunities, risks, next steps) from the monthly totals.
+- Exports to Excel; prints or saves as PDF; works in many currencies.
+- Free. The dashboard works without an account; an optional free account saves the figures for use on any computer.
+
+## What it doesn't do
+
+FinDash does not connect to bank accounts, keep books, send invoices, take payments, run payroll, file taxes, or show cash flow. It shows profit from the figures the owner already has.
+
+## Pages
+
+- [Home](https://findash.tech/): what FinDash is, and answers to common questions
+- [Dashboard](https://findash.tech/dashboard): the dashboard, with demo figures until you add your own
+- [Help](https://findash.tech/help): getting figures in, what each number means, how data is handled
+- [Privacy policy](https://findash.tech/privacy)
+- [Terms of service](https://findash.tech/terms)
+
+## Contact
+
+support.findash@findash.tech

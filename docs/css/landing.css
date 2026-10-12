@@ -682,6 +682,95 @@ button:focus-visible {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+/* ---- what FinDash is, and the questions people ask ---- */
+.eyebrow {
+  margin: 0 0 18px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.about,
+.faq {
+  margin: 40px 5% 0;
+  padding: 30px 28px 26px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+}
+.about .tag,
+.faq .tag {
+  display: block;
+  margin-bottom: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.about h2,
+.faq h2 {
+  margin: 0 0 14px;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.about-lede {
+  margin: 0;
+  max-width: 70ch;
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--ink-2);
+}
+.about-list {
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px 28px;
+}
+.about-list li {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-3);
+}
+.about-list b {
+  color: var(--ink);
+}
+.faq-item {
+  border-top: 1px solid var(--line);
+}
+.faq-item summary {
+  cursor: pointer;
+  padding: 14px 0;
+  font-size: 15px;
+  font-weight: 600;
+  list-style-position: inside;
+}
+.faq-item summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.faq-item p {
+  margin: 0 0 16px;
+  max-width: 75ch;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--ink-3);
+}
+@media (max-width: 640px) {
+  .about,
+  .faq {
+    margin-inline: 20px;
+    padding: 24px 20px 20px;
+  }
+  .about-list {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* The phone-only "Open dashboard" bar (sticky-cta.js shows it once the
    page's own buttons have scrolled away). */
 .sticky-cta {

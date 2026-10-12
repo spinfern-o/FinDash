@@ -26,7 +26,7 @@ html[data-theme="light"] {
   --line-soft: rgba(10, 10, 10, 0.06);
   --ink: #0a0a0a;
   --ink-2: #4b4b50;
-  --ink-3: #86868c;
+  --ink-3: #68686e;
   --accent: #4f46e5;
   --accent-2: #6366f1;
   --accent-ink: #ffffff;
@@ -240,7 +240,8 @@ html:not([data-theme="light"]) .theme-toggle svg.icon-sun {
 html[data-theme="light"] .theme-toggle svg.icon-moon {
   display: block;
 }
-h1 {
+/* The slogan under the page's heading, at headline size. */
+.slogan {
   margin: 0;
   max-width: 22ch;
   font-size: clamp(36px, 6.4vw, 72px);
@@ -248,7 +249,7 @@ h1 {
   letter-spacing: -0.045em;
   line-height: 1.08;
 }
-h1 .line-2 {
+.slogan .line-2 {
   display: block;
   margin-top: 2px;
 }
@@ -256,6 +257,14 @@ h1 .line-2 {
   position: relative;
   display: inline-block;
   vertical-align: bottom;
+}
+/* On the narrowest phones the longer words don't fit beside "Built for",
+   so the line would wrap for some words and not others and the page below
+   would jump each time. There, the word always has its own line. */
+@media (max-width: 380px) {
+  .rotator-wrap {
+    display: block;
+  }
 }
 .rotator {
   display: inline-block;
@@ -485,7 +494,7 @@ h1 .line-2 {
   text-transform: uppercase;
   color: var(--accent);
 }
-.forecast-head h3 {
+.forecast-head h2 {
   margin: 0;
   font-size: 19px;
   font-weight: 700;
@@ -602,8 +611,35 @@ a.nav-tag:hover {
 }
 
 /* ---- for-everyone band ---- */
-.band {
+.audience {
   margin: 72px 5% 0;
+}
+.section-title {
+  margin: 0 0 14px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.preview-title {
+  grid-column: 1/-1;
+  margin: -6px 0 4px;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.about-more {
+  margin: 18px 0 0;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.about-more a {
+  color: var(--accent);
+}
+.band {
+  margin: 0;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 1px;
@@ -685,6 +721,8 @@ button:focus-visible {
 /* ---- what FinDash is, and the questions people ask ---- */
 .eyebrow {
   margin: 0 0 18px;
+  font-weight: 600;
+  line-height: 1.5;
   font-family: var(--mono);
   font-size: 12px;
   letter-spacing: 0.1em;
@@ -738,27 +776,6 @@ button:focus-visible {
 }
 .about-list b {
   color: var(--ink);
-}
-.faq-item {
-  border-top: 1px solid var(--line);
-}
-.faq-item summary {
-  cursor: pointer;
-  padding: 14px 0;
-  font-size: 15px;
-  font-weight: 600;
-  list-style-position: inside;
-}
-.faq-item summary:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-.faq-item p {
-  margin: 0 0 16px;
-  max-width: 75ch;
-  font-size: 14px;
-  line-height: 1.65;
-  color: var(--ink-3);
 }
 @media (max-width: 640px) {
   .about,
@@ -817,6 +834,8 @@ button:focus-visible {
   }
   .band {
     grid-template-columns: 1fr;
+  }
+  .audience {
     margin-inline: 20px;
   }
 }

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- page-head: start (tools/build-pages.py writes this) -->
+<title>Free Restaurant P&amp;L Dashboard: Prime Cost, Food &amp; Labor · FinDash</title>
+<meta name="description" content="A free restaurant profit and loss dashboard: food cost, labor and prime cost as a share of sales, occupancy and net margin, month by month.">
+<link rel="canonical" href="https://findash.tech/restaurant-profit-and-loss">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="FinDash">
+<meta property="og:title" content="Free Restaurant P&amp;L Dashboard: Prime Cost, Food &amp; Labor · FinDash">
+<meta property="og:description" content="A free restaurant profit and loss dashboard: food cost, labor and prime cost as a share of sales, occupancy and net margin, month by month.">
+<meta property="og:url" content="https://findash.tech/restaurant-profit-and-loss">
+<meta property="og:image" content="https://findash.tech/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="FinDash: revenue, costs and budget on one monthly dashboard">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#050505">
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+<link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/css/site.css">
+<script type="module" src="/js/cookie-notice.js"></script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "FAQPage",
+      "@id": "https://findash.tech/restaurant-profit-and-loss/#questions",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is prime cost?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Prime cost is your cost of goods sold (food and drink) plus your total labor: wages, payroll tax and staff meals. It is usually the largest part of a restaurant's spending. FinDash shows it each month as the direct costs group, as a share of sales."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is a good prime cost for a restaurant?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Full-service restaurants often aim for about 60 to 65% of sales, and quick-service a little lower. Much above that leaves little room for rent and everything else. How your own prime cost moves from month to month matters more than any one target."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is a good food cost percentage?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Food cost is commonly quoted at about 25 to 35% of sales, depending on the menu and the concept. FinDash shows it each month as cost of goods sold divided by sales."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is a good net profit margin for a restaurant?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Restaurant margins are thin: full-service restaurants often keep around 3 to 5% of sales as net profit, and a slow month can easily turn into a loss when rent and other fixed costs stay the same."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I use the numbers from my POS or accounting software?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Copy each month's totals from your Profit and Loss report in QuickBooks or Xero, or from your POS sales reports, into FinDash's template. FinDash doesn't connect to your POS or accounting software; it reads the spreadsheet you give it."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Does FinDash replace my bookkeeper or accountant?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. FinDash doesn't keep your books, run payroll or file taxes. It turns the monthly totals you already have into a clear picture of food cost, labor, prime cost and profit, so you can see where the month went."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+<!-- page-head: end -->
+<script src="/js/theme-init.js"></script>
+<link rel="stylesheet" href="/css/help.css">
+</head>
+<body>
+<main>
+  <div class="masthead">
+    <div class="masthead-left">
+      <a class="wordmark" href="/">FinDash</a>
+      <nav>
+        <a class="nav-link" href="/">Home</a>
+        <a class="nav-link" href="/dashboard">Dashboard</a>
+        <a class="nav-link" href="/help">Help</a>
+      </nav>
+    </div>
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle light and dark mode">
+      <svg class="icon-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+      <svg class="icon-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+    </button>
+  </div>
+
+  <h1>Free restaurant profit and loss (P&amp;L) dashboard</h1>
+  <p class="lede">See your restaurant's food cost, labor and prime cost as a share of sales, with rent, net
+     margin and budget vs actual, month by month. Free, it reads your spreadsheet in your own browser, and no
+     signup is needed.</p>
+  <p><a class="btn" href="/dashboard">Open the dashboard</a></p>
+
+  <section id="what-it-shows">
+    <h2>What it shows for a restaurant</h2>
+    <p>FinDash was first built for a restaurant, so its cost lines are a restaurant's: food and drink, labor,
+       payroll tax, staff meals, packaging, card fees, rent and the rest. Each month you see:</p>
+    <ul>
+      <li><b>Food cost:</b> cost of goods sold (food and drink) as a share of sales.</li>
+      <li><b>Labor:</b> wages, payroll tax and staff meals as a share of sales.</li>
+      <li><b>Prime cost:</b> food cost plus labor, the biggest share of most restaurants' spending and the
+          part you can change week to week. In FinDash it is the <b>direct costs</b> group.</li>
+      <li><b>Rent and other fixed costs:</b> what doesn't shrink when sales do.</li>
+      <li><b>Net profit and net margin:</b> what is left after every cost.</li>
+      <li><b>Budget vs actual:</b> how much of the month's spending budget you used, and where you went
+          over.</li>
+      <li><b>What needs attention:</b> loss-making months, budget overruns and unusual costs.</li>
+    </ul>
+  </section>
+
+  <section id="example">
+    <h2>An example: three months at the demo restaurant</h2>
+    <p>These are the demo figures the <a href="/dashboard">dashboard</a> opens on.</p>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr><th scope="col">Month</th><th scope="col">Sales</th><th scope="col">Food cost</th>
+              <th scope="col">Labor</th><th scope="col">Prime cost</th><th scope="col">Rent</th>
+              <th scope="col">Net margin</th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">July 2026</th><td>$72,000</td><td>36.1%</td><td>27.1%</td><td>63.2%</td>
+              <td>8.3%</td><td>10.5%</td></tr>
+          <tr><th scope="row">August 2026</th><td>$64,000</td><td>32.8%</td><td>25.8%</td><td>58.6%</td>
+              <td>9.7%</td><td>8.5%</td></tr>
+          <tr><th scope="row">September 2026</th><td>$33,000</td><td>33.3%</td><td>27.9%</td><td>61.2%</td>
+              <td>18.2%</td><td>&minus;11.0%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>In September sales roughly halved. Prime cost stayed near 61% of sales, because food and staff costs
+       came down with them. Rent didn't: the same $6,000 went from 8.3% of sales to 18.2%, and the month
+       ended $3,640 down. Fixed costs are what turn a slow month into a loss, and that is the first thing the
+       dashboard flags.</p>
+  </section>
+
+  <section id="lines">
+    <h2>How your restaurant P&amp;L lines map to FinDash</h2>
+    <p>Copy each month's totals into the template's matching column. A cost without its own line goes in the
+       one that behaves most like it.</p>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr><th scope="col">On your P&amp;L</th><th scope="col">FinDash line</th><th scope="col">Group</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Food and beverage purchases</td><td>Cost of goods sold</td><td>Direct costs (prime cost)</td></tr>
+          <tr><td>Wages and salaries</td><td>Labor</td><td>Direct costs (prime cost)</td></tr>
+          <tr><td>Payroll taxes</td><td>Payroll tax</td><td>Direct costs (prime cost)</td></tr>
+          <tr><td>Staff meals</td><td>Employee meals</td><td>Direct costs (prime cost)</td></tr>
+          <tr><td>Takeout containers, bags</td><td>Packaging</td><td>Operating costs</td></tr>
+          <tr><td>Card processing, delivery-app commissions</td><td>Credit card fees</td><td>Operating costs</td></tr>
+          <tr><td>Advertising, promotions</td><td>Marketing</td><td>Operating costs</td></tr>
+          <tr><td>POS terminals, small equipment</td><td>Hardware</td><td>Operating costs</td></tr>
+          <tr><td>Gas, electricity, water</td><td>Utilities</td><td>Variable overhead</td></tr>
+          <tr><td>Repairs, cleaning, pest control</td><td>Maintenance</td><td>Variable overhead</td></tr>
+          <tr><td>Rent</td><td>Rent</td><td>Fixed overhead</td></tr>
+          <tr><td>Insurance</td><td>Insurance</td><td>Fixed overhead</td></tr>
+          <tr><td>Licenses and permits</td><td>Business license</td><td>Fixed overhead</td></tr>
+          <tr><td>Phone and internet</td><td>Telephone</td><td>Fixed overhead</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="benchmarks">
+    <h2>Restaurant benchmarks, as a rough guide</h2>
+    <p>Figures quoted across the industry, which vary a lot by concept and location. Your own trend, month by
+       month, tells you more than any single target.</p>
+    <ul>
+      <li><b>Prime cost:</b> often targeted at about 60&ndash;65% of sales for full-service restaurants, and a
+          little lower for quick-service (<a href="https://7shifts.com/blog/restaurant-prime-cost-guide/">7shifts</a>;
+          <a href="https://smallbusiness.chron.com/common-food-labor-cost-percentages-14700.html">Chron</a>).</li>
+      <li><b>Food cost:</b> commonly quoted at about 25&ndash;35% of sales, and <b>labor</b> at about
+          25&ndash;35%, higher for table service (<a href="https://smallbusiness.chron.com/common-food-labor-cost-percentages-14700.html">Chron</a>).</li>
+      <li><b>Rent and occupancy:</b> a common rule of thumb keeps it under about 8&ndash;10% of sales
+          (<a href="https://restaurantbusinessonline.com/advice-guy/how-figure-out-prime-cost-occupancy-percentages">Restaurant
+          Business</a>). Because rent is a fixed amount, the share swings with sales, as September shows.</li>
+      <li><b>Net margin:</b> thin. Full-service restaurants often keep only a few percent of sales as profit,
+          around 3&ndash;5% by many estimates (<a href="https://bloomintelligence.com/blog/restaurant-profit-margins/">Bloom
+          Intelligence</a>).</li>
+    </ul>
+  </section>
+
+  <section id="get-started">
+    <h2>Get your restaurant's numbers in</h2>
+    <ol>
+      <li>On the <a href="/dashboard">dashboard</a>, press <b>Download Excel template</b> (or CSV).</li>
+      <li>Fill in one row per month: sales, your budget, and the cost lines above. Copy the totals from your
+          Profit and Loss report in QuickBooks or Xero, or from your own spreadsheet.</li>
+      <li>Drop the file on the dashboard. It is read in your browser; nothing is uploaded.</li>
+      <li>With a free account, add photos of supplier invoices too: each line is read, checked against the
+          total, and added to its month once you confirm it.</li>
+    </ol>
+    <p><a class="btn" href="/dashboard">Open the dashboard</a></p>
+  </section>
+
+  <section id="questions">
+    <h2>Questions restaurant owners ask</h2>
+    <details class="faq-item">
+      <summary>What is prime cost?</summary>
+      <p>Prime cost is your cost of goods sold (food and drink) plus your total labor: wages, payroll tax and staff meals. It is usually the largest part of a restaurant's spending. FinDash shows it each month as the direct costs group, as a share of sales.</p>
+    </details>
+    <details class="faq-item">
+      <summary>What is a good prime cost for a restaurant?</summary>
+      <p>Full-service restaurants often aim for about 60 to 65% of sales, and quick-service a little lower. Much above that leaves little room for rent and everything else. How your own prime cost moves from month to month matters more than any one target.</p>
+    </details>
+    <details class="faq-item">
+      <summary>What is a good food cost percentage?</summary>
+      <p>Food cost is commonly quoted at about 25 to 35% of sales, depending on the menu and the concept. FinDash shows it each month as cost of goods sold divided by sales.</p>
+    </details>
+    <details class="faq-item">
+      <summary>What is a good net profit margin for a restaurant?</summary>
+      <p>Restaurant margins are thin: full-service restaurants often keep around 3 to 5% of sales as net profit, and a slow month can easily turn into a loss when rent and other fixed costs stay the same.</p>
+    </details>
+    <details class="faq-item">
+      <summary>Can I use the numbers from my POS or accounting software?</summary>
+      <p>Yes. Copy each month's totals from your Profit and Loss report in QuickBooks or Xero, or from your POS sales reports, into FinDash's template. FinDash doesn't connect to your POS or accounting software; it reads the spreadsheet you give it.</p>
+    </details>
+    <details class="faq-item">
+      <summary>Does FinDash replace my bookkeeper or accountant?</summary>
+      <p>No. FinDash doesn't keep your books, run payroll or file taxes. It turns the monthly totals you already have into a clear picture of food cost, labor, prime cost and profit, so you can see where the month went.</p>
+    </details>
+  </section>
+
+  <footer>FinDash &middot; <a href="/dashboard">Dashboard</a> &middot; <a href="/help">Help</a> &middot;
+    <a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot;
+    <a href="mailto:support.findash@findash.tech?subject=FinDash">Contact</a></footer>
+</main>
+
+<script type="module" src="/js/error-reporter.js"></script>
+<script type="module" src="/js/theme-toggle.js"></script>
+</body>
+</html>

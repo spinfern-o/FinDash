@@ -22,7 +22,7 @@ html[data-theme="light"] {
   --line-soft: rgba(10, 10, 10, 0.06);
   --ink: #0a0a0a;
   --ink-2: #4b4b50;
-  --ink-3: #6e6e74;
+  --ink-3: #68686e;
   --accent: #4f46e5;
   --accent-ink: #ffffff;
 }
@@ -70,6 +70,8 @@ a {
   text-decoration: none;
 }
 .nav-link {
+  display: inline-block;
+  padding: 6px 2px;   /* a tap target at least 24px tall */
   font-family: var(--mono);
   font-size: 11px;
   font-weight: 600;
@@ -215,6 +217,7 @@ dl > :nth-last-child(-n + 2) {
   border-bottom: 0;
 }
 .group-label {
+  margin: 0;
   grid-column: 1/-1;
   font-family: var(--mono);
   font-size: 11px;
@@ -255,6 +258,31 @@ dl > :nth-last-child(-n + 2) {
   dd {
     padding-top: 2px;
   }
+}
+/* Tables of figures (the restaurant page): scroll sideways on a narrow
+   screen rather than squeezing the columns. */
+.table-wrap {
+  overflow-x: auto;
+  margin: 12px 0;
+}
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.data-table th,
+.data-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.data-table thead th {
+  color: var(--ink-3);
+  font-weight: 600;
+}
+.data-table td {
+  font-variant-numeric: tabular-nums;
 }
 footer {
   margin-top: 24px;

@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- page-head: start (tools/page-head.py writes this) -->
+<!-- page-head: start (tools/build-pages.py writes this) -->
 <title>FinDash: Free Small Business Profit &amp; Loss Dashboard</title>
-<meta name="description" content="Turn an Excel or CSV spreadsheet into a monthly dashboard of revenue, costs, profit and budget vs actual. Free, no signup needed.">
+<meta name="description" content="Turn an Excel or CSV spreadsheet into a monthly profit and loss (P&amp;L) dashboard: revenue, costs, profit and budget vs actual. Free, no signup.">
 <link rel="canonical" href="https://findash.tech/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="FinDash">
 <meta property="og:title" content="FinDash: Free Small Business Profit &amp; Loss Dashboard">
-<meta property="og:description" content="Turn an Excel or CSV spreadsheet into a monthly dashboard of revenue, costs, profit and budget vs actual. Free, no signup needed.">
+<meta property="og:description" content="Turn an Excel or CSV spreadsheet into a monthly profit and loss (P&amp;L) dashboard: revenue, costs, profit and budget vs actual. Free, no signup.">
 <meta property="og:url" content="https://findash.tech/">
 <meta property="og:image" content="https://findash.tech/og-image.png">
 <meta property="og:image:width" content="1200">
@@ -26,6 +26,7 @@
   window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
 </script>
 <script defer src="/_vercel/insights/script.js"></script>
+<link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/css/site.css">
 <script type="module" src="/js/cookie-notice.js"></script>
 <script type="application/ld+json">
@@ -45,14 +46,17 @@
       "name": "FinDash",
       "url": "https://findash.tech/",
       "logo": "https://findash.tech/icon-512.png",
-      "email": "support.findash@findash.tech"
+      "email": "support.findash@findash.tech",
+      "sameAs": [
+        "https://github.com/spinfern-o/FinDash"
+      ]
     },
     {
       "@type": "WebApplication",
       "@id": "https://findash.tech/#app",
       "name": "FinDash",
       "url": "https://findash.tech/dashboard",
-      "description": "FinDash (findash.tech) is a free web app that turns a small business's monthly figures, from an Excel or CSV spreadsheet or a photo of a supplier invoice, into a dashboard of revenue, costs, profit and budget vs actual, with plain-language AI advice. It is not accounting software.",
+      "description": "FinDash (findash.tech) is a free web app that turns a small business's monthly figures, from an Excel or CSV spreadsheet or a photo of a supplier invoice, into a profit and loss (P&L) dashboard of revenue, costs, profit and budget vs actual, with plain-language AI advice. It is not accounting software.",
       "applicationCategory": "BusinessApplication",
       "operatingSystem": "Any",
       "browserRequirements": "A modern web browser",
@@ -73,7 +77,7 @@
         "Export to Excel, print or save as PDF",
         "Works in many currencies"
       ],
-      "screenshot": "https://findash.tech/og-image.png",
+      "screenshot": "https://findash.tech/screenshot-dashboard.jpg",
       "publisher": {
         "@id": "https://findash.tech/#organization"
       }
@@ -160,9 +164,6 @@
 }
 </script>
 <!-- page-head: end -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="js/theme-init.js"></script>
 <link rel="stylesheet" href="css/landing.css">
 </head>
@@ -192,11 +193,11 @@
 
   <main>
     <section class="hero">
-      <p class="eyebrow">Free profit and loss dashboard for small businesses</p>
-      <h1>
+      <h1 class="eyebrow">Free profit and loss (P&amp;L) dashboard for small businesses</h1>
+      <p class="slogan">
         Everyone can manage finances
         <span class="line-2">Built for <span class="rotator-wrap"><em class="rotator" id="rotator">non&#8209;tech</em></span></span>
-      </h1>
+      </p>
       <p class="lede">
         Revenue, costs and budget from the figures you already have. Copy your monthly totals from
         QuickBooks, Xero or your own spreadsheet into our template, or snap a photo of a supplier invoice,
@@ -241,6 +242,7 @@
          the first thing a visitor would catch. -->
     <section class="preview" id="preview" aria-label="Sample figures">
       <p class="preview-cap">From the <a href="/dashboard">demo dashboard</a> &middot; September 2026</p>
+      <h2 class="preview-title">Profit, costs and budget vs actual, month by month</h2>
       <div class="cell"><p>Revenue</p><strong>$33,000</strong><small class="bad">Down 48.4% on August</small></div>
       <div class="cell"><p>Net margin</p><strong class="bad">&minus;11.0%</strong><small class="bad">A loss: costs ran past revenue</small></div>
       <div class="cell"><p>Total costs</p><strong>$36,640</strong><small>Across 4 cost groups</small></div>
@@ -256,7 +258,7 @@
       <div class="forecast-head">
         <div>
           <span class="tag">Forecast example</span>
-          <h3>See where it's heading, not just where it's been</h3>
+          <h2>See where it's heading, not just where it's been</h2>
           <p>FinDash draws the trend through your monthly profit. In the demo it turned down in August, a month before September's loss.</p>
         </div>
         <div class="forecast-legend">
@@ -292,7 +294,9 @@
       <p class="forecast-note">With fewer than six months on file you see the direction only. From six months, FinDash projects the next three in dollars, with a range.</p>
     </section>
 
-    <section class="band" aria-label="Who it's built for">
+    <section class="audience" aria-labelledby="audience-title">
+      <h2 class="section-title" id="audience-title">Who it's built for</h2>
+      <div class="band">
       <div class="item">
         <span class="tag">No jargon</span>
         <h3>Non-tech owners</h3>
@@ -313,12 +317,13 @@
         <h3>Small teams</h3>
         <p>No account needed, no onboarding call. Your figures stay in your browser, or log in to have them on any computer.</p>
       </div>
+      </div>
     </section>
 
     <section class="about" id="what-is-findash" aria-labelledby="about-title">
       <span class="tag">About</span>
       <h2 id="about-title">What is FinDash?</h2>
-      <p class="about-lede">FinDash (findash.tech) is a free web app that turns a small business's monthly figures, from an Excel or CSV spreadsheet or a photo of a supplier invoice, into a dashboard of revenue, costs, profit and budget vs actual, with plain-language AI advice. It is not accounting software.</p>
+      <p class="about-lede">FinDash (findash.tech) is a free web app that turns a small business's monthly figures, from an Excel or CSV spreadsheet or a photo of a supplier invoice, into a profit and loss (P&amp;L) dashboard of revenue, costs, profit and budget vs actual, with plain-language AI advice. It is not accounting software.</p>
       <ul class="about-list">
         <li><b>Profit and loss, month by month:</b> revenue, 14 cost lines in four groups, gross profit, net
           profit and net margin.</li>
@@ -329,6 +334,8 @@
         <li><b>Where it's heading:</b> a trend through your net profit, and advice written by Claude when you
           ask for it.</li>
       </ul>
+      <p class="about-more">Running a restaurant? The <a href="/restaurant-profit-and-loss">restaurant P&amp;L
+        dashboard</a> page shows food cost, labor and prime cost, month by month.</p>
     </section>
 
     <section class="faq" id="questions" aria-labelledby="faq-title">

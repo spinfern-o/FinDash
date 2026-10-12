@@ -9,8 +9,11 @@ import { COST_GROUP_ROWS } from "../cost-groups.js";
 import { helpButton } from "../help-tips.js";
 
 function segmentHtml(className, width, name, amount, revenue) {
+  const money = formatMoney(amount);
+  const share = formatPercent(percentOf(amount, revenue));
   return `<button type="button" class="seg ${className}" style="flex:0 0 ${width}%"
-         data-name="${name}" data-amt="${formatMoney(amount)}" data-share="${formatPercent(percentOf(amount, revenue))}"></button>`;
+         data-name="${name}" data-amt="${money}" data-share="${share}"
+         aria-label="${name}: ${money}, ${share} of revenue"></button>`;
 }
 
 export function allocationHtml(totals) {

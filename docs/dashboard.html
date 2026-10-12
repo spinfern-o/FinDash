@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- page-head: start (tools/page-head.py writes this) -->
-<title>FinDash · Profit, Costs and Budget vs Actual Dashboard</title>
+<!-- page-head: start (tools/build-pages.py writes this) -->
+<title>Profit, Costs and Budget vs Actual Dashboard · FinDash</title>
 <meta name="description" content="See any month, quarter or year to date: revenue, costs in four groups, gross and net profit, budget used and the profit trend. No account needed.">
 <link rel="canonical" href="https://findash.tech/dashboard">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="FinDash">
-<meta property="og:title" content="FinDash · Profit, Costs and Budget vs Actual Dashboard">
+<meta property="og:title" content="Profit, Costs and Budget vs Actual Dashboard · FinDash">
 <meta property="og:description" content="See any month, quarter or year to date: revenue, costs in four groups, gross and net profit, budget used and the profit trend. No account needed.">
 <meta property="og:url" content="https://findash.tech/dashboard">
 <meta property="og:image" content="https://findash.tech/og-image.png">
@@ -26,13 +26,63 @@
   window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
 </script>
 <script defer src="/_vercel/insights/script.js"></script>
+<link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/css/site.css">
 <script type="module" src="/js/cookie-notice.js"></script>
+<link rel="modulepreload" href="/js/dashboard/main.js">
+<link rel="modulepreload" href="/js/dashboard/state.js">
+<link rel="modulepreload" href="/js/dashboard/preferences.js">
+<link rel="modulepreload" href="/js/dashboard/cards/advice.js">
+<link rel="modulepreload" href="/js/dashboard/saved-figures.js">
+<link rel="modulepreload" href="/js/dashboard/owner-figures.js">
+<link rel="modulepreload" href="/js/dashboard/figures-on-screen.js">
+<link rel="modulepreload" href="/js/dashboard/draw-dashboard.js">
+<link rel="modulepreload" href="/js/dashboard/toolbar.js">
+<link rel="modulepreload" href="/js/dashboard/import-box.js">
+<link rel="modulepreload" href="/js/dashboard/help-tips.js">
+<link rel="modulepreload" href="/js/dashboard/capabilities.js">
+<link rel="modulepreload" href="/js/dashboard/account.js">
+<link rel="modulepreload" href="/js/dashboard/account-figures.js">
+<link rel="modulepreload" href="/js/dashboard/status-line.js">
+<link rel="modulepreload" href="/js/dashboard/format.js">
+<link rel="modulepreload" href="/js/dashboard/months.js">
+<link rel="modulepreload" href="/js/dashboard/cards/card.js">
+<link rel="modulepreload" href="/js/dashboard/cost-groups.js">
+<link rel="modulepreload" href="/js/dashboard/numbers.js">
+<link rel="modulepreload" href="/js/dashboard/sample-data.js">
+<link rel="modulepreload" href="/js/dashboard/invoice-list.js">
+<link rel="modulepreload" href="/js/dashboard/periods.js">
+<link rel="modulepreload" href="/js/dashboard/cards/hero.js">
+<link rel="modulepreload" href="/js/dashboard/cards/headline-numbers.js">
+<link rel="modulepreload" href="/js/dashboard/cards/priorities.js">
+<link rel="modulepreload" href="/js/dashboard/cards/budget.js">
+<link rel="modulepreload" href="/js/dashboard/cards/allocation.js">
+<link rel="modulepreload" href="/js/dashboard/cards/net-profit-chart.js">
+<link rel="modulepreload" href="/js/dashboard/cards/revenue-vs-costs-chart.js">
+<link rel="modulepreload" href="/js/dashboard/cards/report.js">
+<link rel="modulepreload" href="/js/dashboard/cards/estimator.js">
+<link rel="modulepreload" href="/js/dashboard/cards/forecast.js">
+<link rel="modulepreload" href="/js/dashboard/photos/photo-review.js">
+<link rel="modulepreload" href="/js/dashboard/export/excel-export.js">
+<link rel="modulepreload" href="/js/dashboard/export/template.js">
+<link rel="modulepreload" href="/js/dashboard/keep-figures.js">
+<link rel="modulepreload" href="/js/dashboard/import/sheet-import.js">
+<link rel="modulepreload" href="/js/dashboard/photos/photo-import.js">
+<link rel="modulepreload" href="/js/glossary.js">
+<link rel="modulepreload" href="/js/dashboard/import/currency-from-file.js">
+<link rel="modulepreload" href="/js/dashboard/export/xlsx-writer.js">
+<link rel="modulepreload" href="/js/dashboard/export/downloads.js">
+<link rel="modulepreload" href="/js/dashboard/import/csv-reader.js">
+<link rel="modulepreload" href="/js/dashboard/import/xlsx-reader.js">
+<link rel="modulepreload" href="/js/dashboard/import/sheet-orientation.js">
+<link rel="modulepreload" href="/js/dashboard/import/column-names.js">
+<link rel="modulepreload" href="/js/dashboard/import/column-mapping.js">
+<link rel="modulepreload" href="/js/dashboard/import/months-from-sheet.js">
+<link rel="modulepreload" href="/js/dashboard/photos/photo-reader.js">
+<link rel="modulepreload" href="/js/dashboard/export/zip-writer.js">
+<link rel="modulepreload" href="/js/dashboard/import/period-cells.js">
 <!-- page-head: end -->
 <script src="js/theme-init.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/dashboard.css">
 </head>
 <body>
@@ -56,12 +106,13 @@
     </div>
   </div>
 
+  <h1 class="page-title">Profit and loss (P&amp;L) dashboard</h1>
   <section class="loader" id="loader" aria-label="Your data">
     <div class="loader-top">
       <div class="loader-head">
         <strong id="source">Demo data</strong>
         <span id="status">You are looking at sample figures. Add your own to see your business.</span>
-        <p class="privacy-line">Your spreadsheet stays on your computer.<span class="photo-only" hidden> A photo is
+        <p class="privacy-line">Your spreadsheet stays on your computer.<span class="photo-only"> A photo is
           sent to Claude to be read.</span> <span id="privacy-figures">Your figures only leave when you press <b>Get advice</b>.</span>
           <a href="/help#privacy">How we handle your data</a></p>
       </div>
@@ -88,22 +139,22 @@
         <div>
           <b class="step-title">Fill in your numbers</b>
           <p>Replace the sample rows with your own monthly totals from QuickBooks, Xero or your own spreadsheet.<span
-            class="photo-only" hidden> For costs you can also add photos of supplier invoices and receipts, once you're logged in.</span></p>
+            class="photo-only"> For costs you can also add photos of supplier invoices and receipts, once you're logged in.</span></p>
           <details class="howto">
             <summary>How to get your numbers</summary>
-            <h4>QuickBooks Online</h4>
+            <p class="howto-source">QuickBooks Online</p>
             <ol>
               <li>Go to <b>Reports</b> and open <b>Profit and Loss</b>.</li>
               <li>Pick the months you want and set <b>Display columns by</b> to <b>Months</b>.</li>
               <li>Copy each month's income and cost totals into the matching template columns.</li>
             </ol>
-            <h4>Xero</h4>
+            <p class="howto-source">Xero</p>
             <ol>
               <li>Open <b>Reports</b>, then <b>Profit and Loss</b>.</li>
               <li>Choose your date range and compare by month.</li>
               <li>Copy each month's totals into the template.</li>
             </ol>
-            <h4>Your own spreadsheet</h4>
+            <p class="howto-source">Your own spreadsheet</p>
             <ol>
               <li>Put one month per row, using the template's column names.</li>
               <li>Column order doesn't matter, and common names like Wages or Advertising are recognised.</li>
@@ -117,18 +168,18 @@
         <span class="step-n" aria-hidden="true">3</span>
         <div>
           <b class="step-title">Add the file</b>
-          <p>Press <b>Choose file</b> or drag it onto this page. Excel (.xlsx) or CSV<span class="photo-only" hidden>, or a photo of an invoice (with a free account)</span>. Your figures are saved in this browser, so you don't have to add them again.</p>
+          <p>Press <b>Choose file</b> or drag it onto this page. Excel (.xlsx) or CSV<span class="photo-only">, or a photo of an invoice (with a free account)</span>. Your figures are saved in this browser, so you don't have to add them again.</p>
         </div>
       </li>
     </ol>
 
-    <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Choose an Excel or CSV file">
+    <div class="dropzone" id="dropzone" tabindex="0" role="button">
       <input type="file" id="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/*" multiple hidden>
       <span class="dropzone-icon" aria-hidden="true">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 .5 9H6"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>
       </span>
       <p class="dropzone-title">Drag your file here, or click to choose it</p>
-      <p class="dropzone-sub">Excel (.xlsx) or CSV &middot; one file with every month<span class="photo-only" hidden>
+      <p class="dropzone-sub">Excel (.xlsx) or CSV &middot; one file with every month<span class="photo-only">
         &middot; or a photo of an invoice or receipt</span></p>
     </div>
 
@@ -160,7 +211,7 @@
   </div>
 
   <div class="showing">
-    <h1 id="showing">Profit and loss dashboard</h1>
+    <h2 id="showing">Your month at a glance</h2>
     <p id="showing-sub">Revenue, costs, profit and budget vs actual for each month.</p>
     <p class="print-only" id="print-meta"></p>
   </div>

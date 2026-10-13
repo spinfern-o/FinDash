@@ -18,6 +18,7 @@ const PAGES = {
   "/dashboard": "dashboard.html",
   "/restaurant-profit-and-loss": "restaurant-profit-and-loss.html",
   "/help": "help.html",
+  "/developers": "developers.html",
   "/about": "about.html",
   "/contact": "contact.html",
   "/privacy": "privacy.html",
@@ -62,7 +63,7 @@ test("the home page answers Markdown to an agent and HTML to a browser, both mar
   assert.equal(markdown.status, 200);
   assert.equal(markdown.headers.get("content-type"), "text/markdown; charset=utf-8");
   assert.ok(varies(markdown));
-  assert.equal(markdown.headers.get("link"), '<' + SITE + '/>; rel="canonical"; type="text/html"');
+  assert.ok(markdown.headers.get("link").startsWith('<' + SITE + '/>; rel="canonical"; type="text/html", '));
   const text = await markdown.text();
   assert.match(text, /^# Free profit and loss \(P&L\) dashboard for small businesses\n/);
   assert.match(text, /## What is FinDash\?\n\nFinDash \(findash\.tech\) is a free web app/);
@@ -153,4 +154,88 @@ test("files and server functions are served as they are, even to an agent asking
 test("the generated Markdown, page heads and structured data are up to date with the pages", function () {
   const result = spawnSync("python3", ["tools/build-pages.py", "--check"], { cwd: ROOT, encoding: "utf8" });
   assert.equal(result.status, 0, result.stdout + result.stderr);
+});
+
+test("every page has a .md twin, and ?mode=agent answers with the view for agents", async function () {
+  for (const address of Object.keys(PAGES)) {
+    const twin = address === "/" ? "/index.md" : address + ".md";
+    const response = await get(twin, BROWSER);
+    assert.equal(response.status, 200, twin);
+    assert.equal(response.headers.get("content-type"), "text/markdown; charset=utf-8", twin);
+    const text = await response.text();
+    assert.match(text, /^# /, twin + " starts with a heading");
+    assert.equal(text, await (await get(address, "text/markdown")).text(), twin + " is the page's Markdown");
+  }
+  const agent = await get("/?mode=agent", BROWSER);
+  assert.equal(agent.status, 200);
+  assert.equal(agent.headers.get("content-type"), "text/markdown; charset=utf-8");
+  assert.equal(await agent.text(), readFileSync(ROOT + "docs/llms.txt", "utf8"));
+});
+
+test("every page sends Link headers to its Markdown, the sitemap, llms.txt and the API's descriptions", async function () {
+  for (const address of Object.keys(PAGES)) {
+    const response = await get(address, BROWSER);
+    const links = response.headers.get("link");
+    const twin = address === "/" ? "/index.md" : address + ".md";
+    assert.ok(links.includes("<" + SITE + twin + '>; rel="alternate"; type="text/markdown"'), address);
+    for (const [target, relation] of [["/sitemap.xml", "sitemap"], ["/llms.txt", "describedby"],
+      ["/.well-known/api-catalog", "api-catalog"], ["/openapi.json", "service-desc"], ["/developers", "service-doc"],
+      ["/.well-known/ai-catalog.json", "ai-catalog"]]) {
+      assert.ok(links.includes("<" + SITE + target + '>; rel="' + relation + '"'), address + " " + relation);
+      assert.equal((await get(target, BROWSER)).status, 200, target);
+    }
+  }
+});
+
+test("llms.txt links an index for each section, and each one links its parts", async function () {
+  const root = await (await get("/llms.txt")).text();
+  for (const section of ["/help", "/dashboard", "/developers"]) {
+    assert.ok(root.includes("(" + SITE + section + "/llms.txt)"), "llms.txt links " + section + "/llms.txt");
+    const response = await get(section + "/llms.txt");
+    assert.equal(response.status, 200, section);
+    assert.equal(response.headers.get("content-type"), "text/plain; charset=utf-8");
+    const text = await response.text();
+    assert.ok(text.includes(SITE + section + ".md"), section + " links its Markdown");
+    const parts = Array.from(text.matchAll(/\(https:\/\/findash\.tech\/([a-z-]+)#([a-z-]+)\)/g));
+    assert.ok(parts.length >= 1, section + " links its sections");
+    const page = readFileSync(ROOT + "docs/" + section.slice(1) + ".html", "utf8");
+    for (const part of parts) {
+      assert.ok(page.includes('id="' + part[2] + '"'), section + "#" + part[2] + " exists");
+    }
+  }
+});
+
+test("robots.txt names the Schema Map, which lists a feed of every page's structured data", async function () {
+  const robots = await (await get("/robots.txt")).text();
+  assert.match(robots, /^schemamap: https:\/\/findash\.tech\/schemamap\.xml$/m);
+  const map = await (await get("/schemamap.xml")).text();
+  assert.match(map, /<urlset xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9"\s+xmlns:sf="http:\/\/schema\.org\/schemas\/schemafeed\/0\.1">/);
+  assert.match(map, /<loc>https:\/\/findash\.tech\/schema-feed\.jsonl<\/loc>\s*<sf:contentType>structuredData\/schema\.org<\/sf:contentType>/);
+
+  const feed = await get("/schema-feed.jsonl");
+  assert.equal(feed.headers.get("content-type"), "application/x-jsonlines; charset=utf-8");
+  const items = (await feed.text()).trim().split("\n").map(function (line) {
+    return JSON.parse(line);
+  });
+  const types = new Set();
+  for (const item of items) {
+    assert.equal(item["@context"], "https://schema.org");
+    assert.ok(item["@type"] && item["@id"], JSON.stringify(item).slice(0, 80));
+    types.add(item["@type"]);
+  }
+  for (const type of ["WebSite", "Organization", "WebApplication", "FAQPage", "AboutPage", "ContactPage", "WebAPI"]) {
+    assert.ok(types.has(type), "the feed has the " + type);
+  }
+  // The same objects the pages carry, word for word.
+  for (const [address, file] of Object.entries(PAGES)) {
+    const page = readFileSync(ROOT + "docs/" + file, "utf8");
+    for (const block of page.matchAll(/<script type="application\/ld\+json">\n([\s\S]*?)\n<\/script>/g)) {
+      for (const node of JSON.parse(block[1])["@graph"]) {
+        const inFeed = items.find(function (item) {
+          return item["@id"] === node["@id"];
+        });
+        assert.deepEqual(inFeed, Object.assign({ "@context": "https://schema.org" }, node), address + " " + node["@id"]);
+      }
+    }
+  }
 });

@@ -284,6 +284,19 @@ dl > :nth-last-child(-n + 2) {
 .data-table td {
   font-variant-numeric: tabular-nums;
 }
+/* Example requests (the developers page): scroll sideways on a narrow screen
+   rather than wrapping a command. */
+.code-block {
+  overflow-x: auto;
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre;
+}
 footer {
   margin-top: 24px;
   font-size: 12px;

@@ -1,0 +1,27 @@
+{
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "FinDash",
+    "identifier": "findash.tech",
+    "documentationUrl": "https://findash.tech/developers",
+    "logoUrl": "https://findash.tech/icon-512.png"
+  },
+  "entries": [
+    {
+      "identifier": "urn:air:findash.tech:mcp:findash",
+      "displayName": "FinDash",
+      "type": "application/mcp-server-card+json",
+      "url": "https://findash.tech/api/mcp/server-card",
+      "description": "Turn a small business's monthly figures into a profit and loss summary.",
+      "tags": ["finance", "small-business", "profit-and-loss"]
+    },
+    {
+      "identifier": "urn:air:findash.tech:mcp:docs",
+      "displayName": "FinDash docs",
+      "type": "application/mcp-server-card+json",
+      "url": "https://findash.tech/api/mcp/docs/server-card",
+      "description": "Read and search FinDash's pages, help and glossary.",
+      "tags": ["documentation"]
+    }
+  ]
+}

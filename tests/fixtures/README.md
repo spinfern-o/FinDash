@@ -7,3 +7,6 @@ is kept in this repository.
                          dashboard asks for a second look
 - fourteen-months.csv    fourteen made-up months (Sep 2025 to Oct 2026) with Total costs and
                          Net profit columns, which must be set aside rather than counted twice
+- mcp-server-card.schema.json   the JSON Schema for MCP Server Cards, copied unchanged from
+                         github.com/modelcontextprotocol/experimental-ext-server-card (schema.json at
+                         526201b, Apache License 2.0), so the tests check FinDash's cards against it

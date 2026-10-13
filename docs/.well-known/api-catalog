@@ -1,0 +1,28 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://findash.tech/.well-known/api-catalog",
+      "item": [
+        {
+          "href": "https://findash.tech/api/v1",
+          "title": "FinDash API"
+        }
+      ]
+    },
+    {
+      "anchor": "https://findash.tech/api/v1",
+      "service-desc": [
+        {
+          "href": "https://findash.tech/openapi.json",
+          "type": "application/vnd.oai.openapi+json"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://findash.tech/developers",
+          "type": "text/html"
+        }
+      ]
+    }
+  ]
+}

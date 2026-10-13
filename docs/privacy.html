@@ -21,6 +21,8 @@
 <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
+<link rel="ai-catalog" type="application/ai-catalog+json" href="/.well-known/ai-catalog.json">
+<link rel="api-catalog" href="/.well-known/api-catalog">
 <meta name="theme-color" content="#050505">
 <script>
   window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
@@ -29,6 +31,7 @@
 <link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/css/site.css">
 <script type="module" src="/js/cookie-notice.js"></script>
+<link rel="alternate" type="text/markdown" href="https://findash.tech/privacy.md">
 <!-- page-head: end -->
 <script src="/js/theme-init.js"></script>
 <link rel="stylesheet" href="/css/help.css">
@@ -51,7 +54,7 @@
   </div>
 
   <h1>Privacy policy</h1>
-  <p class="lede">Last updated 12 October 2026. The short version: your spreadsheets are read in your own
+  <p class="lede">Last updated 13 October 2026. The short version: your spreadsheets are read in your own
      browser and never uploaded, accounts are optional, and we don't sell your data or use advertising or
      tracking cookies.</p>
   <ul class="toc">
@@ -92,6 +95,9 @@
       <dt>Unrecognised column names (while logged in)</dt>
       <dd>Only the names of the columns in your file, never the numbers, are sent to Claude so they can be
           matched to the right cost lines.</dd>
+      <dt>Figures sent to the API or MCP servers</dt>
+      <dd>Monthly figures sent to <a href="/developers">FinDash's API or MCP servers</a> are worked out and sent
+          straight back. They aren't stored, and no AI model sees them.</dd>
       <dt>Forecasts (only if offered)</dt>
       <dd>If a forecasting model is offered and you press its button, the net profit figure for each month is
           sent to it, and nothing else.</dd>
@@ -189,7 +195,7 @@
   </section>
 
   <footer>FinDash &middot; <a href="/dashboard">Dashboard</a> &middot; <a href="/help">Help</a> &middot;
-    <a href="/about">About</a> &middot; <a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot;
+    <a href="/about">About</a> &middot; <a href="/developers">Developers</a> &middot; <a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot;
     <a href="mailto:support.findash@findash.tech?subject=FinDash">Contact</a></footer>
 </main>
 

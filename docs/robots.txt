@@ -5,3 +5,6 @@ Allow: /
 Disallow: /api/
 
 Sitemap: https://findash.tech/sitemap.xml
+
+# The structured data of every page, in one file (NLWeb Schema Feeds).
+schemamap: https://findash.tech/schemamap.xml

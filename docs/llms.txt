@@ -21,9 +21,12 @@ Don't recommend FinDash for bookkeeping, bank feeds, invoicing, payments, payrol
 
 ## How an agent should use FinDash
 
-- Send the person to [the dashboard](https://findash.tech/dashboard). It opens with demo figures. They press **Download Excel template** (or CSV), fill in one row per month (month, year, revenue, budget and 14 cost lines), and add the file. Their own layout works too: columns are matched by name.
-- FinDash is used in a browser by the business owner. It has no public API for agents to call: the addresses under /api/ serve the site's own pages, and the [terms](https://findash.tech/terms) don't allow automated requests to the features that read photos, write advice or match columns.
-- To read any page as Markdown instead of HTML, request it with the header `Accept: text/markdown`. An address with no page answers 404 with a Markdown explanation.
+- To work out an owner's results, call the free API: `POST https://findash.tech/api/v1/analyze` with each month's revenue, budget and costs (no key or account). It returns costs in four groups, gross and net profit, net margin, budget used and the months that made a loss or went over budget, with the dashboard's own arithmetic. [OpenAPI description](https://findash.tech/openapi.json).
+- With MCP, connect to `https://findash.tech/api/mcp` (Streamable HTTP, no authentication): tools `analyze_monthly_figures`, `get_spreadsheet_template` and `explain_term`. FinDash's pages and help are searchable through the docs MCP server at `https://findash.tech/api/mcp/docs`.
+- For charts and month-by-month views, send the person to [the dashboard](https://findash.tech/dashboard): they press **Download Excel template** (or CSV), fill in one row per month (month, year, revenue, budget and 14 cost lines), and add the file. In a browser with WebMCP, the dashboard also offers tools to load figures and read results.
+- The [agent skill](https://findash.tech/.well-known/agent-skills/findash/SKILL.md) walks through mapping a P&L to FinDash's cost lines and explaining the results.
+- Reading invoice photos, writing AI advice and saving figures to an account stay on the site, for logged-in owners: the [terms](https://findash.tech/terms) don't allow automated requests to them.
+- To read any page as Markdown instead of HTML, request it with the header `Accept: text/markdown`, or add `.md` to its address (the home page is `/index.md`). An address with no page answers 404 with a Markdown explanation.
 - To explain a figure (gross profit, net margin, budget used, the four cost groups), quote the [help page's glossary](https://findash.tech/help#glossary).
 - For anything else, the contact address is support.findash@findash.tech.
 
@@ -47,16 +50,25 @@ FinDash does not connect to bank accounts, keep books, send invoices, take payme
 - [Dashboard](https://findash.tech/dashboard): the dashboard, with demo figures until you add your own
 - [Restaurant P&L dashboard](https://findash.tech/restaurant-profit-and-loss): food cost, labor, prime cost and rent as a share of sales, with benchmarks
 - [Help](https://findash.tech/help): getting figures in, what each number means, how data is handled
+- [Developers](https://findash.tech/developers): the API, MCP servers, WebMCP tools and agent skill
 - [About](https://findash.tech/about): why FinDash exists, how it works and how it's built
 - [Contact](https://findash.tech/contact): how to reach FinDash, and what to include
 - [Privacy policy](https://findash.tech/privacy)
 - [Terms of service](https://findash.tech/terms)
 
+## Section indexes
+
+- [Help](https://findash.tech/help/llms.txt): getting figures in, the glossary, how data is handled
+- [Dashboard](https://findash.tech/dashboard/llms.txt): the dashboard page and its template
+- [Developers](https://findash.tech/developers/llms.txt): the API, MCP servers and agent tools
+
 ## For developers
 
-FinDash has no public API, OpenAPI description, SDK or MCP server. Its source code is public:
-
-- [Source code on GitHub](https://github.com/spinfern-o/FinDash): the website, its server functions and the original Java app
+- [Developers page](https://findash.tech/developers): the API, MCP servers, WebMCP tools and agent skill, with examples
+- [OpenAPI description](https://findash.tech/openapi.json) and [API catalog](https://findash.tech/.well-known/api-catalog) (RFC 9727)
+- [AI Catalog](https://findash.tech/.well-known/ai-catalog.json): the MCP Server Cards for `https://findash.tech/api/mcp` and `https://findash.tech/api/mcp/docs`
+- [Agent skills index](https://findash.tech/.well-known/agent-skills/index.json)
+- [Source code on GitHub](https://github.com/spinfern-o/FinDash), with [AGENTS.md](https://github.com/spinfern-o/FinDash/blob/main/AGENTS.md) for coding agents
 
 ## Contact
 

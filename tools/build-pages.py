@@ -14,8 +14,12 @@
     of discovering them one level at a time
   - lib/markdown-pages.js: every page as Markdown, converted from the page's
     own HTML, which middleware.js sends to AI agents that ask for Markdown
-    ("Accept: text/markdown"), plus the Markdown 404 and the list of files at
-    the top of docs/
+    ("Accept: text/markdown") or ask for /page.md, plus the Markdown 404, the
+    view for agents (?mode=agent), each section's llms.txt and the list of
+    files in docs/
+  - the agent skill at /.well-known/agent-skills/ (from skills/), with its
+    index and digest, and the structured data of every page as a Schema
+    Feed (docs/schema-feed.jsonl, listed in docs/schemamap.xml)
 
 Run it after changing a page's text, a title or description below, a page's
 definition or questions, the glossary, the dashboard's imports, or after
@@ -28,6 +32,7 @@ it is out of date; the tests run it.
 
 Only what sits between each block's two marker comments is rewritten."""
 
+import hashlib
 import html
 import json
 import pathlib
@@ -69,6 +74,9 @@ PAGES = {
     "login.html": ("/login", "Log in · FinDash",
                    "Log in to FinDash, or create an account. Accounts are optional: the dashboard works "
                    "without one.", False),
+    "developers.html": ("/developers", "FinDash API and MCP Server for Developers and AI Agents",
+                        "A free API and MCP server: send a small business's monthly revenue and costs, get profit, "
+                        "margin and budget vs actual back. No key needed.", True),
     "about.html": ("/about", "About FinDash: A Free P&L Dashboard for Small Businesses",
                    "Why FinDash exists, how it reads your figures without uploading your spreadsheet, what it "
                    "doesn't do, and how it's built.", True),
@@ -151,7 +159,17 @@ def structured_data(address, page_text):
              "name": title, "about": {"@id": SITE + "/#organization"},
              "isPartOf": {"@type": "WebSite", "@id": SITE + "/#website", "name": "FinDash", "url": SITE + "/"}},
         ]
-    definition = re.search(r'<p class="about-lede">(.*?)</p>', page_text, re.S)
+    # The developers page describes the public API.
+    if address == "/developers":
+        graph += [
+            organization(),
+            {"@type": "WebAPI", "@id": SITE + "/developers#api", "name": "FinDash API",
+             "description": PAGES["developers.html"][2], "url": SITE + "/api/v1",
+             "documentation": SITE + "/developers", "termsOfService": SITE + "/terms",
+             "provider": {"@id": SITE + "/#organization"},
+             "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}},
+        ]
+    definition =re.search(r'<p class="about-lede">(.*?)</p>', page_text, re.S)
     if definition:
         graph += [
             {"@type": "WebSite", "@id": SITE + "/#website", "name": "FinDash", "alternateName": "findash.tech",
@@ -194,6 +212,11 @@ def module_preloads(entry):
     return "\n".join(lines)
 
 
+def markdown_address(address):
+    """Where a page's Markdown is: "/" -> "/index.md", "/help" -> "/help.md"."""
+    return "/index.md" if address == "/" else address + ".md"
+
+
 def head_block(file_name, page_text):
     address, title, description, listed = PAGES[file_name]
     title = html.escape(title)
@@ -219,6 +242,9 @@ def head_block(file_name, page_text):
         '<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">',
         '<link rel="apple-touch-icon" href="/apple-touch-icon.png">',
         '<link rel="manifest" href="/site.webmanifest">',
+        # Where an agent finds the site's AI and API catalogs.
+        '<link rel="ai-catalog" type="application/ai-catalog+json" href="/.well-known/ai-catalog.json">',
+        '<link rel="api-catalog" href="/.well-known/api-catalog">',
         '<meta name="theme-color" content="#050505">',
         # Vercel Web Analytics: counts page visits without cookies. Only
         # active once Analytics is switched on for the project in Vercel.
@@ -230,6 +256,9 @@ def head_block(file_name, page_text):
         '<link rel="stylesheet" href="/css/site.css">',
         '<script type="module" src="/js/cookie-notice.js"></script>',
     ]
+    if file_name != "404.html":
+        # Where an agent finds this page as Markdown. The 404 page has no twin.
+        lines.append(f'<link rel="alternate" type="text/markdown" href="{SITE}{markdown_address(address)}">')
     if file_name == "dashboard.html":
         lines.append(module_preloads(DOCS / "js" / "dashboard" / "main.js"))
     extra = structured_data(address, page_text)
@@ -545,9 +574,17 @@ def text_of(element):
             yield from text_of(child)
 
 
-SITE_LINKS = [("Home", "/"), ("Dashboard", "/dashboard"), ("Help", "/help"), ("About", "/about"),
-              ("Contact", "/contact"), ("Privacy", "/privacy"), ("Terms", "/terms"),
+SITE_LINKS = [("Home", "/"), ("Dashboard", "/dashboard"), ("Help", "/help"), ("Developers", "/developers"),
+              ("About", "/about"), ("Contact", "/contact"), ("Privacy", "/privacy"), ("Terms", "/terms"),
               ("llms.txt", "/llms.txt"), ("Sitemap", "/sitemap.xml")]
+
+# The sections with an llms.txt of their own, for an agent working in one area.
+SECTION_PAGES = ["help.html", "dashboard.html", "developers.html"]
+SKILLS = ROOT / "skills"
+SKILLS_PUBLISHED = DOCS / ".well-known" / "agent-skills"
+SKILLS_SCHEMA = "https://schemas.agentskills.io/discovery/0.2.0/schema.json"
+# Folders the middleware never sees (see middleware.js), so not listed in FILES.
+UNLISTED_FOLDERS = ("css/", "js/", "fonts/")
 
 
 def page_markdown(file_name, page_html):
@@ -556,7 +593,12 @@ def page_markdown(file_name, page_html):
     builder = TreeBuilder()
     builder.feed(page_html)
     main = find(builder.root, "main")
-    body = "\n\n".join(blocks(main, address))
+    parts = blocks(main, address)
+    # Markdown opens with the page's title. A small label set above the <h1>
+    # (the log in page's "Account") follows it instead of preceding it.
+    title = next((index for index, part in enumerate(parts) if part.startswith("# ")), 0)
+    parts.insert(0, parts.pop(title))
+    body = "\n\n".join(parts)
     links = " · ".join(f"[{label}]({SITE}{path})" for label, path in SITE_LINKS)
     ending = f"FinDash: {links}"
     if file_name != "404.html":
@@ -576,22 +618,137 @@ def not_found_markdown(page_html):
     return f"{body}\n\n{finder}\n\n---\n\n{ending}"
 
 
-def markdown_module(pages):
-    """lib/markdown-pages.js: each page's Markdown, the Markdown 404, and the
-    files at the top of docs/ (which are served as they are)."""
+def page_sections(page_html):
+    """Each <h2> in the page's <main>, with the id it can be linked to: its own,
+    or the <section> it sits in."""
+    builder = TreeBuilder()
+    builder.feed(page_html)
+    found = []
+
+    def walk(element, section_id):
+        if skipped(element):
+            return
+        for child in element.children:
+            if not isinstance(child, Element):
+                continue
+            own_id = child.attrs.get("id")
+            if child.tag == "h2":
+                found.append((finish_line(inline(child, "")).replace("\\", ""), own_id or section_id))
+            else:
+                walk(child, own_id if child.tag == "section" and own_id else section_id)
+
+    walk(find(builder.root, "main"), None)
+    return found
+
+
+def section_index(file_name, page_html):
+    """A section's own llms.txt: what the page covers, and a link to each part."""
+    address, title, description, _listed = PAGES[file_name]
+    links = [f"- [{heading}]({SITE}{address}#{anchor})" if anchor else f"- {heading}"
+             for heading, anchor in page_sections(page_html)]
+    return "\n".join([
+        f"# {title}", "", f"> {description}", "",
+        f"The whole page as Markdown: {SITE}{markdown_address(address)}", "",
+        "## Sections", "", *links, "",
+        "## More", "",
+        f"- [llms.txt]({SITE}/llms.txt): all of FinDash, for AI tools",
+        f"- [Developers]({SITE}/developers): the API and MCP servers", ""])
+
+
+def published_skills():
+    """Each skill in skills/, copied to /.well-known/agent-skills/, and the
+    discovery index listing them (Agent Skills Discovery 0.2.0): name,
+    description, address and the SHA-256 of the file as served."""
+    outputs = {}
+    entries = []
+    for skill_file in sorted(SKILLS.glob("*/SKILL.md")):
+        text = skill_file.read_text()
+        frontmatter = re.match(r"^---\n(.*?)\n---\n", text, re.S)
+        assert frontmatter, f"{skill_file}: SKILL.md needs YAML frontmatter"
+        fields = dict(re.findall(r"^(name|description): (.*)$", frontmatter.group(1), re.M))
+        name = fields["name"]
+        assert name == skill_file.parent.name, f"{skill_file}: name must match its folder"
+        assert re.fullmatch(r"[a-z0-9]+(-[a-z0-9]+)*", name) and len(name) <= 64, f"bad skill name {name}"
+        assert 0 < len(fields["description"]) <= 1024, f"{skill_file}: description of 1 to 1024 characters"
+        outputs[SKILLS_PUBLISHED / name / "SKILL.md"] = text
+        entries.append({"name": name, "type": "skill-md", "description": fields["description"],
+                        "url": f"/.well-known/agent-skills/{name}/SKILL.md",
+                        "digest": "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()})
+    index = {"$schema": SKILLS_SCHEMA, "skills": entries}
+    outputs[SKILLS_PUBLISHED / "index.json"] = json.dumps(index, indent=2, ensure_ascii=False) + "\n"
+    return outputs
+
+
+def schema_feed(pages):
+    """Every page's structured data, one schema.org object per line (NLWeb
+    Schema Feeds, structuredData/schema.org), and the Schema Map that lists it.
+    Built from the same JSON-LD the pages carry, so the two always agree."""
+    lines = []
+    seen = set()
+    for name in PAGES:
+        for block in re.findall(r'<script type="application/ld\+json">\n(.*?)\n</script>', pages[name], re.S):
+            for item in json.loads(block.replace("<\\/", "</"))["@graph"]:
+                if item["@id"] in seen:
+                    continue
+                seen.add(item["@id"])
+                lines.append(json.dumps(dict({"@context": "https://schema.org"}, **item), ensure_ascii=False,
+                                        separators=(",", ":")))
+    schema_map = "\n".join([
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        "<!-- The site's structured data as a Schema Feed (NLWeb Schema Feeds 0.1), named in robots.txt.",
+        "     tools/build-pages.py writes this and the feed. -->",
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"',
+        '        xmlns:sf="http://schema.org/schemas/schemafeed/0.1">',
+        "  <url>",
+        f"    <loc>{SITE}/schema-feed.jsonl</loc>",
+        "    <sf:contentType>structuredData/schema.org</sf:contentType>",
+        "  </url>",
+        "</urlset>", ""])
+    return {DOCS / "schema-feed.jsonl": "\n".join(lines) + "\n", DOCS / "schemamap.xml": schema_map}
+
+
+def site_files(also):
+    """Every file the site serves outside css/, js/ and fonts/, as "/path":
+    the ones in docs/ now, and `also`, the ones this run is about to write."""
+    found = set()
+    for path in list(DOCS.rglob("*")) + list(also):
+        if path.is_relative_to(DOCS) and (path.is_file() or path in also):
+            relative = path.relative_to(DOCS).as_posix()
+            if not relative.startswith(UNLISTED_FOLDERS):
+                found.add("/" + relative)
+    return sorted(found)
+
+
+def markdown_module(pages, files):
+    """lib/markdown-pages.js: what middleware.js and the docs MCP server serve."""
     markdown = {}
-    for name, (address, _title, _description, _listed) in PAGES.items():
+    info = {}
+    for name, (address, title, description, listed) in PAGES.items():
         if name != "404.html":
             markdown[address] = page_markdown(name, pages[name])
-    files = sorted(path.name for path in DOCS.iterdir() if path.is_file())
+            info[address] = {"title": title, "description": description, "listed": listed}
+    sections = {f"{PAGES[name][0]}/llms.txt": section_index(name, pages[name]) for name in SECTION_PAGES}
+    agent_view = (DOCS / "llms.txt").read_text()
     return "\n".join([
         "// Written by tools/build-pages.py from the pages in docs/. Don't edit it by hand:",
         "// change the page, then run python3 tools/build-pages.py.",
         "",
+        "// Each page as Markdown, by address.",
         "export const PAGES = " + json.dumps(markdown, indent=2, ensure_ascii=False) + ";",
         "",
+        "// Each page's title and description, and whether search engines list it.",
+        "export const PAGE_INFO = " + json.dumps(info, indent=2, ensure_ascii=False) + ";",
+        "",
+        "// The answer for an address with no page, to an agent asking for Markdown.",
         "export const NOT_FOUND = " + json.dumps(not_found_markdown(pages["404.html"]), ensure_ascii=False) + ";",
         "",
+        "// The view for agents (?mode=agent): docs/llms.txt.",
+        "export const AGENT_VIEW = " + json.dumps(agent_view, ensure_ascii=False) + ";",
+        "",
+        "// Each section's own llms.txt, by address.",
+        "export const SECTION_INDEXES = " + json.dumps(sections, indent=2, ensure_ascii=False) + ";",
+        "",
+        "// Every file the site serves (outside css/, js/ and fonts/), served as it is.",
         "export const FILES = " + json.dumps(files, indent=2) + ";",
         "",
     ])
@@ -605,7 +762,9 @@ def main():
         if (DOCS / name).exists():
             pages[name] = updated_page(name)
             outputs[DOCS / name] = pages[name]
-    outputs[MARKDOWN_MODULE] = markdown_module(pages)
+    outputs.update(published_skills())
+    outputs.update(schema_feed(pages))
+    outputs[MARKDOWN_MODULE] = markdown_module(pages, site_files(outputs))
 
     stale = []
     for path, text in outputs.items():
@@ -614,6 +773,7 @@ def main():
             continue
         stale.append(path.relative_to(ROOT).as_posix())
         if not check:
+            path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(text)
             print("updated", path.relative_to(ROOT).as_posix())
     if check and stale:

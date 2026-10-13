@@ -15,6 +15,9 @@
     },
     "api/read-document.js": {
       "maxDuration": 60
+    },
+    "api/agent.js": {
+      "maxDuration": 15
     }
   },
   "headers": [
@@ -96,6 +99,107 @@
           "value": "public, max-age=604800"
         }
       ]
+    },
+    {
+      "source": "/.well-known/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
+        }
+      ]
+    },
+    {
+      "source": "/.well-known/api-catalog",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/linkset+json; profile=\"https://www.rfc-editor.org/info/rfc9727\""
+        }
+      ]
+    },
+    {
+      "source": "/.well-known/ai-catalog.json",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/ai-catalog+json"
+        }
+      ]
+    },
+    {
+      "source": "/.well-known/agent-skills/(.*).md",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/markdown; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "source": "/openapi.json",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
+        }
+      ]
+    },
+    {
+      "source": "/schema-feed.jsonl",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/x-jsonlines; charset=utf-8"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
+        }
+      ]
+    },
+    {
+      "source": "/schemamap.xml",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/v1",
+      "destination": "/api/agent?route=v1"
+    },
+    {
+      "source": "/api/v1/:path*",
+      "destination": "/api/agent?route=v1/:path*"
+    },
+    {
+      "source": "/api/mcp",
+      "destination": "/api/agent?route=mcp"
+    },
+    {
+      "source": "/api/mcp/:path*",
+      "destination": "/api/agent?route=mcp/:path*"
     }
   ]
 }

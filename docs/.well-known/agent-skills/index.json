@@ -1,0 +1,12 @@
+{
+  "$schema": "https://schemas.agentskills.io/discovery/0.2.0/schema.json",
+  "skills": [
+    {
+      "name": "findash",
+      "type": "skill-md",
+      "description": "Turn a small business's monthly revenue, costs and budget into a profit and loss (P&L) summary with FinDash (findash.tech) - costs in four groups, gross and net profit, net margin, budget vs actual, and the months that made a loss or went over budget. Use when someone asks how their business did month by month, wants their P&L or budget explained, or wants their figures in the FinDash dashboard. Free, no account or API key.",
+      "url": "/.well-known/agent-skills/findash/SKILL.md",
+      "digest": "sha256:37e4c987b2f0cd908e9b86f4b539a4405658eed67af91484c591d739958db74b"
+    }
+  ]
+}

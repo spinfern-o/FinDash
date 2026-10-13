@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The site's structured data as a Schema Feed (NLWeb Schema Feeds 0.1), named in robots.txt.
+     tools/build-pages.py writes this and the feed. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:sf="http://schema.org/schemas/schemafeed/0.1">
+  <url>
+    <loc>https://findash.tech/schema-feed.jsonl</loc>
+    <sf:contentType>structuredData/schema.org</sf:contentType>
+  </url>
+</urlset>

@@ -351,27 +351,56 @@ that say plainly what something is and answer the questions people actually ask.
 - **The dashboard's heading** has plain fallback text for crawlers that don't run its
   script.
 - **`docs/llms.txt`** describes FinDash for AI tools in plain text: what it is, when an
-  agent should (and shouldn't) recommend it, how an agent should use it, and that there is
-  no public API. Few tools read it yet; it costs nothing.
+  agent should (and shouldn't) recommend it, and how an agent should use it. The help,
+  dashboard and developers pages each have a smaller one (`/help/llms.txt` and so on).
 - **Every page as Markdown.** An AI agent that asks for a page with the header
-  `Accept: text/markdown` gets the page as Markdown instead of HTML, and an address with
-  no page gets a Markdown 404 pointing to `llms.txt` and the sitemap. Browsers and search
-  engines get the HTML exactly as before. `middleware.js` (Vercel Routing Middleware)
-  decides, using `lib/markdown-negotiation.js`; the Markdown itself is in
-  `lib/markdown-pages.js`, which `tools/build-pages.py` converts from each page's own HTML.
-  **After changing any page's text, run `python3 tools/build-pages.py`**: a test fails if
-  the Markdown no longer matches the pages. To check the live site:
-
-  ```bash
-  curl -sS -i -H 'Accept: text/markdown' https://findash.tech/
-  curl -sS -i -H 'Accept: text/markdown' https://findash.tech/no-such-page
-  ```
-
-  The first answers `200` with `Content-Type: text/markdown` and `Vary: Accept`; the
-  second `404`, in Markdown.
+  `Accept: text/markdown`, or adds `.md` to its address (`/index.md` for the home page),
+  gets the page as Markdown; `?mode=agent` gets llms.txt; an address with no page gets a
+  Markdown 404 pointing to `llms.txt` and the sitemap. Browsers and search engines get the
+  HTML exactly as before, with `Link` headers saying where the Markdown, llms.txt and the
+  API's descriptions are. `middleware.js` (Vercel Routing Middleware) decides, using
+  `lib/markdown-negotiation.js`; the Markdown itself is in `lib/markdown-pages.js`, which
+  `tools/build-pages.py` converts from each page's own HTML. **After changing any page's
+  text, run `python3 tools/build-pages.py`**: a test fails if the Markdown no longer
+  matches the pages.
 - **`/about` and `/contact`** say who runs FinDash and how to reach it, which AI tools
   check before recommending a site. The structured data names the support address as a
   `ContactPoint`.
+- **`docs/schema-feed.jsonl`** has every page's structured data in one file (NLWeb Schema
+  Feeds), listed in `docs/schemamap.xml`, which `robots.txt` names. The script writes both.
+
+### For developers and AI agents
+
+`/developers` documents all of this for people; the pieces are:
+
+- **The API** (`/api/v1`): monthly figures in, a profit and loss summary out, with the
+  template's columns and the glossary. No account or key, no AI model, nothing stored.
+  `docs/openapi.json` describes it and `/.well-known/api-catalog` (RFC 9727) points to it.
+  Every error is JSON with a code and a hint.
+- **Two MCP servers** over Streamable HTTP: `/api/mcp` (the same jobs as tools) and
+  `/api/mcp/docs` (read and search the pages). Each has an MCP Server Card at its address
+  plus `/server-card`, listed in `/.well-known/ai-catalog.json`.
+- **WebMCP tools on the dashboard** (`docs/js/dashboard/agent-tools.js`), for agents in
+  browsers that support it: load figures, read the dashboard, pick the month, save the
+  template.
+- **An agent skill**, `skills/findash/SKILL.md`, published by the script at
+  `/.well-known/agent-skills/` with its digest; and `AGENTS.md` for coding agents.
+
+The API and both MCP servers are one server function, `api/agent.js` (Vercel's Hobby plan
+allows twelve), reached through the rewrites in `vercel.json`, and they use the
+dashboard's own arithmetic through `docs/js/dashboard/analysis.js`, so they always agree
+with the page. To check the live site after a deploy:
+
+```bash
+curl -sS -i -H 'Accept: text/markdown' https://findash.tech/                # 200, text/markdown, Vary: Accept
+curl -sS -i -H 'Accept: text/markdown' https://findash.tech/no-such-page    # 404, in Markdown
+curl -sS -i https://findash.tech/index.md                                   # 200, text/markdown
+curl -sS -X POST https://findash.tech/api/v1/analyze -H 'Content-Type: application/json' \
+  -d '{"months": [{"month": "July", "year": 2026, "revenue": 72000, "costs": {"rent": 6000}}]}'
+curl -sS -i https://findash.tech/api/mcp/server-card                        # 200, application/mcp-server-card+json
+```
+
+Preview deployments sit behind Vercel's login, so check those with `vercel curl` instead.
 
 There is deliberately no meta keywords tag: Google has ignored it since 2009, and Bing may
 treat a stuffed one as spam.
@@ -422,7 +451,7 @@ npx playwright install chromium   # the first time only
 npm test
 ```
 
-Over 80 tests, in under a minute, against stand-ins for Supabase and Claude, so no keys
+Over 150 tests, in a few minutes, against stand-ins for Supabase and Claude, so no keys
 are needed and nothing is spent:
 
 - `tests/unit/`: the arithmetic and file reading
@@ -433,7 +462,12 @@ are needed and nothing is spent:
   the basics of every page (titles, share previews, icons, robots.txt, the sitemap, the
   404 page, phone layouts, the cookie notice, footers)
 - `tests/api/agent-readiness.test.mjs`: what AI agents get: Markdown pages, the Markdown
-  404, and that the Markdown is up to date with the pages
+  404, `.md` addresses, Link headers, the section llms.txt files, the schema feed, and
+  that everything generated is up to date with the pages
+- `tests/api/developer-api.test.mjs`: the public API against its OpenAPI description, its
+  errors, the API catalog, both MCP servers through the official MCP client, the Server
+  Cards against their JSON Schema, and the agent skill's digest
+- `tests/browser/agent-tools.test.mjs`: the dashboard's WebMCP tools
 
 GitHub runs the same tests, and builds the Java app, on every pull request
 (`.github/workflows/tests.yml`).
@@ -472,6 +506,10 @@ docs/                    The website (Vercel serves this folder)
   dashboard.html         The dashboard
   help.html              Getting data in, glossary, how data is handled
   about.html, contact.html   Who runs FinDash and how to reach it
+  developers.html        The API, MCP servers, WebMCP tools and agent skill
+  openapi.json           The API's OpenAPI description
+  .well-known/           The API catalog, the AI Catalog and the agent skills index
+  schema-feed.jsonl, schemamap.xml   Every page's structured data in one file
   restaurant-profit-and-loss.html   Food cost, labor and prime cost, for restaurants
   login.html             Log in, create an account, reset a password, delete an account
   privacy.html, terms.html   The privacy policy and terms of service
@@ -503,17 +541,21 @@ docs/                    The website (Vercel serves this folder)
       saved-figures.js   Remembering figures in this browser
       account-figures.js Saving them to the account
 api/                     Server functions: accounts, saved figures, photo reading, advice,
-                         column matching, forecast, capabilities, error reports
-lib/                     Shared by the functions: Supabase, login cookies, daily limits;
-                         and the Markdown versions of the pages (markdown-pages.js,
-                         written by tools/build-pages.py) with the rules for serving them
-middleware.js            Sends AI agents that ask for Markdown the Markdown version
+                         column matching, forecast, capabilities, error reports, and
+                         agent.js: the public API and the MCP servers
+lib/                     Shared by the functions: Supabase, login cookies, daily limits,
+                         the API (agent-api.js) and MCP servers (mcp-servers.js); and the
+                         Markdown versions of the pages (markdown-pages.js, written by
+                         tools/build-pages.py) with the rules for serving them
+middleware.js            Sends AI agents the Markdown version of a page, and Link headers
+skills/                  The agent skill (SKILL.md), published under .well-known/
+AGENTS.md                Instructions for AI coding agents working on this code
 supabase/migrations/     The SQL for saved figures and daily limits
 tests/                   The tests (npm test)
 .github/workflows/       Runs the tests on every pull request
 forecast/                The optional forecast service (Python, Chronos)
 tools/                   build-pages.py (head tags, structured data, the glossary, the
-                         Markdown versions of the pages),
+                         Markdown versions of the pages, the skill index, the schema feed),
                          og-image/ (the share image)
 src/main/java/           The Java command-line app
 data/                    The Java app's input CSVs

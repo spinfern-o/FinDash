@@ -11,6 +11,7 @@
      export/                the template and "Export to Excel"
      saved-figures.js       remembering the figures in this browser
      account-figures.js     saving them to the owner's account when logged in
+     agent-tools.js         tools for AI agents in the browser (WebMCP)
    README.md has a fuller tour. */
 
 import { state, isShowingOwnerFigures } from "./state.js";
@@ -27,6 +28,7 @@ import { loadCapabilities } from "./capabilities.js";
 import { loggedInUser, showLoggedIn } from "./account.js";
 import { startSavingToAccount, stopSavingToAccount } from "./account-figures.js";
 import { showStatus } from "./status-line.js";
+import { offerAgentTools } from "./agent-tools.js";
 
 /* Mentions photos only where this copy of FinDash can read them. Where
    accounts are set up, shows who is logged in and saves their figures to
@@ -104,6 +106,7 @@ function start() {
 
   showSavedFigures();
   loadDemoFigures();
+  offerAgentTools();
 
   // For checking figures by hand from the browser's console.
   window.findash = { state: state };

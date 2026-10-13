@@ -35,12 +35,56 @@ const CONTENT_TYPES = {
   ".ico": "image/x-icon",
   ".txt": "text/plain; charset=utf-8",
   ".xml": "application/xml",
+  ".jsonl": "application/x-jsonlines",
+  ".md": "text/markdown; charset=UTF-8",
   ".webmanifest": "application/manifest+json"
 };
 
-function securityHeaders() {
-  const vercel = JSON.parse(readFileSync(path.join(ROOT, "vercel.json"), "utf8"));
-  return vercel.headers[0].headers;
+const VERCEL = JSON.parse(readFileSync(path.join(ROOT, "vercel.json"), "utf8"));
+
+/* A vercel.json source pattern as a regular expression for the whole path:
+   "(.*)" groups stay as they are, ":name*" takes the rest of the path
+   (or nothing), and dots are literal. */
+function sourcePattern(source) {
+  let pattern = "";
+  for (const part of source.split(/(\(\.\*\)|\/:[a-z]+\*)/)) {
+    if (part === "(.*)") {
+      pattern += "(.*)";
+    } else if (/^\/:[a-z]+\*$/.test(part)) {
+      pattern += "(?:/(.*))?";
+    } else {
+      pattern += part.replace(/[.+?^${}|[\]\\]/g, "\\$&");
+    }
+  }
+  return new RegExp("^" + pattern + "$");
+}
+
+/* The headers vercel.json sets for this address, from every rule that
+   matches it, later rules winning, as on Vercel. */
+function headersFor(pathname) {
+  const found = [];
+  for (const rule of VERCEL.headers) {
+    if (sourcePattern(rule.source).test(pathname)) {
+      found.push(...rule.headers);
+    }
+  }
+  return found;
+}
+
+/* vercel.json's rewrites: the address an /api/ request is served from when
+   no function lives at its own address. */
+function rewritten(url) {
+  for (const rule of VERCEL.rewrites || []) {
+    const match = sourcePattern(rule.source).exec(url.pathname);
+    if (match) {
+      const destination = new URL(rule.destination.replace(/:[a-z]+\*/, match[1] || ""), url);
+      for (const [name, value] of url.searchParams) {
+        destination.searchParams.set(name, value);
+      }
+      return destination;
+    }
+  }
+  return url;
 }
 
 /* Vercel's request and response helpers, on Node's own objects. */
@@ -163,7 +207,6 @@ export async function startSite(options = {}) {
   console.error = keep;
   console.warn = keep;
 
-  const headers = securityHeaders();
   const handlers = {};
 
   async function handlerFor(name) {
@@ -178,16 +221,21 @@ export async function startSite(options = {}) {
   }
 
   const server = http.createServer(async function (request, response) {
-    for (const header of headers) {
-      response.setHeader(header.key, header.value);
+    let url = new URL(request.url, "http://localhost");
+    for (const header of headersFor(url.pathname)) {
+      if (header.key.toLowerCase() !== "content-type") {
+        response.setHeader(header.key, header.value);
+      }
     }
-    const url = new URL(request.url, "http://localhost");
 
     if (await answeredByMiddleware(request, response, url)) {
       return;
     }
 
     if (url.pathname.startsWith("/api/")) {
+      if (!existsSync(path.join(API, url.pathname.slice("/api/".length) + ".js"))) {
+        url = rewritten(url);
+      }
       const handler = await handlerFor(url.pathname.slice("/api/".length));
       if (!handler) {
         response.statusCode = 404;
@@ -220,6 +268,12 @@ export async function startSite(options = {}) {
       return createReadStream(path.join(PAGES, "404.html")).pipe(response);
     }
     response.setHeader("content-type", CONTENT_TYPES[path.extname(file)] || "application/octet-stream");
+    // A rule in vercel.json can give a file its own type, as for /.well-known/api-catalog.
+    for (const header of headersFor(url.pathname)) {
+      if (header.key.toLowerCase() === "content-type") {
+        response.setHeader("content-type", header.value);
+      }
+    }
     createReadStream(file).pipe(response);
   });
 

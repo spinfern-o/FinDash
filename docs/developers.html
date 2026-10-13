@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- page-head: start (tools/build-pages.py writes this) -->
+<title>FinDash API and MCP Server for Developers and AI Agents</title>
+<meta name="description" content="A free API and MCP server: send a small business&#x27;s monthly revenue and costs, get profit, margin and budget vs actual back. No key needed.">
+<link rel="canonical" href="https://findash.tech/developers">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="FinDash">
+<meta property="og:title" content="FinDash API and MCP Server for Developers and AI Agents">
+<meta property="og:description" content="A free API and MCP server: send a small business&#x27;s monthly revenue and costs, get profit, margin and budget vs actual back. No key needed.">
+<meta property="og:url" content="https://findash.tech/developers">
+<meta property="og:image" content="https://findash.tech/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="FinDash: revenue, costs and budget on one monthly dashboard">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="ai-catalog" type="application/ai-catalog+json" href="/.well-known/ai-catalog.json">
+<link rel="api-catalog" href="/.well-known/api-catalog">
+<meta name="theme-color" content="#050505">
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+<link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/css/site.css">
+<script type="module" src="/js/cookie-notice.js"></script>
+<link rel="alternate" type="text/markdown" href="https://findash.tech/developers.md">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://findash.tech/#organization",
+      "name": "FinDash",
+      "url": "https://findash.tech/",
+      "logo": "https://findash.tech/icon-512.png",
+      "email": "support.findash@findash.tech",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "email": "support.findash@findash.tech",
+        "url": "https://findash.tech/contact",
+        "availableLanguage": "English"
+      },
+      "sameAs": [
+        "https://github.com/spinfern-o/FinDash"
+      ]
+    },
+    {
+      "@type": "WebAPI",
+      "@id": "https://findash.tech/developers#api",
+      "name": "FinDash API",
+      "description": "A free API and MCP server: send a small business's monthly revenue and costs, get profit, margin and budget vs actual back. No key needed.",
+      "url": "https://findash.tech/api/v1",
+      "documentation": "https://findash.tech/developers",
+      "termsOfService": "https://findash.tech/terms",
+      "provider": {
+        "@id": "https://findash.tech/#organization"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+  ]
+}
+</script>
+<!-- page-head: end -->
+<script src="/js/theme-init.js"></script>
+<link rel="stylesheet" href="/css/help.css">
+</head>
+<body>
+<main>
+  <div class="masthead">
+    <div class="masthead-left">
+      <a class="wordmark" href="/">FinDash</a>
+      <nav>
+        <a class="nav-link" href="/">Home</a>
+        <a class="nav-link" href="/dashboard">Dashboard</a>
+        <a class="nav-link" href="/help">Help</a>
+      </nav>
+    </div>
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle light and dark mode">
+      <svg class="icon-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+      <svg class="icon-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+    </button>
+  </div>
+
+  <h1>FinDash API and MCP server</h1>
+  <p class="lede">FinDash's profit and loss arithmetic, for developers and AI agents: send a small business's monthly
+     revenue and costs, get back costs in four groups, gross and net profit, net margin and budget used. Free, with
+     no account or key, and nothing you send is stored.</p>
+
+  <section id="api">
+    <h2>The FinDash API</h2>
+    <p>Base address <code>https://findash.tech/api/v1</code>. Requests and responses are JSON. No authentication:
+       every endpoint is open, and browsers may call it from any site (CORS). The
+       <a href="/openapi.json">OpenAPI description</a> lists every field.</p>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr><th scope="col">Method</th><th scope="col">Address</th><th scope="col">What it does</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>POST</td><td><code>/api/v1/analyze</code></td><td>Monthly figures in, a profit and loss summary out</td></tr>
+          <tr><td>GET</td><td><code>/api/v1/template</code></td><td>The spreadsheet template's columns</td></tr>
+          <tr><td>GET</td><td><code>/api/v1/glossary</code></td><td>What each figure means, in plain words</td></tr>
+          <tr><td>GET</td><td><code>/api/v1</code></td><td>What the API offers, and where it is described</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="analyze">
+    <h2>Analyse monthly figures</h2>
+    <p>Send each month's revenue, its spending budget (the most planned to be spent, not a sales target) and its
+       costs, by line. The fourteen cost lines are <code>costOfGoodsSold</code>, <code>labor</code>,
+       <code>employeeMeals</code> and <code>payrollTax</code> (direct costs); <code>packaging</code>,
+       <code>creditCardFees</code>, <code>marketing</code> and <code>hardware</code> (operating costs);
+       <code>utilities</code> and <code>maintenance</code> (variable overhead); <code>rent</code>,
+       <code>insurance</code>, <code>businessLicense</code> and <code>telephone</code> (fixed overhead). Leave out a
+       line with nothing in it, and put a cost with no line of its own in the closest one.</p>
+    <pre class="code-block" id="example-request"><code>curl -sS https://findash.tech/api/v1/analyze \
+  -H 'Content-Type: application/json' \
+  -d '{"currency": "USD", "months": [{"month": "July", "year": 2026, "revenue": 72000, "budget": 66000,
+       "costs": {"costOfGoodsSold": 26000, "labor": 12000, "rent": 6000, "utilities": 2800, "marketing": 2200}}]}'</code></pre>
+    <p>The answer has every month with its fourteen cost lines (zero where none were sent), and a total across
+       the months:</p>
+    <pre class="code-block" id="example-response"><code>{
+  "currency": "USD",
+  "months": [{
+    "label": "July 2026", "month": 7, "year": 2026,
+    "revenue": 72000, "budget": 66000,
+    "costs": { "costOfGoodsSold": 26000, "labor": 12000, "rent": 6000, ... },
+    "costGroups": { "directCosts": 38000, "operatingCosts": 2200, "variableOverhead": 2800, "fixedOverhead": 6000 },
+    "totalCosts": 49000, "grossProfit": 34000, "netProfit": 23000,
+    "netMarginPercent": 31.94, "budgetUsedPercent": 74.24, "overBudgetBy": 0
+  }],
+  "total": { "label": "July 2026", "months": 1, "revenue": 72000, "netProfit": 23000, ... },
+  "needsAttention": []
+}</code></pre>
+    <p><code>needsAttention</code> lists the months that made a loss or went over budget, the two things the
+       dashboard puts first. The arithmetic is the dashboard's own, so the figures match what an owner sees on
+       the <a href="/dashboard">dashboard</a>.</p>
+  </section>
+
+  <section id="errors">
+    <h2>Errors</h2>
+    <p>Every error is JSON, with an HTTP status to match: <code>{"error": {"code", "message", "hint",
+       "docs"}}</code>, and for figures that can't be read, a <code>problems</code> list naming each field to fix,
+       such as <code>months[0].costs.wages</code>.</p>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr><th scope="col">Status</th><th scope="col">Code</th><th scope="col">When</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>400</td><td><code>invalid_json</code></td><td>The body isn't a JSON object</td></tr>
+          <tr><td>400</td><td><code>invalid_figures</code></td><td>A month or amount can't be read; see problems</td></tr>
+          <tr><td>404</td><td><code>not_found</code></td><td>No endpoint at that address</td></tr>
+          <tr><td>405</td><td><code>method_not_allowed</code></td><td>Wrong method; the Allow header says which</td></tr>
+          <tr><td>413</td><td><code>too_large</code></td><td>More than 120 months, or a body over 200 KB</td></tr>
+          <tr><td>500</td><td><code>internal_error</code></td><td>Something went wrong on FinDash's side</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="limits">
+    <h2>Limits and fair use</h2>
+    <ul>
+      <li>Up to 120 months per request.</li>
+      <li>Figures are worked out and sent back, never stored or logged.</li>
+      <li>The API doesn't read invoice photos, write advice or save figures to an account: those stay on the
+          site, for logged-in owners. The <a href="/terms">terms</a> apply.</li>
+      <li>There is no OAuth: nothing in the API belongs to an account, so there is nothing to authorise.</li>
+    </ul>
+  </section>
+
+  <section id="mcp">
+    <h2>MCP servers</h2>
+    <p>Two Model Context Protocol servers, over Streamable HTTP, with no authentication:</p>
+    <dl>
+      <dt><code>https://findash.tech/api/mcp</code></dt>
+      <dd>The product. Tools: <code>analyze_monthly_figures</code> (the same job as the API),
+          <code>get_spreadsheet_template</code> and <code>explain_term</code>.</dd>
+      <dt><code>https://findash.tech/api/mcp/docs</code></dt>
+      <dd>The documentation. Tools: <code>list_pages</code>, <code>read_page</code> and
+          <code>search_docs</code>, over every page on this site.</dd>
+    </dl>
+    <p>To add the product server to Claude Code, for example:</p>
+    <pre class="code-block"><code>claude mcp add --transport http findash https://findash.tech/api/mcp</code></pre>
+    <p>Each server has an MCP Server Card at its address plus <code>/server-card</code>, and both are listed in
+       the <a href="/.well-known/ai-catalog.json">AI Catalog</a>.</p>
+  </section>
+
+  <section id="webmcp">
+    <h2>Tools on the dashboard page (WebMCP)</h2>
+    <p>In a browser that supports WebMCP, the <a href="/dashboard">dashboard</a> offers agents four tools of its
+       own: <code>load_monthly_figures</code> shows an owner's figures on the page (kept in their browser, as a
+       spreadsheet would be), <code>read_dashboard</code> reads back what the page shows,
+       <code>show_month</code> picks the month and period on screen, and <code>download_template</code> saves
+       the spreadsheet template.</p>
+  </section>
+
+  <section id="reading">
+    <h2>Reading the site</h2>
+    <ul>
+      <li><a href="/llms.txt">llms.txt</a>: what FinDash is, when to use it and every page, with smaller indexes
+          for the <a href="/help/llms.txt">help</a>, the <a href="/dashboard/llms.txt">dashboard</a> and
+          <a href="/developers/llms.txt">this page</a>.</li>
+      <li>Every page as Markdown: ask with <code>Accept: text/markdown</code>, or add <code>.md</code> to its
+          address (<a href="/developers.md">/developers.md</a>; the home page is
+          <a href="/index.md">/index.md</a>). <code>?mode=agent</code> on any page answers with llms.txt.</li>
+      <li>The <a href="/.well-known/agent-skills/index.json">agent skill</a> for working with FinDash, the
+          <a href="/.well-known/api-catalog">API catalog</a> (RFC 9727), the <a href="/sitemap.xml">sitemap</a>
+          and the site's structured data as a <a href="/schemamap.xml">schema feed</a>.</li>
+    </ul>
+  </section>
+
+  <section id="source">
+    <h2>Source code</h2>
+    <p>FinDash's code is public on <a href="https://github.com/spinfern-o/FinDash">GitHub</a>, with an
+       <a href="https://github.com/spinfern-o/FinDash/blob/main/AGENTS.md">AGENTS.md</a> for coding agents and the
+       agent skill in <a href="https://github.com/spinfern-o/FinDash/tree/main/skills/findash">skills/findash</a>.
+       Questions: <a href="mailto:support.findash@findash.tech?subject=FinDash%20API">support.findash@findash.tech</a>.</p>
+  </section>
+
+  <footer>FinDash &middot; <a href="/dashboard">Dashboard</a> &middot; <a href="/help">Help</a> &middot;
+    <a href="/about">About</a> &middot; <a href="/developers">Developers</a> &middot; <a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot;
+    <a href="mailto:support.findash@findash.tech?subject=FinDash">Contact</a></footer>
+</main>
+
+<script type="module" src="/js/error-reporter.js"></script>
+<script type="module" src="/js/theme-toggle.js"></script>
+</body>
+</html>

@@ -12,8 +12,8 @@ import { launchBrowser, openPage, text } from "../support/browser.mjs";
 
 const SITE = "https://findash.tech";
 // Listed by search engines, and in the sitemap.
-const LISTED_PAGES = ["/", "/dashboard", "/restaurant-profit-and-loss", "/help", "/about", "/contact", "/privacy",
-  "/terms"];
+const LISTED_PAGES = ["/", "/dashboard", "/restaurant-profit-and-loss", "/help", "/developers", "/about", "/contact",
+  "/privacy", "/terms"];
 // Kept out of search results: nothing on them is worth finding by search.
 const UNLISTED_PAGES = ["/login", "/thanks", "/no-such-page"];
 const ALL_PAGES = LISTED_PAGES.concat(UNLISTED_PAGES);
@@ -161,6 +161,7 @@ test("robots.txt lets search engines in, keeps them out of /api/, and names the 
   assert.match(robots, /^Allow: \/$/m);
   assert.match(robots, /^Disallow: \/api\/$/m);
   assert.match(robots, new RegExp("^Sitemap: " + SITE + "/sitemap\\.xml$", "m"));
+  assert.match(robots, new RegExp("^schemamap: " + SITE + "/schemamap\\.xml$", "m"));
   await page.context().close();
 });
 
@@ -296,7 +297,7 @@ test("the cookie notice also shows on pages without a sticky button", async func
   await page.context().close();
 });
 
-test("every page's footer links to the privacy policy, the terms, the about page and a contact address", async function () {
+test("every page's footer links to the privacy policy, the terms, the about and developers pages and a contact address", async function () {
   const page = await openPage(browser, { ignore: /status of 404/ });
   for (const address of ALL_PAGES) {
     await visit(page, address);
@@ -308,6 +309,7 @@ test("every page's footer links to the privacy policy, the terms, the about page
     assert.ok(links.includes("/privacy"), address);
     assert.ok(links.includes("/terms"), address);
     assert.ok(links.includes("/about"), address);
+    assert.ok(links.includes("/developers"), address);
     assert.ok(links.some(function (href) {
       return href.startsWith("mailto:" + SUPPORT);
     }), address);
@@ -394,7 +396,10 @@ test("llms.txt describes FinDash, what it doesn't do, and links its pages", asyn
   assert.match(text, /## When not to use FinDash/);
   assert.match(text, /## How an agent should use FinDash/);
   assert.match(text, /`Accept: text\/markdown`/);
-  assert.match(text, /## For developers\n\nFinDash has no public API/);
+  assert.match(text, /## For developers\n\n- \[Developers page\]\(https:\/\/findash\.tech\/developers\)/);
+  assert.match(text, /`POST https:\/\/findash\.tech\/api\/v1\/analyze`/);
+  assert.match(text, /`https:\/\/findash\.tech\/api\/mcp`/);
+  assert.doesNotMatch(text, /no public API/);
   for (const address of LISTED_PAGES) {
     assert.ok(text.includes("(" + SITE + address + ")"), address);
   }
@@ -577,5 +582,55 @@ test("the about and contact pages say who FinDash is and how to reach it, in the
     assert.equal(byType.Organization.contactPoint.email, SUPPORT);
   }
   assert.deepEqual(page.errors, []);
+  await page.context().close();
+});
+
+test("the developers page documents the API, MCP servers and agent tools in the HTML, with WebAPI data", async function () {
+  const page = await openPage(browser);
+  const html = await (await page.request.get(site.url + "/developers")).text();
+  for (const words of ["https://findash.tech/api/v1", "/api/v1/analyze", "https://findash.tech/api/mcp",
+    "https://findash.tech/api/mcp/docs", 'href="/openapi.json"', 'id="errors"', "invalid_figures", "load_monthly_figures",
+    "AGENTS.md", 'href="/.well-known/agent-skills/index.json"']) {
+    assert.ok(html.includes(words), "the developers page mentions " + words);
+  }
+  await visit(page, "/developers");
+  const data = await page.evaluate(function () {
+    return JSON.parse(document.querySelector('script[type="application/ld+json"]').textContent);
+  });
+  const api = data["@graph"].find(function (item) {
+    return item["@type"] === "WebAPI";
+  });
+  assert.equal(api.documentation, SITE + "/developers");
+  assert.equal(api.url, SITE + "/api/v1");
+  assert.equal(api.provider["@id"], SITE + "/#organization");
+  assert.deepEqual(page.errors, []);
+  await page.context().close();
+});
+
+test("every page's head links its Markdown and the AI and API catalogs", async function () {
+  const page = await openPage(browser, { ignore: /status of 404/ });
+  for (const address of ALL_PAGES) {
+    await visit(page, address);
+    const links = await page.evaluate(function () {
+      function href(selector) {
+        const element = document.querySelector(selector);
+        return element ? element.getAttribute("href") : null;
+      }
+      return {
+        markdown: href('link[rel="alternate"][type="text/markdown"]'),
+        aiCatalog: href('link[rel="ai-catalog"]'),
+        apiCatalog: href('link[rel="api-catalog"]')
+      };
+    });
+    assert.equal(links.aiCatalog, "/.well-known/ai-catalog.json", address);
+    assert.equal(links.apiCatalog, "/.well-known/api-catalog", address);
+    if (address === "/no-such-page") {
+      assert.equal(links.markdown, null, "the 404 page has no Markdown twin");
+      continue;
+    }
+    assert.equal(links.markdown, SITE + (address === "/" ? "/index.md" : address + ".md"), address);
+    const twin = await page.request.get(site.url + links.markdown.slice(SITE.length));
+    assert.equal(twin.status(), 200, links.markdown);
+  }
   await page.context().close();
 });

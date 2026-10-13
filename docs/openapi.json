@@ -1,0 +1,722 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "FinDash API",
+    "version": "1.0.0",
+    "summary": "A small business's monthly figures in, a profit and loss summary out.",
+    "description": "Turns monthly revenue, costs and budget into costs in four groups, gross and net profit, net margin and budget used, with the same arithmetic as the FinDash dashboard. No account or key is needed, and nothing sent is stored. The same jobs are offered as MCP tools at https://findash.tech/api/mcp.",
+    "contact": {
+      "name": "FinDash",
+      "email": "support.findash@findash.tech",
+      "url": "https://findash.tech/contact"
+    },
+    "termsOfService": "https://findash.tech/terms"
+  },
+  "externalDocs": {
+    "description": "The developers page",
+    "url": "https://findash.tech/developers"
+  },
+  "servers": [
+    {
+      "url": "https://findash.tech"
+    }
+  ],
+  "security": [],
+  "tags": [
+    {
+      "name": "Figures",
+      "description": "Profit and loss from monthly figures."
+    },
+    {
+      "name": "Reference",
+      "description": "The template and the glossary."
+    }
+  ],
+  "paths": {
+    "/api/v1": {
+      "get": {
+        "operationId": "getApiIndex",
+        "tags": [
+          "Reference"
+        ],
+        "summary": "What the API offers",
+        "responses": {
+          "200": {
+            "description": "The API's endpoints and where they are described.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiIndex"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analyze": {
+      "post": {
+        "operationId": "analyzeMonthlyFigures",
+        "tags": [
+          "Figures"
+        ],
+        "summary": "Monthly figures in, a profit and loss summary out",
+        "description": "Send one object per month. Leave out cost lines with nothing in them; put a cost with no line of its own in the closest one.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeRequest"
+              },
+              "example": {
+                "currency": "USD",
+                "months": [
+                  {
+                    "month": "July",
+                    "year": 2026,
+                    "revenue": 72000,
+                    "budget": 66000,
+                    "costs": {
+                      "costOfGoodsSold": 26000,
+                      "labor": 12000,
+                      "rent": 6000,
+                      "utilities": 2800,
+                      "marketing": 2200
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The summary.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Summary"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "405": {
+            "$ref": "#/components/responses/MethodNotAllowed"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          }
+        }
+      }
+    },
+    "/api/v1/template": {
+      "get": {
+        "operationId": "getTemplate",
+        "tags": [
+          "Reference"
+        ],
+        "summary": "The spreadsheet template's columns",
+        "responses": {
+          "200": {
+            "description": "The columns, in order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Template"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/glossary": {
+      "get": {
+        "operationId": "getGlossary",
+        "tags": [
+          "Reference"
+        ],
+        "summary": "What each figure means",
+        "responses": {
+          "200": {
+            "description": "Every term, in plain words.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Glossary"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Costs": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "A month's costs, one amount per line.",
+        "properties": {
+          "costOfGoodsSold": {
+            "type": "number"
+          },
+          "labor": {
+            "type": "number"
+          },
+          "employeeMeals": {
+            "type": "number"
+          },
+          "payrollTax": {
+            "type": "number"
+          },
+          "packaging": {
+            "type": "number"
+          },
+          "creditCardFees": {
+            "type": "number"
+          },
+          "marketing": {
+            "type": "number"
+          },
+          "hardware": {
+            "type": "number"
+          },
+          "utilities": {
+            "type": "number"
+          },
+          "maintenance": {
+            "type": "number"
+          },
+          "rent": {
+            "type": "number"
+          },
+          "insurance": {
+            "type": "number"
+          },
+          "businessLicense": {
+            "type": "number"
+          },
+          "telephone": {
+            "type": "number"
+          }
+        }
+      },
+      "Month": {
+        "type": "object",
+        "required": [
+          "month",
+          "year",
+          "revenue"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "month": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "The month's name, such as July."
+              },
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 12
+              }
+            ]
+          },
+          "year": {
+            "type": "integer",
+            "minimum": 1900,
+            "maximum": 2200
+          },
+          "revenue": {
+            "type": "number",
+            "description": "Everything that came in from sales that month."
+          },
+          "budget": {
+            "type": "number",
+            "minimum": 0,
+            "description": "The most planned to be spent that month in total. A spending limit, not a sales target."
+          },
+          "costs": {
+            "$ref": "#/components/schemas/Costs"
+          }
+        }
+      },
+      "AnalyzeRequest": {
+        "type": "object",
+        "required": [
+          "months"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "months": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 120,
+            "items": {
+              "$ref": "#/components/schemas/Month"
+            }
+          },
+          "currency": {
+            "type": "string",
+            "pattern": "^[A-Za-z]{3}$",
+            "description": "Labels the result, such as USD."
+          }
+        }
+      },
+      "CostGroups": {
+        "type": "object",
+        "required": [
+          "directCosts",
+          "operatingCosts",
+          "variableOverhead",
+          "fixedOverhead"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "directCosts": {
+            "type": "number",
+            "description": "Cost of goods sold, labor, employee meals and payroll tax."
+          },
+          "operatingCosts": {
+            "type": "number",
+            "description": "Packaging, credit card fees, marketing and hardware."
+          },
+          "variableOverhead": {
+            "type": "number",
+            "description": "Utilities and maintenance."
+          },
+          "fixedOverhead": {
+            "type": "number",
+            "description": "Rent, insurance, business license and telephone."
+          }
+        }
+      },
+      "MonthSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "label",
+          "month",
+          "year",
+          "revenue",
+          "budget",
+          "costs",
+          "costGroups",
+          "totalCosts",
+          "grossProfit",
+          "netProfit",
+          "netMarginPercent",
+          "budgetUsedPercent",
+          "overBudgetBy"
+        ],
+        "properties": {
+          "label": {
+            "type": "string",
+            "examples": [
+              "July 2026"
+            ]
+          },
+          "month": {
+            "type": "integer"
+          },
+          "year": {
+            "type": "integer"
+          },
+          "revenue": {
+            "type": "number"
+          },
+          "budget": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "costs": {
+            "$ref": "#/components/schemas/Costs"
+          },
+          "costGroups": {
+            "$ref": "#/components/schemas/CostGroups"
+          },
+          "totalCosts": {
+            "type": "number"
+          },
+          "grossProfit": {
+            "type": "number",
+            "description": "Revenue minus direct costs."
+          },
+          "netProfit": {
+            "type": "number",
+            "description": "What is left after every cost."
+          },
+          "netMarginPercent": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Net profit as a share of revenue; null without revenue."
+          },
+          "budgetUsedPercent": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Total costs as a share of the budget; null without a budget."
+          },
+          "overBudgetBy": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "How far costs ran past the budget; 0 when within it, null without a budget."
+          }
+        }
+      },
+      "Total": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "label",
+          "months",
+          "revenue",
+          "costGroups",
+          "totalCosts",
+          "grossProfit",
+          "netProfit",
+          "netMarginPercent",
+          "budget",
+          "budgetUsedPercent"
+        ],
+        "properties": {
+          "label": {
+            "type": "string",
+            "examples": [
+              "Jul–Sep 2026"
+            ]
+          },
+          "months": {
+            "type": "integer"
+          },
+          "revenue": {
+            "type": "number"
+          },
+          "costGroups": {
+            "$ref": "#/components/schemas/CostGroups"
+          },
+          "totalCosts": {
+            "type": "number"
+          },
+          "grossProfit": {
+            "type": "number"
+          },
+          "netProfit": {
+            "type": "number"
+          },
+          "netMarginPercent": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "budget": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "budgetUsedPercent": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Spending in months with a budget, as a share of those budgets."
+          }
+        }
+      },
+      "Attention": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "month",
+          "message"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "loss",
+              "over-budget"
+            ]
+          },
+          "month": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "Summary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "currency",
+          "months",
+          "total",
+          "needsAttention"
+        ],
+        "properties": {
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "months": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MonthSummary"
+            }
+          },
+          "total": {
+            "$ref": "#/components/schemas/Total"
+          },
+          "needsAttention": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Attention"
+            }
+          }
+        }
+      },
+      "Template": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "columns",
+          "csvHeader",
+          "instructions",
+          "excelTemplate"
+        ],
+        "properties": {
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "header",
+                "field",
+                "description"
+              ],
+              "properties": {
+                "header": {
+                  "type": "string"
+                },
+                "field": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "csvHeader": {
+            "type": "string"
+          },
+          "instructions": {
+            "type": "string"
+          },
+          "excelTemplate": {
+            "type": "string"
+          }
+        }
+      },
+      "Glossary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "terms"
+        ],
+        "properties": {
+          "terms": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "key",
+                "term",
+                "text"
+              ],
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "term": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ApiIndex": {
+        "type": "object",
+        "required": [
+          "name",
+          "version",
+          "documentation",
+          "openapi",
+          "authentication",
+          "endpoints"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "documentation": {
+            "type": "string",
+            "format": "uri"
+          },
+          "openapi": {
+            "type": "string",
+            "format": "uri"
+          },
+          "authentication": {
+            "type": "string",
+            "const": "none"
+          },
+          "endpoints": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "mcp": {
+            "type": "object"
+          },
+          "dashboard": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "code",
+              "message",
+              "hint",
+              "docs"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "invalid_json",
+                  "invalid_figures",
+                  "too_large",
+                  "not_found",
+                  "method_not_allowed",
+                  "internal_error"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "hint": {
+                "type": "string",
+                "description": "What to do about it."
+              },
+              "docs": {
+                "type": "string",
+                "format": "uri"
+              },
+              "problems": {
+                "type": "array",
+                "description": "For invalid_figures: each value to fix.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "field",
+                    "message"
+                  ],
+                  "properties": {
+                    "field": {
+                      "type": "string",
+                      "examples": [
+                        "months[0].costs.wages"
+                      ]
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "The body or a figure can't be read.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "MethodNotAllowed": {
+        "description": "Wrong method; the Allow header says which.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "TooLarge": {
+        "description": "More than 120 months, or a body over 200 KB.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    }
+  }
+}

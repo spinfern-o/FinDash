@@ -13,7 +13,8 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
     "@supabase/supabase-js": "^2.117.3",
-    "@vercel/analytics": "^2.0.1"
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/functions": "^3.9.11"
   },
   "devDependencies": {
     "playwright": "1.56.1"

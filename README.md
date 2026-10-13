@@ -350,8 +350,28 @@ that say plainly what something is and answer the questions people actually ask.
   benchmarks. If the demo figures change, update its example table.
 - **The dashboard's heading** has plain fallback text for crawlers that don't run its
   script.
-- **`docs/llms.txt`** describes FinDash for AI tools in plain text. Few tools read it yet;
-  it costs nothing.
+- **`docs/llms.txt`** describes FinDash for AI tools in plain text: what it is, when an
+  agent should (and shouldn't) recommend it, how an agent should use it, and that there is
+  no public API. Few tools read it yet; it costs nothing.
+- **Every page as Markdown.** An AI agent that asks for a page with the header
+  `Accept: text/markdown` gets the page as Markdown instead of HTML, and an address with
+  no page gets a Markdown 404 pointing to `llms.txt` and the sitemap. Browsers and search
+  engines get the HTML exactly as before. `middleware.js` (Vercel Routing Middleware)
+  decides, using `lib/markdown-negotiation.js`; the Markdown itself is in
+  `lib/markdown-pages.js`, which `tools/build-pages.py` converts from each page's own HTML.
+  **After changing any page's text, run `python3 tools/build-pages.py`**: a test fails if
+  the Markdown no longer matches the pages. To check the live site:
+
+  ```bash
+  curl -sS -i -H 'Accept: text/markdown' https://findash.tech/
+  curl -sS -i -H 'Accept: text/markdown' https://findash.tech/no-such-page
+  ```
+
+  The first answers `200` with `Content-Type: text/markdown` and `Vary: Accept`; the
+  second `404`, in Markdown.
+- **`/about` and `/contact`** say who runs FinDash and how to reach it, which AI tools
+  check before recommending a site. The structured data names the support address as a
+  `ContactPoint`.
 
 There is deliberately no meta keywords tag: Google has ignored it since 2009, and Bing may
 treat a stuffed one as spam.
@@ -372,7 +392,9 @@ that it does none of these, which is also what people searching for them need to
 5. **Legal:** `docs/privacy.html` and `docs/terms.html` describe what the site actually
    does, but have them read by someone qualified where you operate. The terms name no
    governing law yet. Some countries (Germany, for one) also require a postal address on
-   a business website.
+   a business website. Once there is one to publish, put it in `POSTAL_ADDRESS` in
+   `tools/build-pages.py` and run the script: it is added to the structured data, where
+   AI tools look for it when deciding whether a business is real.
 6. **Analytics and search:** Web Analytics enabled in Vercel, and the site added to
    Google Search Console (see above).
 
@@ -410,6 +432,8 @@ are needed and nothing is spent:
   accounts, saving, deleting an account, two people taking turns on one browser, and
   the basics of every page (titles, share previews, icons, robots.txt, the sitemap, the
   404 page, phone layouts, the cookie notice, footers)
+- `tests/api/agent-readiness.test.mjs`: what AI agents get: Markdown pages, the Markdown
+  404, and that the Markdown is up to date with the pages
 
 GitHub runs the same tests, and builds the Java app, on every pull request
 (`.github/workflows/tests.yml`).
@@ -447,6 +471,7 @@ docs/                    The website (Vercel serves this folder)
   index.html             Landing page
   dashboard.html         The dashboard
   help.html              Getting data in, glossary, how data is handled
+  about.html, contact.html   Who runs FinDash and how to reach it
   restaurant-profit-and-loss.html   Food cost, labor and prime cost, for restaurants
   login.html             Log in, create an account, reset a password, delete an account
   privacy.html, terms.html   The privacy policy and terms of service
@@ -479,12 +504,16 @@ docs/                    The website (Vercel serves this folder)
       account-figures.js Saving them to the account
 api/                     Server functions: accounts, saved figures, photo reading, advice,
                          column matching, forecast, capabilities, error reports
-lib/                     Shared by the functions: Supabase, login cookies, daily limits
+lib/                     Shared by the functions: Supabase, login cookies, daily limits;
+                         and the Markdown versions of the pages (markdown-pages.js,
+                         written by tools/build-pages.py) with the rules for serving them
+middleware.js            Sends AI agents that ask for Markdown the Markdown version
 supabase/migrations/     The SQL for saved figures and daily limits
 tests/                   The tests (npm test)
 .github/workflows/       Runs the tests on every pull request
 forecast/                The optional forecast service (Python, Chronos)
-tools/                   build-pages.py (head tags, structured data, the glossary),
+tools/                   build-pages.py (head tags, structured data, the glossary, the
+                         Markdown versions of the pages),
                          og-image/ (the share image)
 src/main/java/           The Java command-line app
 data/                    The Java app's input CSVs

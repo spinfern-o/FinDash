@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- page-head: start (tools/build-pages.py writes this) -->
+<title>About FinDash: A Free P&amp;L Dashboard for Small Businesses</title>
+<meta name="description" content="Why FinDash exists, how it reads your figures without uploading your spreadsheet, what it doesn&#x27;t do, and how it&#x27;s built.">
+<link rel="canonical" href="https://findash.tech/about">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="FinDash">
+<meta property="og:title" content="About FinDash: A Free P&amp;L Dashboard for Small Businesses">
+<meta property="og:description" content="Why FinDash exists, how it reads your figures without uploading your spreadsheet, what it doesn&#x27;t do, and how it&#x27;s built.">
+<meta property="og:url" content="https://findash.tech/about">
+<meta property="og:image" content="https://findash.tech/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="FinDash: revenue, costs and budget on one monthly dashboard">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="theme-color" content="#050505">
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+<link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/css/site.css">
+<script type="module" src="/js/cookie-notice.js"></script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://findash.tech/#organization",
+      "name": "FinDash",
+      "url": "https://findash.tech/",
+      "logo": "https://findash.tech/icon-512.png",
+      "email": "support.findash@findash.tech",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "email": "support.findash@findash.tech",
+        "url": "https://findash.tech/contact",
+        "availableLanguage": "English"
+      },
+      "sameAs": [
+        "https://github.com/spinfern-o/FinDash"
+      ]
+    },
+    {
+      "@type": "AboutPage",
+      "@id": "https://findash.tech/about#page",
+      "url": "https://findash.tech/about",
+      "name": "About FinDash: A Free P&L Dashboard for Small Businesses",
+      "about": {
+        "@id": "https://findash.tech/#organization"
+      },
+      "isPartOf": {
+        "@type": "WebSite",
+        "@id": "https://findash.tech/#website",
+        "name": "FinDash",
+        "url": "https://findash.tech/"
+      }
+    }
+  ]
+}
+</script>
+<!-- page-head: end -->
+<script src="/js/theme-init.js"></script>
+<link rel="stylesheet" href="/css/help.css">
+</head>
+<body>
+<main>
+  <div class="masthead">
+    <div class="masthead-left">
+      <a class="wordmark" href="/">FinDash</a>
+      <nav>
+        <a class="nav-link" href="/">Home</a>
+        <a class="nav-link" href="/dashboard">Dashboard</a>
+        <a class="nav-link" href="/help">Help</a>
+      </nav>
+    </div>
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle light and dark mode">
+      <svg class="icon-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+      <svg class="icon-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+    </button>
+  </div>
+
+  <h1>About FinDash</h1>
+  <p class="lede">FinDash (findash.tech) is a free web app that turns a small business's monthly figures, from an
+     Excel or CSV spreadsheet or a photo of a supplier invoice, into a profit and loss (P&amp;L) dashboard of
+     revenue, costs, profit and budget vs actual, with plain-language AI advice. It is not accounting
+     software.</p>
+
+  <section id="why">
+    <h2>Why it exists</h2>
+    <p>Most small business owners already have their numbers: a Profit and Loss report from QuickBooks or Xero, a
+       spreadsheet, a pile of supplier invoices. What they rarely have is the time to turn those numbers into an
+       answer to the questions that matter each month. Did we make money? Where did it go? Are we over budget?
+       Is it getting better or worse?</p>
+    <p>FinDash was built for a restaurant, to answer exactly those questions from its monthly totals. It began
+       as a small Java program that read two spreadsheets and printed each month's profit, and grew into the
+       dashboard on this site. Its four cost groups work just as well for shops, trades, service businesses and
+       freelancers.</p>
+  </section>
+
+  <section id="how">
+    <h2>How it works</h2>
+    <ul>
+      <li><b>Your spreadsheet stays on your computer.</b> FinDash reads and totals it in your own browser. It is
+          not uploaded.</li>
+      <li><b>No account needed.</b> The dashboard works for anyone. A free account adds saving your figures
+          for use on any computer, reading invoice photos and written advice.</li>
+      <li><b>AI with a free account.</b> Claude, an AI model made by Anthropic, reads invoice photos, writes
+          advice when you press Get advice, and matches column names it doesn't recognise (the names only,
+          never your numbers). FinDash checks invoice arithmetic against the printed total, and you confirm
+          every line.</li>
+      <li><b>Plain words.</b> Every figure has a short explanation beside it, and the
+          <a href="/help">help page</a> explains each term.</li>
+    </ul>
+  </section>
+
+  <section id="not">
+    <h2>What FinDash doesn't do</h2>
+    <p>FinDash does not connect to bank accounts, keep books, send invoices, take payments, run payroll, file
+       taxes or show cash flow. It shows profit from the figures you already have, so you can act on them. Its
+       numbers are a guide, not accounting, tax, legal or investment advice.</p>
+  </section>
+
+  <section id="open">
+    <h2>Open about how it's built</h2>
+    <p>FinDash runs on Vercel, saves accounts and figures with Supabase, and uses Anthropic's Claude for the
+       features that read photos, write advice and match column names. The <a href="/privacy">privacy policy</a> lists exactly what
+       each of them receives. The source code is public on
+       <a href="https://github.com/spinfern-o/FinDash">GitHub</a>.</p>
+  </section>
+
+  <section id="reach">
+    <h2>Get in touch</h2>
+    <p>Questions, ideas and problem reports go to
+       <a href="mailto:support.findash@findash.tech?subject=FinDash">support.findash@findash.tech</a>. The
+       <a href="/contact">contact page</a> says what to include so we can help quickly.</p>
+  </section>
+
+  <footer>FinDash &middot; <a href="/dashboard">Dashboard</a> &middot; <a href="/help">Help</a> &middot;
+    <a href="/about">About</a> &middot; <a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot;
+    <a href="mailto:support.findash@findash.tech?subject=FinDash">Contact</a></footer>
+</main>
+
+<script type="module" src="/js/error-reporter.js"></script>
+<script type="module" src="/js/theme-toggle.js"></script>
+</body>
+</html>

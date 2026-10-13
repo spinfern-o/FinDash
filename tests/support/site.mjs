@@ -1,7 +1,8 @@
 /* The whole site, running locally for the tests: the pages in docs/ served
-   with the same security headers vercel.json sets, and every /api/*
-   request handled by the real function in api/, talking to the stand-ins
-   for Supabase and Claude instead of the real services.
+   with the same security headers vercel.json sets, every request the
+   middleware's matcher covers passed through the real middleware.js first,
+   and every /api/* request handled by the real function in api/, talking to
+   the stand-ins for Supabase and Claude instead of the real services.
 
    const site = await startSite();
    ... site.url, site.supabase, site.anthropic, site.serverLogs ...
@@ -13,8 +14,14 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { startMockSupabase } from "./mock-supabase.mjs";
 import { startMockAnthropic } from "./mock-anthropic.mjs";
+import middleware, { config as middlewareConfig } from "../../middleware.js";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
+// The addresses Vercel runs the middleware for. The matcher is a regular
+// expression for the whole path, as Vercel reads it.
+const MIDDLEWARE_PATHS = middlewareConfig.matcher.map(function (pattern) {
+  return new RegExp("^" + pattern + "$");
+});
 const PAGES = path.join(ROOT, "docs");
 const API = path.join(ROOT, "api");
 
@@ -90,6 +97,40 @@ function fileFor(pathname) {
   return file;
 }
 
+/* Runs middleware.js as Vercel does. Returns true when the middleware
+   answered the request itself; otherwise the headers it asked for (with
+   next()) are set and the request carries on as usual. */
+async function answeredByMiddleware(request, response, url) {
+  if (!MIDDLEWARE_PATHS.some(function (pattern) {
+    return pattern.test(url.pathname);
+  })) {
+    return false;
+  }
+  const headers = new Headers();
+  for (const [name, value] of Object.entries(request.headers)) {
+    headers.set(name, Array.isArray(value) ? value.join(", ") : value);
+  }
+  const result = await middleware(new Request(url, { method: request.method, headers: headers }));
+
+  if (result.headers.get("x-middleware-next") === "1") {
+    for (const [name, value] of result.headers) {
+      if (!name.startsWith("x-middleware-")) {
+        response.setHeader(name, value);
+      }
+    }
+    return false;
+  }
+  if (result.headers.has("x-middleware-rewrite")) {
+    throw new Error("the test site doesn't follow middleware rewrites");
+  }
+  response.statusCode = result.status;
+  for (const [name, value] of result.headers) {
+    response.setHeader(name, value);
+  }
+  response.end(Buffer.from(await result.arrayBuffer()));
+  return true;
+}
+
 /* options.accounts: false runs the site without Supabase settings.
    options.claude: false runs it without an Anthropic key. */
 export async function startSite(options = {}) {
@@ -141,6 +182,10 @@ export async function startSite(options = {}) {
       response.setHeader(header.key, header.value);
     }
     const url = new URL(request.url, "http://localhost");
+
+    if (await answeredByMiddleware(request, response, url)) {
+      return;
+    }
 
     if (url.pathname.startsWith("/api/")) {
       const handler = await handlerFor(url.pathname.slice("/api/".length));

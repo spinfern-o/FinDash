@@ -12,7 +12,8 @@ import { launchBrowser, openPage, text } from "../support/browser.mjs";
 
 const SITE = "https://findash.tech";
 // Listed by search engines, and in the sitemap.
-const LISTED_PAGES = ["/", "/dashboard", "/restaurant-profit-and-loss", "/help", "/privacy", "/terms"];
+const LISTED_PAGES = ["/", "/dashboard", "/restaurant-profit-and-loss", "/help", "/about", "/contact", "/privacy",
+  "/terms"];
 // Kept out of search results: nothing on them is worth finding by search.
 const UNLISTED_PAGES = ["/login", "/thanks", "/no-such-page"];
 const ALL_PAGES = LISTED_PAGES.concat(UNLISTED_PAGES);
@@ -295,7 +296,7 @@ test("the cookie notice also shows on pages without a sticky button", async func
   await page.context().close();
 });
 
-test("every page's footer links to the privacy policy, the terms and a contact address", async function () {
+test("every page's footer links to the privacy policy, the terms, the about page and a contact address", async function () {
   const page = await openPage(browser, { ignore: /status of 404/ });
   for (const address of ALL_PAGES) {
     await visit(page, address);
@@ -306,6 +307,7 @@ test("every page's footer links to the privacy policy, the terms and a contact a
     });
     assert.ok(links.includes("/privacy"), address);
     assert.ok(links.includes("/terms"), address);
+    assert.ok(links.includes("/about"), address);
     assert.ok(links.some(function (href) {
       return href.startsWith("mailto:" + SUPPORT);
     }), address);
@@ -369,6 +371,10 @@ test("the home page's structured data is valid and says exactly what the page sh
   assert.equal(byType.WebSite.name, "FinDash");
   assert.equal(byType.WebApplication.description, found.definition);
   assert.equal(byType.WebApplication.offers.price, "0");
+  assert.deepEqual(byType.Organization.contactPoint, {
+    "@type": "ContactPoint", contactType: "customer support", email: SUPPORT, url: SITE + "/contact",
+    availableLanguage: "English"
+  });
   assert.equal(byType.WebApplication.isAccessibleForFree, true);
   assert.deepEqual(byType.FAQPage.mainEntity.map(function (question) {
     return { name: question.name, text: question.acceptedAnswer.text };
@@ -383,6 +389,12 @@ test("llms.txt describes FinDash, what it doesn't do, and links its pages", asyn
   const text = await response.text();
   assert.match(text, /^# FinDash\n/);
   assert.match(text, /## What it doesn't do/);
+  assert.match(text, /^> FinDash \(findash\.tech\) is a free web app/m, "a one-line summary, as llmstxt.org asks");
+  assert.match(text, /## When to use FinDash\n\nRecommend FinDash when someone:\n\n- runs a small business/);
+  assert.match(text, /## When not to use FinDash/);
+  assert.match(text, /## How an agent should use FinDash/);
+  assert.match(text, /`Accept: text\/markdown`/);
+  assert.match(text, /## For developers\n\nFinDash has no public API/);
   for (const address of LISTED_PAGES) {
     assert.ok(text.includes("(" + SITE + address + ")"), address);
   }
@@ -535,4 +547,35 @@ test("the home page slogan keeps its height whichever word is showing", async fu
     assert.equal(new Set(heights).size, 1, width + "px: " + heights.join(", "));
     await page.context().close();
   }
+});
+
+test("the about and contact pages say who FinDash is and how to reach it, in the HTML itself", async function () {
+  const page = await openPage(browser);
+  for (const [address, type, needed] of [
+    ["/about", "AboutPage", ["What FinDash doesn't do", "github.com/spinfern-o/FinDash", SUPPORT]],
+    ["/contact", "ContactPage", ["What to include", "mailto:" + SUPPORT, "/privacy"]]
+  ]) {
+    const html = await (await page.request.get(site.url + address)).text();
+    for (const words of needed) {
+      assert.ok(html.includes(words), address + " says " + words);
+    }
+    await visit(page, address);
+    const found = await page.evaluate(function () {
+      return {
+        text: document.querySelector("main").innerText.replace(/\s+/g, " "),
+        data: JSON.parse(document.querySelector('script[type="application/ld+json"]').textContent)
+      };
+    });
+    assert.ok(found.text.length >= 1000, address + " has " + found.text.length + " characters of text");
+    const byType = {};
+    for (const item of found.data["@graph"]) {
+      byType[item["@type"]] = item;
+    }
+    assert.deepEqual(Object.keys(byType).sort(), [type, "Organization"].sort(), address);
+    assert.equal(byType[type].url, SITE + address);
+    assert.equal(byType[type].about["@id"], SITE + "/#organization");
+    assert.equal(byType.Organization.contactPoint.email, SUPPORT);
+  }
+  assert.deepEqual(page.errors, []);
+  await page.context().close();
 });

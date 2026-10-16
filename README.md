@@ -265,9 +265,14 @@ allowance that depends on their plan (months run from the 1st, in UTC):
 
 | Feature | Free | Plus |
 | --- | --- | --- |
-| Reading photos | 10 (a photo is one request, or two when it gets a second look) | 100 |
-| Advice | 2 | 20 |
-| Matching column names | 200 | 200 |
+| Reading photos | 10 (a photo is one request, or two when it gets a second look) | 50 |
+| Advice | 2 | 10 |
+| Matching column names | 30 | 30 |
+
+Plus costs $9 a month or $90 a year: the lowest price at which someone who uses every
+request still pays for what they cost (about $0.15 a photo read, $0.08 a piece of advice
+and $0.02 a column match on Claude, plus about $0.62 of Stripe fees on $9). Those per-use
+costs are estimates; check them with the query below before changing prices or limits.
 
 Change them, and Plus's prices, in `docs/js/plans.js`: the server enforces them from there
 and the account box shows them. The pricing page (`docs/pricing.html`) and the prices in
@@ -297,7 +302,7 @@ everyone is on the free plan and the Plus buttons don't appear.
 1. **Test mode first.** In the [Stripe dashboard](https://dashboard.stripe.com), switch on
    test mode.
 2. **The product.** Under **Product catalog**, add a product named FinDash Plus with two
-   recurring prices: $19 a month and $190 a year (the prices in `docs/js/plans.js`). Copy
+   recurring prices: $9 a month and $90 a year (the prices in `docs/js/plans.js`). Copy
    each price's ID (`price_...`).
 3. **The billing page.** Under **Settings → Billing → Customer portal**, save the default
    settings once, with cancellation allowed ("at the end of the billing period") and

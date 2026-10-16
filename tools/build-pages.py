@@ -78,8 +78,8 @@ PAGES = {
                         "A free API and MCP server: send a small business's monthly revenue and costs, get profit, "
                         "margin and budget vs actual back. No key needed.", True),
     "pricing.html": ("/pricing", "Pricing: Free Dashboard, FinDash Plus for Invoice Photos · FinDash",
-                     "The dashboard is free with or without an account. FinDash Plus, $19 a month, adds 100 "
-                     "invoice photo reads and 20 requests for AI advice a month.", True),
+                     "The dashboard is free with or without an account. FinDash Plus, $9 a month, adds 50 "
+                     "invoice photo reads and 10 requests for AI advice a month.", True),
     "about.html": ("/about", "About FinDash: A Free P&L Dashboard for Small Businesses",
                    "Why FinDash exists, how it reads your figures without uploading your spreadsheet, what it "
                    "doesn't do, and how it's built.", True),
@@ -120,9 +120,9 @@ FEATURES = [
 # are the ones in docs/js/plans.js (a test checks they agree).
 PLAN_OFFERS = [
     {"@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "USD", "url": SITE + "/pricing"},
-    {"@type": "Offer", "name": "FinDash Plus, monthly", "price": "19", "priceCurrency": "USD",
+    {"@type": "Offer", "name": "FinDash Plus, monthly", "price": "9", "priceCurrency": "USD",
      "url": SITE + "/pricing"},
-    {"@type": "Offer", "name": "FinDash Plus, yearly", "price": "190", "priceCurrency": "USD",
+    {"@type": "Offer", "name": "FinDash Plus, yearly", "price": "90", "priceCurrency": "USD",
      "url": SITE + "/pricing"},
 ]
 

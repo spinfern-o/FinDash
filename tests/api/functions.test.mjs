@@ -142,7 +142,7 @@ test("each person has a monthly limit per feature, from their plan, and a refusa
   const third = await client.post("/api/briefing", ADVICE_REQUEST);
   assert.equal(third.status, 429);
   assert.equal(third.json.error,
-    "You've used this month's 2 requests for advice. FinDash Plus includes 20 a month: see the Pricing page.");
+    "You've used this month's 2 requests for advice. FinDash Plus includes 10 a month: see the Pricing page.");
   assert.equal(third.json.upgrade, "/pricing");
   assert.equal(site.anthropic.requestsOfKind("advice").length, 2);
   const status = await client.get("/api/billing?action=status");

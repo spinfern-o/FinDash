@@ -374,7 +374,7 @@ test("the home page's structured data is valid and says exactly what the page sh
   assert.equal(byType.WebApplication.description, found.definition);
   assert.deepEqual(byType.WebApplication.offers.map(function (offer) {
     return [offer.name, offer.price, offer.priceCurrency];
-  }), [["Free", "0", "USD"], ["FinDash Plus, monthly", "19", "USD"], ["FinDash Plus, yearly", "190", "USD"]]);
+  }), [["Free", "0", "USD"], ["FinDash Plus, monthly", "9", "USD"], ["FinDash Plus, yearly", "90", "USD"]]);
   assert.deepEqual(byType.Organization.contactPoint, {
     "@type": "ContactPoint", contactType: "customer support", email: SUPPORT, url: SITE + "/contact",
     availableLanguage: "English"

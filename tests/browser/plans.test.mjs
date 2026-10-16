@@ -51,8 +51,8 @@ test("the plan box shows the free plan, this month's use, and the way to Plus", 
   const { page } = await loggedInOnLoginPage();
   assert.equal(await text(page, "#plan-box .plan-name"), "Your plan: Free");
   assert.equal(await text(page, "#plan-box .plan-usage"), "This month: 0 of 10 photo reads · 0 of 2 requests for advice");
-  assert.equal(await text(page, '[data-checkout="month"]'), "Get Plus: $19 a month");
-  assert.equal(await text(page, '[data-checkout="year"]'), "or $190 a year");
+  assert.equal(await text(page, '[data-checkout="month"]'), "Get Plus: $9 a month");
+  assert.equal(await text(page, '[data-checkout="year"]'), "or $90 a year");
   assert.equal(await page.getAttribute("#plan-box .plan-note a", "href"), "/pricing");
 });
 
@@ -63,7 +63,7 @@ test("paying on Stripe's page brings you back on Plus, welcomed once", async fun
   await page.waitForSelector("#message.good");
   assert.match(await text(page, "#message"), /Welcome to Plus/);
   assert.match(await text(page, "#plan-box .plan-name"), /^Your plan: Plus · billed monthly, renews \d+ \w+ \d{4}\.$/);
-  assert.equal(await text(page, "#plan-box .plan-usage"), "This month: 0 of 100 photo reads · 0 of 20 requests for advice");
+  assert.equal(await text(page, "#plan-box .plan-usage"), "This month: 0 of 50 photo reads · 0 of 10 requests for advice");
   assert.equal(await page.locator("[data-checkout]").count(), 0);
   assert.equal(new URL(page.url()).search, "", "a refresh won't welcome them again");
   assert.equal(site.stripe.customers.get(site.supabase.billingCustomers.get(site.supabase.userId(email))).email, email);
@@ -155,7 +155,7 @@ test("advice used up for the month: the card links to the pricing page", async f
   assert.equal(await signUp(page, site, newEmail("advice"), PASSWORD), 200);
   await page.route("**/api/briefing", function (route) {
     route.fulfill({ status: 429, json: { error: "You've used this month's 2 requests for advice. FinDash Plus " +
-      "includes 20 a month: see the Pricing page.", plan: "free", upgrade: "/pricing" } });
+      "includes 10 a month: see the Pricing page.", plan: "free", upgrade: "/pricing" } });
   });
   await page.goto(site.url + "/dashboard", { waitUntil: "networkidle" });
   await page.click("#brief-go");

@@ -11,6 +11,8 @@
      export/                the template and "Export to Excel"
      saved-figures.js       remembering the figures in this browser
      account-figures.js     saving them to the owner's account when logged in
+     items.js               what the owner buys, item by item, from invoices
+     count-sheet.js         the count sheet made from those items
      agent-tools.js         tools for AI agents in the browser (WebMCP)
    README.md has a fuller tour. */
 
@@ -29,6 +31,7 @@ import { loggedInUser, showLoggedIn } from "./account.js";
 import { startSavingToAccount, stopSavingToAccount } from "./account-figures.js";
 import { showStatus } from "./status-line.js";
 import { offerAgentTools } from "./agent-tools.js";
+import { wireItemLog } from "./cards/item-log.js";
 
 /* Mentions photos only where this copy of FinDash can read them. Where
    accounts are set up, shows who is logged in and saves their figures to
@@ -99,6 +102,7 @@ function start() {
   state.savedAdvice = loadSavedAdvice();
 
   wireMonthSelection();
+  wireItemLog();
   wireToolbar();
   wireImportBox();
   wireHelpTips();

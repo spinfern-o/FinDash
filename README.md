@@ -493,6 +493,7 @@ Where to start:
 | How a spreadsheet becomes months | `import/sheet-import.js`, `import/months-from-sheet.js` |
 | How a photo becomes an invoice | `photos/photo-import.js`, `photos/photo-review.js`, `api/read-document.js` |
 | How figures are remembered | `saved-figures.js` (this browser), `account-figures.js` (the account) |
+| What you buy and the count sheet | `items.js`, `cards/item-log.js`, `count-sheet.js` |
 | How logging in works | `api/auth.js`, `lib/session.js`, `docs/js/login.js` |
 | Who may use the paid features | `lib/ai-access.js` |
 | The cost groups | `docs/js/dashboard/cost-groups.js` |
@@ -540,6 +541,8 @@ docs/                    The website (Vercel serves this folder)
       export/            The template and Export to Excel
       saved-figures.js   Remembering figures in this browser
       account-figures.js Saving them to the account
+      items.js           What the owner buys, item by item, from the invoices
+      count-sheet.js     The count sheet made from those items, printed or for Excel
 api/                     Server functions: accounts, saved figures, photo reading, advice,
                          column matching, forecast, capabilities, error reports, and
                          agent.js: the public API and the MCP servers

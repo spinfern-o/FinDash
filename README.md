@@ -31,11 +31,11 @@ or a service business.
   attention" list of losses, budget overruns and unusual costs.
 - **Looks ahead.** A budget estimator for next month, and a trend line through net
   profit (from three months on file, with a dollar range from six).
-- **Reads invoice photos** *(with a free account)*. Take a photo of a supplier invoice or
-  receipt; Claude reads every line, FinDash checks the arithmetic, and you confirm
-  before anything is added.
-- **Writes advice** *(with a free account)*. Press **Get advice** and Claude writes
-  opportunities, risks and next steps from your monthly totals.
+- **Reads invoice photos** *(with a free account; more each month with Plus)*. Take a
+  photo of a supplier invoice or receipt; Claude reads every line, FinDash checks the
+  arithmetic, and you confirm before anything is added.
+- **Writes advice** *(with a free account; more each month with Plus)*. Press **Get
+  advice** and Claude writes opportunities, risks and next steps from your monthly totals.
 - **Remembers.** Figures stay in your browser for next time. Log in and they are saved
   to your account, so they're there on any computer.
 - **Shares.** Print or save as PDF, or export everything to Excel.
@@ -46,7 +46,7 @@ or a service business.
 
 Your spreadsheet is opened and added up by your own browser. It never leaves it. Only
 these things are ever sent anywhere, always through this site's own server (the browser
-never contacts Supabase or Claude itself). The help page lists the same eight, and the
+never contacts Supabase, Claude or Stripe itself). The help page lists the same nine, and the
 [privacy policy](docs/privacy.html) names every service involved.
 
 | When | What is sent | To |
@@ -56,12 +56,13 @@ never contacts Supabase or Claude itself). The help page lists the same eight, a
 | Adding a photo | the photo, to be read (it isn't kept) | Claude |
 | Pressing **Get advice** | each month's totals: revenue, the four cost groups, net profit, budget | Claude |
 | A column name isn't recognised | the column names only, never the numbers | Claude |
+| Getting Plus | card details (typed on Stripe's own page) and email; never figures | Stripe |
 | Pressing the forecast model's button (if one is set up) | the net profit figure for each month | the forecast service |
 | Something on the page breaks | the error message and which file it came from | this site's own log |
 | Every page visit | which page, the linking site, browser, device type, country (no cookies) | Vercel Web Analytics |
 
 Photos, advice and column matching need a free account, because each one is a paid
-request (see [Paid features and daily limits](#paid-features-and-daily-limits)).
+request (see [Plans and monthly limits](#plans-and-monthly-limits)).
 **Forget my data** removes everything from the browser and the account.
 
 ## How the numbers are worked out
@@ -191,6 +192,8 @@ these under **Settings → Environment Variables** and redeploy:
 | `SUPABASE_URL` and `SUPABASE_ANON_KEY` | Accounts. The Supabase integration in the Vercel Marketplace adds these for you. `SUPABASE_PUBLISHABLE_KEY` and the `NEXT_PUBLIC_` forms work too. |
 | `ANTHROPIC_API_KEY` | Photos, advice and column matching (also needs accounts) |
 | `SITE_URL` | Optional: the address used in login emails, e.g. `https://yourdomain.com` |
+| `STRIPE_SECRET_KEY`, `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_YEARLY` | Optional: selling FinDash Plus (see [Paid plans with Stripe](#paid-plans-with-stripe)) |
+| `STRIPE_AUTOMATIC_TAX` | Optional: `on` to have Stripe Tax add sales tax at checkout |
 | `FORECAST_URL` and `FORECAST_TOKEN` | Optional: the forecast model (see `forecast/README.md`) |
 
 The site never uses Supabase's service-role key (the integration adds one; nothing reads
@@ -205,10 +208,13 @@ nothing.
 1. In Supabase open **SQL Editor**. For each file in `supabase/migrations/`, in order,
    paste it and press **Run**:
    - `20261011000000_account_figures.sql`: where saved figures are kept
-   - `20261012000000_ai_usage_limits.sql`: the daily limits on paid features
+   - `20261012000000_ai_usage_limits.sql`: the usage counts for paid features
+   - `20261016000000_plans_and_billing.sql`: monthly limits, token counts, and which
+     Stripe customer is whose
 
    Running a file twice does no harm. Until the first is run, figures stay in the browser;
-   until the second is run, photos, advice and column matching say "not set up yet".
+   until the last two are run, photos, advice and column matching say "not set up yet".
+   Run each new file **before** deploying the code that needs it.
 2. Under **Authentication → URL Configuration**, set the Site URL to your live address
    and add `https://yourdomain.com/login` to the redirect URLs, so the links in emails
    come back to the login page.
@@ -251,30 +257,76 @@ If creating an account fails, the login page says why:
 | This site has sent all the emails it can for now | Raise the email rate limit in Supabase |
 | This site isn't taking new accounts at the moment | Supabase → Authentication → Sign In / Providers: allow new sign-ups, with Email on |
 
-### Paid features and daily limits
+### Plans and monthly limits
 
 Reading a photo, writing advice and matching column names each cost money, paid from
-your Anthropic account. So each needs someone logged in, and each person has a daily
-allowance (days run midnight to midnight UTC):
+your Anthropic account. So each needs someone logged in, and each person has a monthly
+allowance that depends on their plan (months run from the 1st, in UTC):
 
-| Feature | Requests per person per day |
-| --- | --- |
-| Reading photos | 40 (a photo is one request, or two when it gets a second look) |
-| Advice | 10 |
-| Matching column names | 60 |
+| Feature | Free | Plus |
+| --- | --- | --- |
+| Reading photos | 10 (a photo is one request, or two when it gets a second look) | 100 |
+| Advice | 2 | 20 |
+| Matching column names | 200 | 200 |
 
-Change them in `DAILY_LIMITS` in `lib/ai-access.js`. The counts are kept in Supabase by
-the second migration; without it, the three features stay off rather than run without a
+Change them, and Plus's prices, in `docs/js/plans.js`: the server enforces them from there
+and the account box shows them. The pricing page (`docs/pricing.html`) and the prices in
+`tools/build-pages.py` must say the same; a test checks they do. The counts are kept in
+Supabase; without the migrations, the three features stay off rather than run without a
 limit. Set a monthly spending limit in the Anthropic Console as well.
+
+**What each use really costs.** Every request also records the tokens Claude used. In the
+Supabase SQL Editor:
+
+```sql
+select feature, sum(uses) as uses, sum(input_tokens) as input, sum(output_tokens) as output
+from public.ai_usage where day >= date_trunc('month', now()) group by feature;
+```
+
+Divide by the uses and multiply by Claude's price per token (input and output are priced
+differently) to get the cost of one photo read or one piece of advice.
+
+### Paid plans with Stripe
+
+FinDash Plus is sold through Stripe, with Stripe's own checkout and billing pages, so
+card details never reach this site. `lib/billing.js` explains the design: Stripe is the
+only record of who has paid, asked directly whenever a plan matters, so there is no
+webhook and the site still never needs Supabase's admin key. Without the Stripe settings,
+everyone is on the free plan and the Plus buttons don't appear.
+
+1. **Test mode first.** In the [Stripe dashboard](https://dashboard.stripe.com), switch on
+   test mode.
+2. **The product.** Under **Product catalog**, add a product named FinDash Plus with two
+   recurring prices: $19 a month and $190 a year (the prices in `docs/js/plans.js`). Copy
+   each price's ID (`price_...`).
+3. **The billing page.** Under **Settings → Billing → Customer portal**, save the default
+   settings once, with cancellation allowed ("at the end of the billing period") and
+   invoice history on. People reach it with **Manage billing**.
+4. **Failed payments.** Under **Settings → Billing → Revenue recovery**, choose how often
+   Stripe retries and what happens after the last try: "cancel the subscription" puts the
+   account back on Free. Turn on Stripe's emails for receipts and failed payments.
+5. **Vercel.** Add `STRIPE_SECRET_KEY` (the test secret key, `sk_test_...`),
+   `STRIPE_PRICE_MONTHLY` and `STRIPE_PRICE_YEARLY`, and redeploy. Run the third
+   migration first (see Supabase above).
+6. **Try it.** Log in, open the login page, press **Get Plus**, and pay with Stripe's test
+   card `4242 4242 4242 4242` (any future date, any CVC). The plan box should say Plus.
+   Then try **Manage billing** and cancel, and **Delete my account** on a test account.
+7. **Sales tax (optional).** Set up Stripe Tax in the dashboard, then add
+   `STRIPE_AUTOMATIC_TAX=on`; the checkout page then asks for an address and adds tax.
+   Whether you must collect tax, and where, is a question for an accountant.
+8. **Going live.** Repeat steps 2 to 4 with test mode off, and replace the three Stripe
+   settings with the live key and live price IDs.
 
 ### Deleting an account
 
-**Delete my account** on the login page removes that person's saved figures (from the
+**Delete my account** on the login page first ends Plus (it removes the person's customer
+from Stripe, which cancels the subscription at once and drops the saved card; if Stripe
+can't be reached, nothing is deleted). Then it removes their saved figures (from the
 account and the browser), logs them out, and opens an email to the site's owner
 (`OWNER_EMAIL` in `docs/js/login.js`) asking for the login to be deleted. Deleting a login
 needs Supabase admin rights, which the site deliberately never has, so the owner finishes
-it: **Supabase → Authentication → Users**, find the email, **Delete user**. Their daily
-usage counts go with it.
+it: **Supabase → Authentication → Users**, find the email, **Delete user**. Their usage
+counts and Stripe customer number go with it.
 
 ### Speed
 
@@ -416,10 +468,12 @@ that it does none of these, which is also what people searching for them need to
 2. **Supabase:** both migrations run, and a real test: create an account, add a file,
    log in on another device.
 3. **Email:** Resend (or another service) connected, as above.
-4. **Plans:** Vercel's free Hobby plan is for non-commercial use, and Supabase's free
-   plan pauses after a week without activity. Check both.
+4. **Plans:** Vercel's free Hobby plan is for non-commercial use, and selling Plus makes
+   the site commercial: move to Vercel Pro. Supabase's free plan pauses after a week
+   without activity: move to Supabase Pro before taking payments.
 5. **Legal:** `docs/privacy.html` and `docs/terms.html` describe what the site actually
-   does, but have them read by someone qualified where you operate. The terms name no
+   does, including Plus's renewal, cancellation and refund terms, but have them read by
+   someone qualified where you operate (auto-renewal rules differ by country and US state). The terms name no
    governing law yet. Some countries (Germany, for one) also require a postal address on
    a business website. Once there is one to publish, put it in `POSTAL_ADDRESS` in
    `tools/build-pages.py` and run the script: it is added to the structured data, where
@@ -455,7 +509,7 @@ Over 150 tests, in a few minutes, against stand-ins for Supabase and Claude, so 
 are needed and nothing is spent:
 
 - `tests/unit/`: the arithmetic and file reading
-- `tests/api/`: the server functions: logins, saved figures, daily limits, what is sent
+- `tests/api/`: the server functions: logins, saved figures, monthly limits, Plus, what is sent
   to Claude, error reports
 - `tests/browser/`: the pages in a real (headless) Chromium: the dashboard, photos,
   accounts, saving, deleting an account, two people taking turns on one browser, and
@@ -495,7 +549,8 @@ Where to start:
 | How figures are remembered | `saved-figures.js` (this browser), `account-figures.js` (the account) |
 | What you buy and the count sheet | `items.js`, `cards/item-log.js`, `count-sheet.js` |
 | How logging in works | `api/auth.js`, `lib/session.js`, `docs/js/login.js` |
-| Who may use the paid features | `lib/ai-access.js` |
+| Who may use the paid features | `lib/ai-access.js`, with the plans in `docs/js/plans.js` |
+| How Plus is sold and checked | `lib/billing.js`, `api/billing.js`, `docs/js/plan-box.js` |
 | The cost groups | `docs/js/dashboard/cost-groups.js` |
 | What the tests check | `tests/browser/dashboard.test.mjs`, then the rest of `tests/` |
 
@@ -506,6 +561,7 @@ docs/                    The website (Vercel serves this folder)
   index.html             Landing page
   dashboard.html         The dashboard
   help.html              Getting data in, glossary, how data is handled
+  pricing.html           What's free and what Plus adds (plans.js has the numbers)
   about.html, contact.html   Who runs FinDash and how to reach it
   developers.html        The API, MCP servers, WebMCP tools and agent skill
   openapi.json           The API's OpenAPI description
@@ -544,16 +600,17 @@ docs/                    The website (Vercel serves this folder)
       items.js           What the owner buys, item by item, from the invoices
       count-sheet.js     The count sheet made from those items, printed or for Excel
 api/                     Server functions: accounts, saved figures, photo reading, advice,
-                         column matching, forecast, capabilities, error reports, and
-                         agent.js: the public API and the MCP servers
-lib/                     Shared by the functions: Supabase, login cookies, daily limits,
+                         column matching, forecast, capabilities, error reports, Plus
+                         (billing.js), and agent.js: the public API and the MCP servers
+lib/                     Shared by the functions: Supabase, login cookies, monthly limits,
+                         Stripe (billing.js),
                          the API (agent-api.js) and MCP servers (mcp-servers.js); and the
                          Markdown versions of the pages (markdown-pages.js, written by
                          tools/build-pages.py) with the rules for serving them
 middleware.js            Sends AI agents the Markdown version of a page, and Link headers
 skills/                  The agent skill (SKILL.md), published under .well-known/
 AGENTS.md                Instructions for AI coding agents working on this code
-supabase/migrations/     The SQL for saved figures and daily limits
+supabase/migrations/     The SQL for saved figures, usage limits and Stripe customers
 tests/                   The tests (npm test)
 .github/workflows/       Runs the tests on every pull request
 forecast/                The optional forecast service (Python, Chronos)

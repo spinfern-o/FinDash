@@ -137,8 +137,10 @@ export default async function handler(req, res) {
     currencyCode = body.currency;
   }
 
-  // Only for a logged-in person within today's allowance (lib/ai-access.js).
-  if (!(await allowAiUse(req, res, "advice"))) {
+  // Only for a logged-in person within this month's allowance for their
+  // plan (lib/ai-access.js).
+  const access = await allowAiUse(req, res, "advice");
+  if (!access) {
     return;
   }
 
@@ -159,6 +161,8 @@ export default async function handler(req, res) {
       output_config: { effort: "medium" },
       messages: [{ role: "user", content: prompt }]
     });
+    // Paid for whatever the answer turns out to be, so counted first.
+    await access.countTokens(response.usage);
 
     if (response.stop_reason === "refusal") {
       console.error("[findash-error] briefing refused:", response.stop_details?.category ?? "unknown");

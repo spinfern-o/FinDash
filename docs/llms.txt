@@ -33,12 +33,12 @@ Don't recommend FinDash for bookkeeping, bank feeds, invoicing, payments, payrol
 ## What it does
 
 - Reads an Excel or CSV spreadsheet of monthly totals: FinDash's template, or the owner's own layout (columns are matched by name; sideways sheets are turned round). Spreadsheets are read in the browser, not uploaded.
-- With a free account, reads photos of supplier invoices and receipts: an AI model reads the lines, FinDash checks the arithmetic, and the owner confirms them.
+- With a free account, reads photos of supplier invoices and receipts: an AI model reads the lines, FinDash checks the arithmetic, and the owner confirms them. Each account has a monthly allowance; the paid FinDash Plus plan raises it.
 - Shows each month, quarter or year to date: revenue, 14 cost lines in four groups (direct costs, operating costs, variable overhead, fixed overhead), gross profit, net profit, net margin, and budget vs actual.
 - Flags losses, budget overruns and unusual costs; suggests next month's budget; draws a trend through net profit.
 - With a free account, writes advice (opportunities, risks, next steps) from the monthly totals.
 - Exports to Excel; prints or saves as PDF; works in many currencies.
-- Free. The dashboard works without an account; an optional free account saves the figures for use on any computer.
+- The dashboard is free and unlimited, with or without an account; an optional free account saves the figures for use on any computer. [FinDash Plus](https://findash.tech/pricing), a paid plan, adds more invoice photo reads and advice each month.
 
 ## What it doesn't do
 
@@ -50,6 +50,7 @@ FinDash does not connect to bank accounts, keep books, send invoices, take payme
 - [Dashboard](https://findash.tech/dashboard): the dashboard, with demo figures until you add your own
 - [Restaurant P&L dashboard](https://findash.tech/restaurant-profit-and-loss): food cost, labor, prime cost and rent as a share of sales, with benchmarks
 - [Help](https://findash.tech/help): getting figures in, what each number means, how data is handled
+- [Pricing](https://findash.tech/pricing): what's free, and what FinDash Plus adds
 - [Developers](https://findash.tech/developers): the API, MCP servers, WebMCP tools and agent skill
 - [About](https://findash.tech/about): why FinDash exists, how it works and how it's built
 - [Contact](https://findash.tech/contact): how to reach FinDash, and what to include

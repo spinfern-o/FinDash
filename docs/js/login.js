@@ -4,10 +4,13 @@
      signup    create an account
      reset     ask for a link to choose a new password
      newpass   choose a new password (after opening a reset link)
-     logged in already logged in: open the dashboard or log out
+     logged in already logged in: the plan (plan-box.js), open the
+               dashboard or log out
 
    Every request goes to /api/auth on this site; the session lives in
    cookies that page scripts cannot read. */
+
+import { showPlanBox, endPlusForDeletion } from "./plan-box.js";
 
 const MINIMUM_PASSWORD_LENGTH = 8;
 
@@ -15,9 +18,10 @@ const MINIMUM_PASSWORD_LENGTH = 8;
 const OWNER_EMAIL = "support.findash@findash.tech";
 
 const DELETE_QUESTION = "Delete your FinDash account?\n\n" +
-  "Your saved figures are removed from your account and from this browser straight away, " +
-  "and you'll be logged out. An email asking FinDash to delete your login is then opened " +
-  "for you to send. This can't be undone.";
+  "If you have Plus, it ends now and you won't be charged again. Your saved figures are " +
+  "removed from your account and from this browser straight away, and you'll be logged out. " +
+  "An email asking FinDash to delete your login is then opened for you to send. This can't " +
+  "be undone.";
 
 // The email of whoever is logged in on this page, for the deletion request.
 let loggedInEmail = null;
@@ -211,6 +215,34 @@ async function callAuth(action, body) {
   return { ok: response.ok, status: response.status, data: data };
 }
 
+/* After paying on Stripe's checkout page (or leaving it), Stripe sends
+   people back here with ?plan=welcome or ?plan=not-now: what to tell them,
+   now that the plan box knows their plan. Null on any other visit. */
+function noteAfterCheckout(plan) {
+  const outcome = new URLSearchParams(location.search).get("plan");
+  if (outcome === "welcome" && plan === "plus") {
+    return "<b>Welcome to Plus.</b> Stripe is emailing you a receipt.";
+  }
+  if (outcome === "welcome") {
+    return "Thanks. Stripe is still confirming your payment: refresh this page in a minute.";
+  }
+  if (outcome === "not-now") {
+    return "No payment was taken. You're still on the free plan.";
+  }
+  return null;
+}
+
+/* The plan box, then the note about a checkout just finished, once only:
+   the ?plan= part is taken off the address so a refresh doesn't repeat it. */
+async function showPlanAndCheckoutNote() {
+  const plan = await showPlanBox();
+  const note = noteAfterCheckout(plan);
+  if (note) {
+    showMessage(note, "good");
+    history.replaceState(null, "", location.pathname + location.hash);
+  }
+}
+
 function showLoggedIn(user, note) {
   loggedInEmail = user.email;
   form.hidden = true;
@@ -224,6 +256,7 @@ function showLoggedIn(user, note) {
   } else {
     showMessage("", "");
   }
+  showPlanAndCheckoutNote();
 }
 
 function disableForm(html) {
@@ -445,11 +478,20 @@ function removeFiguresFromThisBrowser() {
 
 /* The person's figures can be removed from here, but deleting the login
    itself needs Supabase's admin rights, which this site deliberately never
-   holds. So the figures go now, and an email asks whoever runs FinDash to
-   delete the login (Supabase dashboard -> Authentication -> Users). */
+   holds. So Plus ends and the figures go now, and an email asks whoever
+   runs FinDash to delete the login (Supabase dashboard -> Authentication
+   -> Users). Plus ends first: if Stripe can't be reached, nothing is
+   deleted, so no one is left being charged for an account they deleted. */
 async function deleteAccount() {
   const email = loggedInEmail;
   if (!email || !window.confirm(DELETE_QUESTION)) {
+    return;
+  }
+
+  const plus = await endPlusForDeletion();
+  if (!plus.ok) {
+    showMessage("Your Plus subscription couldn't be ended just now, so nothing was deleted. " +
+      "Try again in a moment.", "bad");
     return;
   }
 
@@ -468,8 +510,12 @@ async function deleteAccount() {
     "(My saved figures were already removed from the dashboard.)");
   location.href = "mailto:" + OWNER_EMAIL + "?subject=" + subject + "&body=" + body;
 
+  let plusEnded = "";
+  if (plus.cancelled) {
+    plusEnded = "Plus has ended and you won't be charged again. ";
+  }
   setMode("login");
-  showMessage("Your saved figures were removed and you're logged out. To finish, send the email that " +
+  showMessage(plusEnded + "Your saved figures were removed and you're logged out. To finish, send the email that " +
     "just opened, from <b>" + escapeHtml(email) + "</b>: your login is then deleted and you'll get a reply. " +
     "If no email opened, write to <b>" + OWNER_EMAIL + "</b> yourself.", "good");
 }

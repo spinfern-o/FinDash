@@ -18,6 +18,9 @@
     },
     "api/agent.js": {
       "maxDuration": 15
+    },
+    "api/billing.js": {
+      "maxDuration": 30
     }
   },
   "headers": [

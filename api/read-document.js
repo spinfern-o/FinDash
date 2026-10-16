@@ -374,8 +374,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "mediaType must be one of " + MEDIA_TYPES.join(", ") });
   }
 
-  // Only for a logged-in person within today's allowance (lib/ai-access.js).
-  if (!(await allowAiUse(req, res, "photo"))) {
+  // Only for a logged-in person within this month's allowance for their
+  // plan (lib/ai-access.js).
+  const access = await allowAiUse(req, res, "photo");
+  if (!access) {
     return;
   }
 
@@ -406,6 +408,8 @@ export default async function handler(req, res) {
       system: SYSTEM,
       messages: [{ role: "user", content: content }]
     });
+    // Paid for whatever the answer turns out to be, so counted first.
+    await access.countTokens(response.usage);
 
     if (response.stop_reason === "refusal") {
       console.error("[findash-error] read-document refused:", response.stop_details?.category ?? "unknown");

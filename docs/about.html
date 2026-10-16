@@ -121,7 +121,8 @@
       <li><b>AI with a free account.</b> Claude, an AI model made by Anthropic, reads invoice photos, writes
           advice when you press Get advice, and matches column names it doesn't recognise (the names only,
           never your numbers). FinDash checks invoice arithmetic against the printed total, and you confirm
-          every line.</li>
+          every line. Each request costs money, so each account has a monthly allowance; FinDash Plus, the
+          paid plan, raises it (see <a href="/pricing">Pricing</a>).</li>
       <li><b>Plain words.</b> Every figure has a short explanation beside it, and the
           <a href="/help">help page</a> explains each term.</li>
     </ul>
@@ -136,8 +137,9 @@
 
   <section id="open">
     <h2>Open about how it's built</h2>
-    <p>FinDash runs on Vercel, saves accounts and figures with Supabase, and uses Anthropic's Claude for the
-       features that read photos, write advice and match column names. The <a href="/privacy">privacy policy</a> lists exactly what
+    <p>FinDash runs on Vercel, saves accounts and figures with Supabase, uses Anthropic's Claude for the
+       features that read photos, write advice and match column names, and takes payments for Plus through
+       Stripe. The <a href="/privacy">privacy policy</a> lists exactly what
        each of them receives. The source code is public on
        <a href="https://github.com/spinfern-o/FinDash">GitHub</a>.</p>
   </section>
@@ -150,7 +152,7 @@
   </section>
 
   <footer>FinDash &middot; <a href="/dashboard">Dashboard</a> &middot; <a href="/help">Help</a> &middot;
-    <a href="/about">About</a> &middot; <a href="/developers">Developers</a> &middot; <a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot;
+    <a href="/pricing">Pricing</a> &middot; <a href="/about">About</a> &middot; <a href="/developers">Developers</a> &middot; <a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot;
     <a href="mailto:support.findash@findash.tech?subject=FinDash">Contact</a></footer>
 </main>
 

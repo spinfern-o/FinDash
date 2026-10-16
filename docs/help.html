@@ -210,7 +210,7 @@
     <h2>How we handle your data</h2>
     <p><b>Your spreadsheet stays on your computer.</b> It is opened and added up by your own browser. It is never
        uploaded. Without an account, FinDash keeps none of your figures anywhere but your own browser.</p>
-    <p>Eight things can leave your computer, and only these:</p>
+    <p>Nine things can leave your computer, and only these:</p>
     <ul>
       <li><b>When you log in or create an account:</b> your email and password go to Supabase, the service
           FinDash uses for logins, to check who you are. Accounts are optional.</li>
@@ -226,6 +226,9 @@
       <li><b>When a column name isn't recognised</b> (while logged in): the column names from your file, never
           the numbers, are sent so the unfamiliar ones can be matched to the right cost group. Files that use
           the template's names never need this.</li>
+      <li><b>If you get Plus:</b> you pay on Stripe's own checkout page, so your card details go to Stripe and
+          never to FinDash. Stripe also gets your email address. FinDash keeps only your Stripe customer
+          number, to ask Stripe which plan you're on. Never your figures.</li>
       <li><b>If a forecasting model is offered:</b> once you have six months on file, a button may appear
           under the forecast. Pressing it sends the net profit figure for each month, nothing else.</li>
       <li><b>If something on the page breaks:</b> the error's technical message and which part of FinDash it
@@ -245,10 +248,13 @@
     <p><b>If this browser and your account disagree</b> (say you added a file before logging in), the
        dashboard asks which set of figures to keep, rather than guessing.</p>
     <p><b>Why photos and advice need an account:</b> each one is a paid request to Claude, so each account
-       has a daily allowance. Everything else on the dashboard works without one.</p>
+       has a monthly allowance: a few on the free plan, more with FinDash Plus (see
+       <a href="/pricing">Pricing</a>). Everything else on the dashboard works without one, and without
+       limits.</p>
     <p><b>To delete your account:</b> log in, open the <a href="/login">Log in</a> page and press
-       <b>Delete my account</b>. Your saved figures are removed straight away, and an email asking for your
-       login to be deleted opens for you to send; you'll get a reply once it's done.</p>
+       <b>Delete my account</b>. If you have Plus, it ends at once and you aren't charged again. Your saved
+       figures are removed straight away, and an email asking for your login to be deleted opens for you to
+       send; you'll get a reply once it's done.</p>
     <p>All of this, and who processes your data for us, is in the <a href="/privacy">privacy policy</a>.</p>
   </section>
 
@@ -274,7 +280,7 @@
   </section>
 
   <footer>FinDash &middot; <a href="/dashboard">Back to the dashboard</a> &middot;
-    <a href="/about">About</a> &middot; <a href="/developers">Developers</a> &middot; <a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot;
+    <a href="/pricing">Pricing</a> &middot; <a href="/about">About</a> &middot; <a href="/developers">Developers</a> &middot; <a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot;
     <a href="mailto:support.findash@findash.tech?subject=FinDash">Contact</a></footer>
 </main>
 

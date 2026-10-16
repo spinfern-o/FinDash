@@ -14,7 +14,8 @@ Vercel Routing Middleware in `middleware.js`, and the original Java command-line
   `periods.js`, `cost-groups.js`) is also used by the public API through `docs/js/dashboard/analysis.js`.
 - `api/`: server functions. `api/agent.js` serves the public API (`/api/v1/*`) and the two MCP servers
   (`/api/mcp`, `/api/mcp/docs`) through rewrites in `vercel.json`. Vercel's Hobby plan allows twelve functions,
-  so add new agent endpoints as routes there rather than as new files.
+  so add new agent endpoints as routes there rather than as new files. `api/billing.js` sells FinDash Plus
+  through Stripe (`lib/billing.js`); the plans and their monthly limits are in `docs/js/plans.js`.
 - `lib/`: code shared by the functions and the middleware.
 - `tools/build-pages.py`: writes every generated part of the site (page heads, structured data, the glossary,
   the Markdown versions of the pages in `lib/markdown-pages.js`, the agent-skills index, the schema feed).

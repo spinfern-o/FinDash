@@ -77,6 +77,9 @@ PAGES = {
     "developers.html": ("/developers", "FinDash API and MCP Server for Developers and AI Agents",
                         "A free API and MCP server: send a small business's monthly revenue and costs, get profit, "
                         "margin and budget vs actual back. No key needed.", True),
+    "pricing.html": ("/pricing", "Pricing: Free Dashboard, FinDash Plus for Invoice Photos · FinDash",
+                     "The dashboard is free with or without an account. FinDash Plus, $19 a month, adds 100 "
+                     "invoice photo reads and 20 requests for AI advice a month.", True),
     "about.html": ("/about", "About FinDash: A Free P&L Dashboard for Small Businesses",
                    "Why FinDash exists, how it reads your figures without uploading your spreadsheet, what it "
                    "doesn't do, and how it's built.", True),
@@ -103,14 +106,24 @@ IMAGE_ALT = "FinDash: revenue, costs and budget on one monthly dashboard"
 
 FEATURES = [
     "Reads Excel and CSV spreadsheets in any layout",
-    "Reads photos of supplier invoices and receipts (with a free account)",
+    "Reads photos of supplier invoices and receipts (with a free account; more with Plus)",
     "Monthly revenue, costs in four groups, gross profit, net profit and net margin",
     "Budget vs actual",
     "Month, quarter and year-to-date views",
     "Net profit trend and a budget estimator",
-    "Advice written by AI (with a free account)",
+    "Advice written by AI (with a free account; more with Plus)",
     "Export to Excel, print or save as PDF",
     "Works in many currencies",
+]
+
+# What FinDash costs, for search engines: free, and FinDash Plus. The prices
+# are the ones in docs/js/plans.js (a test checks they agree).
+PLAN_OFFERS = [
+    {"@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "USD", "url": SITE + "/pricing"},
+    {"@type": "Offer", "name": "FinDash Plus, monthly", "price": "19", "priceCurrency": "USD",
+     "url": SITE + "/pricing"},
+    {"@type": "Offer", "name": "FinDash Plus, yearly", "price": "190", "priceCurrency": "USD",
+     "url": SITE + "/pricing"},
 ]
 
 # The help page's glossary, in groups; the words come from glossary.js.
@@ -178,7 +191,7 @@ def structured_data(address, page_text):
             {"@type": "WebApplication", "@id": SITE + "/#app", "name": "FinDash", "url": SITE + "/dashboard",
              "description": plain_text(definition.group(1)), "applicationCategory": "BusinessApplication",
              "operatingSystem": "Any", "browserRequirements": "A modern web browser",
-             "isAccessibleForFree": True, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+             "isAccessibleForFree": True, "offers": PLAN_OFFERS,
              "featureList": FEATURES, "screenshot": SITE + "/screenshot-dashboard.jpg",
              "publisher": {"@id": SITE + "/#organization"}},
         ]
@@ -574,8 +587,8 @@ def text_of(element):
             yield from text_of(child)
 
 
-SITE_LINKS = [("Home", "/"), ("Dashboard", "/dashboard"), ("Help", "/help"), ("Developers", "/developers"),
-              ("About", "/about"), ("Contact", "/contact"), ("Privacy", "/privacy"), ("Terms", "/terms"),
+SITE_LINKS = [("Home", "/"), ("Dashboard", "/dashboard"), ("Help", "/help"), ("Pricing", "/pricing"),
+              ("Developers", "/developers"), ("About", "/about"), ("Contact", "/contact"), ("Privacy", "/privacy"), ("Terms", "/terms"),
               ("llms.txt", "/llms.txt"), ("Sitemap", "/sitemap.xml")]
 
 # The sections with an llms.txt of their own, for an agent working in one area.

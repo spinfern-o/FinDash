@@ -12,8 +12,8 @@ import { launchBrowser, openPage, text } from "../support/browser.mjs";
 
 const SITE = "https://findash.tech";
 // Listed by search engines, and in the sitemap.
-const LISTED_PAGES = ["/", "/dashboard", "/restaurant-profit-and-loss", "/help", "/developers", "/about", "/contact",
-  "/privacy", "/terms"];
+const LISTED_PAGES = ["/", "/dashboard", "/restaurant-profit-and-loss", "/help", "/pricing", "/developers", "/about",
+  "/contact", "/privacy", "/terms"];
 // Kept out of search results: nothing on them is worth finding by search.
 const UNLISTED_PAGES = ["/login", "/thanks", "/no-such-page"];
 const ALL_PAGES = LISTED_PAGES.concat(UNLISTED_PAGES);
@@ -372,7 +372,9 @@ test("the home page's structured data is valid and says exactly what the page sh
   assert.deepEqual(Object.keys(byType).sort(), ["FAQPage", "Organization", "WebApplication", "WebSite"]);
   assert.equal(byType.WebSite.name, "FinDash");
   assert.equal(byType.WebApplication.description, found.definition);
-  assert.equal(byType.WebApplication.offers.price, "0");
+  assert.deepEqual(byType.WebApplication.offers.map(function (offer) {
+    return [offer.name, offer.price, offer.priceCurrency];
+  }), [["Free", "0", "USD"], ["FinDash Plus, monthly", "19", "USD"], ["FinDash Plus, yearly", "190", "USD"]]);
   assert.deepEqual(byType.Organization.contactPoint, {
     "@type": "ContactPoint", contactType: "customer support", email: SUPPORT, url: SITE + "/contact",
     availableLanguage: "English"

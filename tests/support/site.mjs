@@ -2,10 +2,10 @@
    with the same security headers vercel.json sets, every request the
    middleware's matcher covers passed through the real middleware.js first,
    and every /api/* request handled by the real function in api/, talking to
-   the stand-ins for Supabase and Claude instead of the real services.
+   the stand-ins for Supabase, Claude and Stripe instead of the real services.
 
    const site = await startSite();
-   ... site.url, site.supabase, site.anthropic, site.serverLogs ...
+   ... site.url, site.supabase, site.anthropic, site.stripe, site.serverLogs ...
    await site.stop(); */
 
 import http from "node:http";
@@ -14,6 +14,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { startMockSupabase } from "./mock-supabase.mjs";
 import { startMockAnthropic } from "./mock-anthropic.mjs";
+import { startMockStripe } from "./mock-stripe.mjs";
 import middleware, { config as middlewareConfig } from "../../middleware.js";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
@@ -176,10 +177,12 @@ async function answeredByMiddleware(request, response, url) {
 }
 
 /* options.accounts: false runs the site without Supabase settings.
-   options.claude: false runs it without an Anthropic key. */
+   options.claude: false runs it without an Anthropic key.
+   options.billing: false runs it without Stripe settings (no Plus). */
 export async function startSite(options = {}) {
   const supabase = await startMockSupabase();
   const anthropic = await startMockAnthropic();
+  const stripe = await startMockStripe();
 
   // The functions read these when they are first loaded, so they are set
   // before any of them is imported.
@@ -190,6 +193,12 @@ export async function startSite(options = {}) {
   if (options.claude !== false) {
     process.env.ANTHROPIC_BASE_URL = anthropic.url;
     process.env.ANTHROPIC_API_KEY = "test-key";
+  }
+  if (options.billing !== false) {
+    process.env.STRIPE_API_URL = stripe.url;
+    process.env.STRIPE_SECRET_KEY = "sk_test_findash";
+    process.env.STRIPE_PRICE_MONTHLY = "price_plus_month";
+    process.env.STRIPE_PRICE_YEARLY = "price_plus_year";
   }
 
   // What the functions write to the log, kept for the tests to read instead
@@ -288,6 +297,7 @@ export async function startSite(options = {}) {
     url: "http://localhost:" + server.address().port,
     supabase: supabase,
     anthropic: anthropic,
+    stripe: stripe,
     serverLogs: serverLogs,
     stop: async function () {
       console.error = originalError;
@@ -298,6 +308,7 @@ export async function startSite(options = {}) {
       });
       await supabase.stop();
       await anthropic.stop();
+      await stripe.stop();
     }
   };
   return site;

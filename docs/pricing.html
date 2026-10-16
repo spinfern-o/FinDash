@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- page-head: start (tools/build-pages.py writes this) -->
+<title>Pricing: Free Dashboard, FinDash Plus for Invoice Photos · FinDash</title>
+<meta name="description" content="The dashboard is free with or without an account. FinDash Plus, $19 a month, adds 100 invoice photo reads and 20 requests for AI advice a month.">
+<link rel="canonical" href="https://findash.tech/pricing">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="FinDash">
+<meta property="og:title" content="Pricing: Free Dashboard, FinDash Plus for Invoice Photos · FinDash">
+<meta property="og:description" content="The dashboard is free with or without an account. FinDash Plus, $19 a month, adds 100 invoice photo reads and 20 requests for AI advice a month.">
+<meta property="og:url" content="https://findash.tech/pricing">
+<meta property="og:image" content="https://findash.tech/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="FinDash: revenue, costs and budget on one monthly dashboard">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="ai-catalog" type="application/ai-catalog+json" href="/.well-known/ai-catalog.json">
+<link rel="api-catalog" href="/.well-known/api-catalog">
+<meta name="theme-color" content="#050505">
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+<link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/css/site.css">
+<script type="module" src="/js/cookie-notice.js"></script>
+<link rel="alternate" type="text/markdown" href="https://findash.tech/pricing.md">
+<!-- page-head: end -->
+<script src="/js/theme-init.js"></script>
+<link rel="stylesheet" href="/css/help.css">
+</head>
+<body>
+<main>
+  <div class="masthead">
+    <div class="masthead-left">
+      <a class="wordmark" href="/">FinDash</a>
+      <nav>
+        <a class="nav-link" href="/">Home</a>
+        <a class="nav-link" href="/dashboard">Dashboard</a>
+        <a class="nav-link" href="/help">Help</a>
+      </nav>
+    </div>
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle light and dark mode">
+      <svg class="icon-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+      <svg class="icon-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+    </button>
+  </div>
+
+  <h1>Pricing</h1>
+  <p class="lede">The dashboard is free for everyone, with or without an account. FinDash Plus is for owners who
+     add their supplier invoices by photo every week: $19 a month, or $190 a year.</p>
+
+  <section id="plans">
+    <h2>What each plan includes</h2>
+    <div class="table-wrap">
+      <table class="data-table" id="plan-table">
+        <thead>
+          <tr><th scope="col">Each month</th><th scope="col">No account</th><th scope="col">Free account</th>
+              <th scope="col">Plus</th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">Dashboard from your spreadsheet</th><td>Unlimited</td><td>Unlimited</td><td>Unlimited</td></tr>
+          <tr><th scope="row">Forecast, export and print</th><td>Unlimited</td><td>Unlimited</td><td>Unlimited</td></tr>
+          <tr><th scope="row">Figures saved to your account</th><td>&mdash;</td><td>Yes</td><td>Yes</td></tr>
+          <tr><th scope="row">Invoice photos read</th><td>&mdash;</td><td data-limit="free.photo">10</td>
+              <td data-limit="plus.photo">100</td></tr>
+          <tr><th scope="row">Advice written by AI</th><td>&mdash;</td><td data-limit="free.advice">2</td>
+              <td data-limit="plus.advice">20</td></tr>
+          <tr><th scope="row">Unfamiliar column names matched</th><td>&mdash;</td><td data-limit="free.columns">200</td>
+              <td data-limit="plus.columns">200</td></tr>
+          <tr><th scope="row">What you buy, and the count sheet</th><td>&mdash;</td><td>Yes</td><td>Yes</td></tr>
+          <tr><th scope="row">Price</th><td>Free</td><td>Free</td>
+              <td><span data-price="monthly">$19</span> a month, or <span data-price="yearly">$190</span> a year</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">Allowances start again on the 1st of each month. A photo that needs a second look to add up
+       counts as two reads.</p>
+  </section>
+
+  <section id="why">
+    <h2>Why only some things are paid</h2>
+    <p>Everything that happens in your own browser costs us almost nothing, so it stays free and unlimited:
+       reading your spreadsheet, every card on the dashboard, the forecast, export and print. Reading an invoice
+       photo and writing advice are done by Claude, an AI model, and every request costs us money. Plus pays for
+       enough of them to keep up with a business's deliveries.</p>
+  </section>
+
+  <section id="paying">
+    <h2>Paying, and cancelling</h2>
+    <ul>
+      <li><b>Get Plus</b> from the <a href="/login">account page</a> once you're logged in. You pay on Stripe's
+          secure checkout page; FinDash never sees your card.</li>
+      <li><b>It renews</b> each month or year until you cancel, and Stripe emails you a receipt each time.</li>
+      <li><b>Cancel any time</b> with <b>Manage billing</b> on the account page. Plus carries on until the end of
+          the period you've paid for, then you're back on the free plan. Your figures stay.</li>
+      <li><b>Deleting your account</b> ends Plus at once, and you aren't charged again.</li>
+      <li><b>Prices are in US dollars.</b> Your bank may convert them. Where sales tax applies, the checkout page
+          shows it before you pay.</li>
+    </ul>
+    <p>The <a href="/terms#plus">terms</a> have the details. Questions about a payment:
+       <a href="mailto:support.findash@findash.tech?subject=Billing">support.findash@findash.tech</a>.</p>
+  </section>
+
+  <footer>FinDash &middot; <a href="/dashboard">Dashboard</a> &middot; <a href="/help">Help</a> &middot;
+    <a href="/pricing">Pricing</a> &middot; <a href="/about">About</a> &middot; <a href="/developers">Developers</a> &middot; <a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a> &middot;
+    <a href="mailto:support.findash@findash.tech?subject=FinDash">Contact</a></footer>
+</main>
+
+<script type="module" src="/js/error-reporter.js"></script>
+<script type="module" src="/js/theme-toggle.js"></script>
+</body>
+</html>

@@ -448,6 +448,53 @@ input:disabled {
 .delete-account {
   margin: 18px 0 0;
 }
+
+/* ---- the plan: Free or Plus, this month's use, the way to Plus ---- */
+.plan-box {
+  margin-top: 20px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card-2);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+.plan-box p {
+  margin: 0;
+}
+.plan-box b {
+  color: var(--ink);
+}
+.plan-name {
+  font-size: 14px;
+}
+.plan-box .plan-usage {
+  margin-top: 4px;
+}
+.plan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin-top: 12px;
+}
+.plan-actions .submit {
+  margin-top: 0;
+}
+.plan-box .plan-note {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.plan-note a {
+  color: var(--accent);
+}
+.plan-box .plan-problem {
+  margin-top: 10px;
+  color: var(--critical);
+  font-weight: 600;
+}
 .text-link.quiet {
   color: var(--ink-3);
 }

@@ -43,7 +43,8 @@ async function loggedInClient() {
 
 test("capabilities: the Claude features are on only with accounts as well as a key", async function () {
   const response = await httpClient(site).get("/api/capabilities");
-  assert.deepEqual(response.json, { briefing: true, mapping: true, photos: true, accounts: true, forecast: false });
+  assert.deepEqual(response.json,
+    { briefing: true, mapping: true, photos: true, accounts: true, billing: true, forecast: false });
 });
 
 test("figures: nothing without a login, then saved, read back, refreshed and deleted", async function () {
@@ -133,15 +134,19 @@ test("logged in: each feature works, is counted, and asks the current Claude mod
   assert.deepEqual(efforts, ["photo:medium", "advice:medium", "columns:low"]);
 });
 
-test("each person has a daily limit per feature", async function () {
+test("each person has a monthly limit per feature, from their plan, and a refusal isn't counted", async function () {
   const client = await loggedInClient();
-  for (let use = 1; use <= 10; use++) {
+  for (let use = 1; use <= 2; use++) {
     assert.equal((await client.post("/api/briefing", ADVICE_REQUEST)).status, 200, "use " + use);
   }
-  const eleventh = await client.post("/api/briefing", ADVICE_REQUEST);
-  assert.equal(eleventh.status, 429);
-  assert.match(eleventh.json.error, /today's limit for advice/);
-  assert.equal(site.anthropic.requestsOfKind("advice").length, 10);
+  const third = await client.post("/api/briefing", ADVICE_REQUEST);
+  assert.equal(third.status, 429);
+  assert.equal(third.json.error,
+    "You've used this month's 2 requests for advice. FinDash Plus includes 20 a month: see the Pricing page.");
+  assert.equal(third.json.upgrade, "/pricing");
+  assert.equal(site.anthropic.requestsOfKind("advice").length, 2);
+  const status = await client.get("/api/billing?action=status");
+  assert.equal(status.json.usage.advice, 2, "the refused request isn't counted");
 
   // Another feature, and another person, are counted separately.
   assert.equal((await client.post("/api/map-columns", COLUMNS_REQUEST)).status, 200);

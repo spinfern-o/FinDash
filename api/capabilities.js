@@ -1,8 +1,9 @@
 /**
  * GET /api/capabilities
  *
- * Says which optional features are actually set up on this site, so the
- * page can offer only what exists instead of showing a button that fails.
+ * Says which optional features are actually set up on this site, Plus
+ * among them, so the page can offer only what exists instead of showing a
+ * button that fails.
  *
  * Returns true or false for each, never the addresses or keys behind them.
  * Knowing that a forecast service is set up tells an attacker nothing
@@ -10,6 +11,7 @@
  */
 
 import { accountsAreSetUp } from "../lib/supabase.js";
+import { billingIsSetUp } from "../lib/billing.js";
 
 export default function handler(req, res) {
   if (req.method !== "GET") {
@@ -22,7 +24,8 @@ export default function handler(req, res) {
 
   // The features that call Claude need a key, and accounts too: they are
   // only for logged-in people, so each person's daily use can be capped
-  // (lib/ai-access.js).
+  // (lib/ai-access.js). Plus is bought by someone logged in, so it needs
+  // accounts as well as Stripe (lib/billing.js).
   const hasAccounts = accountsAreSetUp();
   const hasClaude = Boolean(process.env.ANTHROPIC_API_KEY) && hasAccounts;
   return res.status(200).json({
@@ -30,6 +33,7 @@ export default function handler(req, res) {
     mapping: hasClaude,
     photos: hasClaude,
     accounts: hasAccounts,
+    billing: billingIsSetUp() && hasAccounts,
     forecast: Boolean(process.env.FORECAST_URL)
   });
 }

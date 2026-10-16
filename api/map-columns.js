@@ -175,8 +175,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "nothing to map: send unplaced fields or unclaimed headers" });
   }
 
-  // Only for a logged-in person within today's allowance (lib/ai-access.js).
-  if (!(await allowAiUse(req, res, "columns"))) {
+  // Only for a logged-in person within this month's allowance for their
+  // plan (lib/ai-access.js).
+  const access = await allowAiUse(req, res, "columns");
+  if (!access) {
     return;
   }
 
@@ -194,6 +196,8 @@ export default async function handler(req, res) {
       output_config: { effort: "low" },
       messages: [{ role: "user", content: buildPrompt(headers, fields, unclaimedHeaders) }]
     });
+    // Paid for whatever the answer turns out to be, so counted first.
+    await access.countTokens(response.usage);
 
     if (response.stop_reason === "refusal" || response.stop_reason === "max_tokens") {
       console.error("[findash-error] map-columns stopped:", response.stop_reason);

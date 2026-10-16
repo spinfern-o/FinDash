@@ -2,9 +2,10 @@
    uses, so the tests never touch a real project:
      Auth (GoTrue)  sign up, log in, refresh, who-am-I, change password,
                     password reset, log out
-     Database       the account_figures table, and the claim_ai_use
-                    function, each with the same row-level rules as the
-                    real SQL in supabase/migrations/
+     Database       the account_figures, ai_usage and billing_customers
+                    tables, and the claim_ai_use, claim_ai_use_this_month
+                    and add_ai_tokens functions, each with the same
+                    row-level rules as the real SQL in supabase/migrations/
 
    It runs inside the test's own process, so a test can look at and change
    its state directly (users, figures, usage, options). */
@@ -64,6 +65,8 @@ export async function startMockSupabase() {
     refreshOf: new Map(),      // access token -> its refresh token
     figures: new Map(),        // user id -> { figures, updated_at }
     usage: new Map(),          // "userId|feature|day" -> uses
+    tokens: new Map(),         // "userId|feature|day" -> { input, output }
+    billingCustomers: new Map(), // user id -> Stripe customer ID
     options: {
       confirmEmails: false,    // true: sign-ups need the emailed link first
       missingTables: false,    // true: answer as if the SQL was never run
@@ -73,6 +76,8 @@ export async function startMockSupabase() {
     reset: function () {
       mock.figures.clear();
       mock.usage.clear();
+      mock.tokens.clear();
+      mock.billingCustomers.clear();
       mock.options.missingTables = false;
       mock.options.signupError = null;
     },
@@ -88,6 +93,10 @@ export async function startMockSupabase() {
     usesToday: function (email, feature) {
       const day = new Date().toISOString().slice(0, 10);
       return mock.usage.get(mock.userId(email) + "|" + feature + "|" + day) || 0;
+    },
+    tokensToday: function (email, feature) {
+      const day = new Date().toISOString().slice(0, 10);
+      return mock.tokens.get(mock.userId(email) + "|" + feature + "|" + day) || { input: 0, output: 0 };
     }
   };
 
@@ -287,6 +296,85 @@ export async function startMockSupabase() {
     return sendJson(response, 200, uses <= body.daily_limit);
   }
 
+  /* This calendar month's uses of a feature, as the SQL adds them up. */
+  function usesThisMonth(userId, feature) {
+    const month = new Date().toISOString().slice(0, 7);
+    let total = 0;
+    for (const [key, uses] of mock.usage) {
+      const [rowUser, rowFeature, rowDay] = key.split("|");
+      if (rowUser === userId && rowFeature === feature && rowDay.startsWith(month)) {
+        total += uses;
+      }
+    }
+    return total;
+  }
+
+  /* claim_ai_use_this_month(feature_name, monthly_limit): a refused request
+     isn't counted. */
+  function handleClaimThisMonth(response, body, userId) {
+    if (!["photo", "advice", "columns"].includes(body.feature_name)) {
+      return databaseError(response, 400, "P0001", "unknown feature: " + body.feature_name);
+    }
+    if (usesThisMonth(userId, body.feature_name) >= body.monthly_limit) {
+      return sendJson(response, 200, false);
+    }
+    const day = new Date().toISOString().slice(0, 10);
+    const key = userId + "|" + body.feature_name + "|" + day;
+    mock.usage.set(key, (mock.usage.get(key) || 0) + 1);
+    return sendJson(response, 200, true);
+  }
+
+  /* add_ai_tokens(feature_name, input_count, output_count). */
+  function handleAddTokens(response, body, userId) {
+    const day = new Date().toISOString().slice(0, 10);
+    const key = userId + "|" + body.feature_name + "|" + day;
+    const counts = mock.tokens.get(key) || { input: 0, output: 0 };
+    counts.input += Math.max(body.input_count, 0);
+    counts.output += Math.max(body.output_count, 0);
+    mock.tokens.set(key, counts);
+    return sendJson(response, 204);
+  }
+
+  /* The ai_usage table, read only, as select=feature,uses&day=gte.<date>. */
+  function handleUsageTable(request, response, url, userId) {
+    if (request.method !== "GET") {
+      return databaseError(response, 403, "42501", "permission denied for table ai_usage");
+    }
+    const from = String(url.searchParams.get("day") || "gte.0000").replace(/^gte\./, "");
+    const rows = [];
+    for (const [key, uses] of mock.usage) {
+      const [rowUser, rowFeature, rowDay] = key.split("|");
+      if (rowUser === userId && rowDay >= from) {
+        rows.push({ feature: rowFeature, uses: uses });
+      }
+    }
+    return sendJson(response, 200, rows);
+  }
+
+  /* The billing_customers table: each person reaches only their own row. */
+  function handleBillingCustomers(request, response, url, body, userId) {
+    if (request.method === "GET") {
+      if (mock.billingCustomers.has(userId)) {
+        return sendJson(response, 200, [{ stripe_customer_id: mock.billingCustomers.get(userId) }]);
+      }
+      return sendJson(response, 200, []);
+    }
+    if (request.method === "POST") {
+      if (body.user_id !== userId) {
+        return databaseError(response, 403, "42501", "new row violates row-level security policy");
+      }
+      mock.billingCustomers.set(userId, body.stripe_customer_id);
+      return sendJson(response, 201);
+    }
+    if (request.method === "DELETE") {
+      if (url.searchParams.get("user_id") === "eq." + userId) {
+        mock.billingCustomers.delete(userId);
+      }
+      return sendJson(response, 204);
+    }
+    return databaseError(response, 405, "PGRST000", "method not allowed");
+  }
+
   function handleDatabase(request, response, url, body, bearer) {
     if (mock.options.missingTables) {
       if (url.pathname.startsWith("/rest/v1/rpc/")) {
@@ -305,6 +393,18 @@ export async function startMockSupabase() {
     }
     if (url.pathname === "/rest/v1/rpc/claim_ai_use" && request.method === "POST") {
       return handleClaimAiUse(response, body, userId);
+    }
+    if (url.pathname === "/rest/v1/rpc/claim_ai_use_this_month" && request.method === "POST") {
+      return handleClaimThisMonth(response, body, userId);
+    }
+    if (url.pathname === "/rest/v1/rpc/add_ai_tokens" && request.method === "POST") {
+      return handleAddTokens(response, body, userId);
+    }
+    if (url.pathname === "/rest/v1/ai_usage") {
+      return handleUsageTable(request, response, url, userId);
+    }
+    if (url.pathname === "/rest/v1/billing_customers") {
+      return handleBillingCustomers(request, response, url, body, userId);
     }
     return databaseError(response, 404, "PGRST205", "no table " + url.pathname);
   }

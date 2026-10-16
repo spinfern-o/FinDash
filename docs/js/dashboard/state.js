@@ -55,7 +55,7 @@ export const state = {
   heldFiles: { dashboard: null, expenses: null, combined: null },
 
   // What this copy of FinDash can do, from /api/capabilities:
-  // { briefing, mapping, photos, forecast, accounts }.
+  // { briefing, mapping, photos, forecast, accounts, billing }.
   capabilities: null,
 
   // A projection from the forecasting model, or null to use the trend line

@@ -148,6 +148,22 @@ async function errorFrom(response) {
   return "the advice service returned " + response.status;
 }
 
+/* This month's advice is used up: the server's words, with its mention of
+   the Pricing page made a link to it when Plus is on sale here. */
+async function limitReachedHtml(response) {
+  let body = {};
+  try {
+    body = await response.json();
+  } catch {
+    // Not JSON: the status says enough.
+  }
+  let text = escapeHtml(body.error || "This month's advice is used up.");
+  if (body.upgrade) {
+    text = text.replace("the Pricing page", '<a href="/pricing">the Pricing page</a>');
+  }
+  return `<p class="brief-note">${text}</p>`;
+}
+
 function markAsAnswered(button) {
   button.textContent = "Ask again";
   button.classList.remove("primary");
@@ -173,7 +189,7 @@ export function wireAdviceButton() {
 
   button.addEventListener("click", async function () {
     // Each request costs money, so advice is only for someone logged in,
-    // within a daily allowance (lib/ai-access.js on the server checks both).
+    // within a monthly allowance (lib/ai-access.js on the server checks both).
     if (!(await loggedInUser())) {
       output.innerHTML = NEEDS_LOGIN_HTML;
       return;
@@ -192,6 +208,11 @@ export function wireAdviceButton() {
       });
       if (response.status === 401) {
         output.innerHTML = NEEDS_LOGIN_HTML;
+        button.textContent = "Try again";
+        return;
+      }
+      if (response.status === 429) {
+        output.innerHTML = await limitReachedHtml(response);
         button.textContent = "Try again";
         return;
       }

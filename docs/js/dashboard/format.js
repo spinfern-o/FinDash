@@ -149,6 +149,13 @@ export function formatLongDate(isoDate) {
   });
 }
 
+/* "Sep 21", for a "2026-09-21" date read from a document, where the year is
+   plain from what is around it. Read as UTC, like formatLongDate. */
+export function formatShortDate(isoDate) {
+  const date = new Date(isoDate + "T00:00:00Z");
+  return date.toLocaleDateString("en-US", { day: "numeric", month: "short", timeZone: "UTC" });
+}
+
 /* Text from a file, a photo reading or the model is text, not markup. This
    makes it safe to put inside HTML. */
 const HTML_ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };

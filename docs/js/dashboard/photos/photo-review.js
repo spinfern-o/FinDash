@@ -155,11 +155,14 @@ function arithmeticVerdictHtml(doc, checks) {
 }
 
 /* What the line said on the paper, if the reading changed it: the original
-   wording, the quantity, and quantity × price. */
+   wording, the item code, the quantity, and quantity × price. */
 function lineDetailHtml(line) {
   const details = [];
   if (line.original) {
     details.push(escapeHtml(line.original));
+  }
+  if (line.code) {
+    details.push(escapeHtml(line.code));
   }
   if (line.quantity !== null) {
     let quantity = `${line.quantity}`;
@@ -419,11 +422,19 @@ export function addReviewedInvoice() {
   const month = pickedMonth(panel);
   const isSale = doc.kind === "sale";
 
+  // Each line keeps what it says about the item bought (its code, the name
+  // as printed, how many and at what price) for the list of what the owner
+  // buys and the count sheet (see items.js).
   let lines = [];
   if (!isSale) {
     lines = doc.lines.map(function (line, index) {
       return {
         description: line.description,
+        original: line.original,
+        code: line.code,
+        quantity: line.quantity,
+        unit: line.unit,
+        unitPrice: line.unit_price,
         amount: line.amount,
         category: pickedCostLine(panel, index) || "cogs"
       };

@@ -35,7 +35,10 @@ export const state = {
   //                    when there is no spreadsheet (the demo, or photos only).
   //   ownerInvoices:   invoices and receipts read from photos, added on top:
   //                    [{ id, kind, supplier, number, date, year, monthNum,
-  //                       total, lines }]
+  //                       total, lines }]. Each line is { description,
+  //                    category, amount } plus, where the invoice had them,
+  //                    { original, code, quantity, unit, unitPrice } for
+  //                    the list of what the owner buys (items.js).
   //   ownerSourceName: the name of the file (or files) behind ownerMonths.
   //   ownerAccount:    the email of the account these figures belong to, or
   //                    null for figures that were never saved to an account.

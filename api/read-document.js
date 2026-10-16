@@ -69,11 +69,12 @@ const SCHEMA = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["description", "original", "quantity", "unit", "billed_quantity",
+        required: ["description", "original", "code", "quantity", "unit", "billed_quantity",
                    "unit_price", "amount", "amount_source", "category"],
         properties: {
           description: { type: "string" },
           original: nullable({ type: "string" }),
+          code: nullable({ type: "string" }),
           quantity: nullable({ type: "number" }),
           unit: nullable({ type: "string" }),
           billed_quantity: nullable({ type: "number" }),
@@ -106,6 +107,8 @@ The lines. One entry per charged item, in the order printed:
   English description on the same row; use the English one, and put the other-language name,
   exactly as printed, in "original". If there is no English, translate briefly and keep the
   printed text in "original".
+- code: the supplier's item code or product number for the line (such as 00660A), exactly as
+  printed, or null when the line has none.
 - quantity and unit: the count as printed (3 cases, 10 lb, 5 bags).
 - billed_quantity: the number the unit price is multiplied by to give the amount. On food
   invoices that is often a weight (meat priced per lb) while produce on the same invoice is
@@ -259,6 +262,7 @@ function normaliseLine(line) {
   return {
     description: textOrNull(line.description, 160) || "Item",
     original: textOrNull(line.original, 160),
+    code: textOrNull(line.code, 40),
     quantity: numberOrNull(line.quantity),
     unit: textOrNull(line.unit, 40),
     billed_quantity: numberOrNull(line.billed_quantity),

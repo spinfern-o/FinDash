@@ -109,6 +109,10 @@ test("logged in: each feature works, is counted, and asks the current Claude mod
   assert.equal(photo.status, 200);
   assert.equal(photo.json.document.supplier, readFixture("invoice-misread.json").supplier);
   assert.equal(photo.json.checks.ok, false);   // the misread digit is caught
+  // Each line's item code is asked for and passed on, for the list of what the owner buys.
+  assert.equal(photo.json.document.lines[0].code, "SAL-20");
+  const photoSchema = site.anthropic.requestsOfKind("photo")[0].body.output_config.format.schema;
+  assert.ok(photoSchema.properties.lines.items.required.includes("code"));
 
   const advice = await client.post("/api/briefing", ADVICE_REQUEST);
   assert.equal(advice.status, 200);

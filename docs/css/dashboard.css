@@ -1878,6 +1878,67 @@ td.share,
   font-size: 12px;
 }
 
+/* ---- what you buy ----
+     One row per item, the money columns right-aligned like the report's.
+     The name as printed and the item's code sit under its English name, as
+     they do on the invoice. */
+.item-table th,
+.item-table td {
+  font-size: 13px;
+  vertical-align: top;
+}
+.item-table td {
+  padding-left: 12px;
+}
+.item-table td:nth-child(2) {
+  text-align: left;
+}
+.item-table thead th:nth-child(2) {
+  text-align: left;
+}
+.item-table th[scope="row"] {
+  font-weight: 600;
+  color: var(--ink);
+}
+.item-sub {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--ink-3);
+}
+.item-up {
+  color: var(--critical);
+  font-weight: 600;
+}
+.item-down {
+  color: var(--positive);
+  font-weight: 600;
+}
+.item-same {
+  color: var(--ink-3);
+}
+.item-more {
+  margin-top: 10px;
+}
+.item-note {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* The count sheet exists only on paper: it is filled in and shown when
+     "Print count sheet" is pressed, and the rest of the page is hidden then
+     (see the print styles below). */
+.count-sheet {
+  display: none;
+}
+
 footer {
   margin-top: 22px;
   font-size: 12px;
@@ -2032,5 +2093,95 @@ footer a {
   /* Advice that has not been asked for is an empty card on paper. */
   .card:has(#brief:empty) {
     display: none;
+  }
+
+  /* Printing the count sheet: only the sheet, in black on white, with a
+     tall row and a wide box beside each item for a pen. */
+  body.printing-count-sheet main > * {
+    display: none !important;
+  }
+  body.printing-count-sheet main > .count-sheet {
+    display: block !important;
+    color: #000;
+  }
+  .count-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 6px 24px;
+    margin-bottom: 12px;
+  }
+  .count-head > div {
+    flex: 1 1 100%;
+  }
+  .count-head h2 {
+    margin: 0;
+    font-size: 20px;
+  }
+  .count-head p {
+    margin: 2px 0 0;
+    font-size: 11px;
+  }
+  .count-fill span {
+    display: inline-block;
+    width: 150px;
+    border-bottom: 1px solid #000;
+    margin-left: 6px;
+  }
+  .count-group h3 {
+    margin: 14px 0 4px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  /* Fixed column widths, so every group's table lines up with the others. */
+  .count-table {
+    table-layout: fixed;
+  }
+  .count-table thead th:nth-child(1) {
+    width: 36%;
+  }
+  .count-table thead th:nth-child(2) {
+    width: 11%;
+  }
+  .count-table thead th:nth-child(3) {
+    width: 19%;
+  }
+  .count-table thead th:nth-child(4) {
+    width: 11%;
+  }
+  .count-table th,
+  .count-table td {
+    padding: 7px 8px 7px 0;
+    border-bottom: 1px solid #999;
+    font-size: 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+  .count-table thead th {
+    color: #000;
+    border-bottom: 1.5px solid #000;
+  }
+  .count-table thead th:not(:first-child) {
+    text-align: left;
+    padding-left: 0;
+  }
+  .count-table th[scope="row"] {
+    font-weight: 600;
+  }
+  .count-table tr {
+    break-inside: avoid;
+  }
+  .count-orig {
+    display: block;
+    font-weight: 400;
+    font-size: 11px;
+  }
+  .count-box {
+    border-left: 1px solid #999;
+  }
+  .count-foot {
+    margin-top: 14px;
+    font-size: 10px;
   }
 }

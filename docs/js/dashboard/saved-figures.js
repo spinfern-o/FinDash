@@ -62,6 +62,33 @@ function textOrBlank(value, maximumLength) {
   return "";
 }
 
+/* What a line says about the item bought: its code, the name as printed,
+   how many and at what price. Only the details the invoice had are kept,
+   so saved figures stay small; invoices added before these were kept have
+   none. */
+function cleanItemDetails(line) {
+  const details = {};
+  const original = textOrBlank(line.original, 160);
+  if (original) {
+    details.original = original;
+  }
+  const code = textOrBlank(line.code, 40);
+  if (code) {
+    details.code = code;
+  }
+  if (Number.isFinite(line.quantity)) {
+    details.quantity = line.quantity;
+  }
+  const unit = textOrBlank(line.unit, 40);
+  if (unit) {
+    details.unit = unit;
+  }
+  if (Number.isFinite(line.unitPrice)) {
+    details.unitPrice = line.unitPrice;
+  }
+  return details;
+}
+
 /* An invoice as this page wrote it, or null. Text fields stay as they were
    read and are made safe wherever they are drawn: they came from a model
    reading a photo. */
@@ -78,11 +105,12 @@ export function cleanInvoice(invoice) {
   const lines = [];
   for (const line of invoice.lines) {
     if (line && ALL_COST_LINES.includes(line.category) && Number.isFinite(line.amount)) {
-      lines.push({
+      const kept = {
         description: textOrBlank(line.description, 160),
         category: line.category,
         amount: roundToCents(line.amount)
-      });
+      };
+      lines.push(Object.assign(kept, cleanItemDetails(line)));
     }
   }
 

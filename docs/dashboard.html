@@ -48,6 +48,7 @@
 <link rel="modulepreload" href="/js/dashboard/account-figures.js">
 <link rel="modulepreload" href="/js/dashboard/status-line.js">
 <link rel="modulepreload" href="/js/dashboard/agent-tools.js">
+<link rel="modulepreload" href="/js/dashboard/cards/item-log.js">
 <link rel="modulepreload" href="/js/dashboard/format.js">
 <link rel="modulepreload" href="/js/dashboard/months.js">
 <link rel="modulepreload" href="/js/dashboard/cards/card.js">
@@ -74,6 +75,8 @@
 <link rel="modulepreload" href="/js/dashboard/photos/photo-import.js">
 <link rel="modulepreload" href="/js/glossary.js">
 <link rel="modulepreload" href="/js/dashboard/analysis.js">
+<link rel="modulepreload" href="/js/dashboard/items.js">
+<link rel="modulepreload" href="/js/dashboard/count-sheet.js">
 <link rel="modulepreload" href="/js/dashboard/import/currency-from-file.js">
 <link rel="modulepreload" href="/js/dashboard/export/xlsx-writer.js">
 <link rel="modulepreload" href="/js/dashboard/export/downloads.js">
@@ -221,6 +224,8 @@
     <p class="print-only" id="print-meta"></p>
   </div>
   <div id="sheet"></div>
+  <!-- Filled and shown only while the count sheet prints (count-sheet.js). -->
+  <section class="count-sheet" id="count-sheet" aria-label="Count sheet"></section>
 
   <footer>
     <span id="footer"></span>

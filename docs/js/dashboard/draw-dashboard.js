@@ -19,6 +19,7 @@ import { reportHtml } from "./cards/report.js";
 import { estimatorHtml } from "./cards/estimator.js";
 import { forecastCardHtml, wireForecastButton, MINIMUM_MONTHS_FOR_TREND } from "./cards/forecast.js";
 import { adviceCardHtml, wireAdviceButton } from "./cards/advice.js";
+import { itemLogCardHtml } from "./cards/item-log.js";
 import { helpButton } from "./help-tips.js";
 
 /* Shows a new set of figures, opening on the latest month. A model forecast
@@ -105,8 +106,9 @@ function reportSubtitle(periodMonths) {
 
 /* The cards follow the questions an owner asks, in the order they ask them:
    did I make money, what needs my attention, am I within budget, how is it
-   trending, show me the detail. The forecast and the advice come last; they
-   are the only cards that guess rather than report. */
+   trending, show me the detail. The forecast and the advice come last of
+   the money cards; they are the only ones that guess rather than report.
+   What the owner buys, item by item, follows them. */
 export function drawDashboard() {
   const activeMonth = state.activeMonth;
   const allMonths = state.data.months;
@@ -158,6 +160,8 @@ export function drawDashboard() {
       ${forecastCard}
 
       ${adviceCardHtml()}
+
+      ${itemLogCardHtml()}
     </div>`;
 
   wireAdviceButton();

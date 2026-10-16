@@ -10,6 +10,7 @@
     {
       "description": "Fresh salmon fillet",
       "original": null,
+      "code": "SAL-20",
       "quantity": 2,
       "unit": "case",
       "billed_quantity": 20,
@@ -21,6 +22,7 @@
     {
       "description": "Tiger prawns 16/20",
       "original": null,
+      "code": "PRW-1620",
       "quantity": 1,
       "unit": "case",
       "billed_quantity": 10,
@@ -32,6 +34,7 @@
     {
       "description": "Jasmine rice, 50 lb bag",
       "original": null,
+      "code": "RIC-50",
       "quantity": 2,
       "unit": "bag",
       "billed_quantity": 2,
@@ -43,6 +46,7 @@
     {
       "description": "Takeout containers, 32 oz",
       "original": null,
+      "code": "TKO-32",
       "quantity": 1,
       "unit": "case",
       "billed_quantity": 1,
@@ -54,6 +58,7 @@
     {
       "description": "Lemons",
       "original": null,
+      "code": "LEM-1",
       "quantity": 1,
       "unit": "case",
       "billed_quantity": 1,
@@ -65,6 +70,7 @@
     {
       "description": "Parsley (no charge)",
       "original": null,
+      "code": "PAR-1",
       "quantity": 2,
       "unit": "bunch",
       "billed_quantity": 2,

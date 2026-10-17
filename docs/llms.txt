@@ -50,6 +50,7 @@ FinDash does not connect to bank accounts, keep books, send invoices, take payme
 - [Dashboard](https://findash.tech/dashboard): the dashboard, with demo figures until you add your own
 - [Restaurant P&L dashboard](https://findash.tech/restaurant-profit-and-loss): food cost, labor, prime cost and rent as a share of sales, with benchmarks
 - [Help](https://findash.tech/help): getting figures in, what each number means, how data is handled
+- [Waitlist](https://findash.tech/waitlist): for food businesses that want inventory counts from photos and FinDash in their language
 - [Developers](https://findash.tech/developers): the API, MCP servers, WebMCP tools and agent skill
 - [About](https://findash.tech/about): why FinDash exists, how it works and how it's built
 - [Contact](https://findash.tech/contact): how to reach FinDash, and what to include

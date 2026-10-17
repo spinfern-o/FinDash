@@ -19,6 +19,7 @@ Vercel Routing Middleware in `middleware.js`, and the original Java command-line
 - `tools/build-pages.py`: writes every generated part of the site (page heads, structured data, the glossary,
   the Markdown versions of the pages in `lib/markdown-pages.js`, the agent-skills index, the schema feed).
 - `skills/findash/SKILL.md`: the agent skill, published at `/.well-known/agent-skills/`.
+- `DESIGN-SYSTEM.md`: the design tokens, components, icons and styling, and how to build a page from a Figma design.
 - `tests/`: unit, API and browser tests, against stand-ins for Supabase and Claude.
 
 ## Commands

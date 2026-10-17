@@ -12,8 +12,8 @@ import { launchBrowser, openPage, text } from "../support/browser.mjs";
 
 const SITE = "https://findash.tech";
 // Listed by search engines, and in the sitemap.
-const LISTED_PAGES = ["/", "/dashboard", "/restaurant-profit-and-loss", "/help", "/developers", "/about", "/contact",
-  "/privacy", "/terms"];
+const LISTED_PAGES = ["/", "/dashboard", "/restaurant-profit-and-loss", "/help", "/waitlist", "/developers", "/about",
+  "/contact", "/privacy", "/terms"];
 // Kept out of search results: nothing on them is worth finding by search.
 const UNLISTED_PAGES = ["/login", "/thanks", "/no-such-page"];
 const ALL_PAGES = LISTED_PAGES.concat(UNLISTED_PAGES);

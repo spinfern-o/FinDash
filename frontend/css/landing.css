@@ -584,20 +584,21 @@ main > .photo {
   }
 
   /* Sections fade and rise in as they come into view; a group's items one
-     after another. */
+     after another. The transition is on the way in only, so sections
+     further down are hidden at once rather than fading out first. */
   html.motion [data-reveal],
   html.motion [data-reveal-item] {
     opacity: 0;
     transform: translateY(28px);
-    transition:
-      opacity 0.7s ease,
-      transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
-    transition-delay: calc(var(--i, 0) * 90ms);
   }
   html.motion [data-reveal].is-visible,
   html.motion [data-reveal-item].is-visible {
     opacity: 1;
     transform: none;
+    transition:
+      opacity 0.7s ease,
+      transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
+    transition-delay: calc(var(--i, 0) * 90ms);
   }
 
   /* Photos move a little slower than the page (--p goes from -1 below the

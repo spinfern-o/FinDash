@@ -18,6 +18,10 @@ working through Figma's MCP server; AGENTS.md's rules still apply on top of thes
 - `tools/build-pages.py` writes the nav bar and the footer into every page, the same everywhere.
 - Figma's output (React + Tailwind, absolute positions, temporary asset URLs) is a picture of the goal, never code to
   paste. Rebuild it from the tokens and classes below.
+- The home page moves as it scrolls, like the kit's site: data attributes in the HTML, one small script
+  (`frontend/js/scroll-motion.js`) and CSS transforms. See section 8.
+- Until launch the app is closed: `/dashboard` and `/stock` send visitors to the waitlist, and every "way in" on
+  the public pages is **Join the waitlist**. See section 9.
 
 ## 1. Design tokens
 
@@ -66,7 +70,7 @@ Chinese reads the same everywhere:
 
 | Role | Font | Size, line height, tracking | Class or where |
 | --- | --- | --- | --- |
-| Display | Crimson Text 400 | 160px (`clamp`ed), 0.9, -0.0425em | `.display`; the home page's `.slogan` |
+| Display | Crimson Text 400 | 160px (`clamp`ed), 0.9, -0.0425em | `.display`; the home page's `.hero-title` (150px, one line on a laptop) |
 | Heading 1 | Crimson Text 400 | 60px (`clamp`ed), 0.9, -0.03em | `.heading-1`; page `h1`s |
 | Heading 2 | Crimson Text 400 | 40px, 1, -0.03em | `.heading-2`; reading pages' `h2` |
 | Heading 3 | Crimson Text 400 | 18px, 1, -0.03em | `.heading-3`; card titles at 24px |
@@ -205,7 +209,8 @@ The kit has no text boxes, dropdowns, tick boxes, cards or charts. They are draw
 - **Responsive:** desktop first, with `max-width` media queries. The nav folds into its menu at 1040px; other
   breakpoints are 960, 760, 640, 560 and 420px. Fluid sizes use `clamp()`. Tests load every page at 360, 768 and
   1024px and fail on any sideways scroll, so wide content (tables) goes inside a wrapper that scrolls on its own.
-- **Motion:** short transitions (0.12–0.15s); respect `@media (prefers-reduced-motion: reduce)`.
+- **Motion:** short transitions (0.12–0.15s) for hover and focus; the home page's scroll animation is in
+  section 8. Respect `@media (prefers-reduced-motion: reduce)` always.
 - **Print:** the FinDash name and the dashboard's source line stay; the nav links, buttons and footer links go.
   The count sheet prints alone.
 
@@ -216,9 +221,10 @@ frontend/                The website, served as it is (formerly docs/)
   *.html                 One file per page
   css/site.css           Colours, fonts, type, buttons, nav and footer: every page
   css/*.css              One more per kind of page
-  js/                    Page scripts (login.js, waitlist.js, theme-*.js, cookie-notice.js, …)
+  js/                    Page scripts (login.js, waitlist.js, scroll-motion.js, theme-*.js, cookie-notice.js, …)
   js/dashboard/          The dashboard: main.js, state.js, draw-dashboard.js, cards/, import/, photos/, export/
   fonts/, images/        The typefaces and the home page's pictures
+lib/app-gate.js          Which pages are closed until launch (section 9)
 tools/build-pages.py     Writes the generated parts of every page, the nav and footer included
 tools/home-preview/      Retakes the pictures of the dashboard
 tools/og-image/          Redraws the share image
@@ -227,6 +233,52 @@ tests/                   Unit, API and browser tests
 
 Write it the way AGENTS.md asks: ordinary named `function`s with a comment saying what each is for, whole-word
 names, one step per line, small files.
+
+## 8. Motion: the home page's scroll animation
+
+The kit's site moves as you scroll; FinDash does the same without a framework or animation library. Mark the HTML,
+and `frontend/js/scroll-motion.js` and the end of `frontend/css/landing.css` do the rest.
+
+| In the HTML | What happens | How |
+| --- | --- | --- |
+| `.hero` (one per page) | as the header scrolls away, the headline drifts up, the sage block widens and the device rises and grows from 88% to full size | the script writes progress 0–1 as `--p` on `.hero`; CSS turns it into `transform`s |
+| `data-reveal` | the element fades and rises 28px into place the first time it comes into view | `IntersectionObserver` adds `.is-visible` |
+| `data-reveal-group` | each child does the same, one after another (90ms apart) | each child gets `data-reveal-item` and its order as `--i` |
+| `data-parallax` on a `.photo` | the photo moves a little slower than the page | `--p` from -1 to 1 by its place on screen; the image is drawn at 112% so its edges never show |
+
+On arrival, the headline and the device come up into place once (`@keyframes rise-in`, on `translate` and
+`opacity` so it never fights the scroll `transform`).
+
+Rules:
+
+- **Transforms and opacity only.** Never animate `width`, `height`, `top`, `margin` or anything else that moves
+  other content: the layout-shift test fails on it.
+- **Visible without the script.** Hidden starting states apply only under `html.motion`, which the script adds
+  after marking whatever is already on screen as visible. No JavaScript, a failed script or print shows every
+  part of the page at once. The motion rules sit inside `@media screen and (prefers-reduced-motion:
+  no-preference)`, and the script does nothing when less motion is asked for.
+- **One scroll listener**, passive, throttled to one update per frame with `requestAnimationFrame`. Elements
+  are revealed once and then forgotten.
+- **Use it sparingly**: a section's text block or a list, not every paragraph. Never on the dashboard, forms or
+  anything a visitor is reading closely.
+- To animate a Figma frame, look at its prototype's "Smart animate" or "While scrolling" settings
+  (`get_motion_context` where the plan allows), then match it with one of the rows above before inventing a new
+  one. Durations in Figma's prototype map to the CSS `transition` here.
+- Tests: `tests/browser/site-basics.test.mjs` checks that the header moves, that nothing on the first screen
+  waits to appear, and that a visitor asking for less motion sees a still page.
+
+## 9. Before launch: the waitlist gate
+
+- `lib/app-gate.js` lists the app's pages (`/dashboard`, `/stock`). `middleware.js` sends them to `/waitlist`
+  with a temporary (307) redirect unless the environment variable `FINDASH_APP_OPEN` is `1`.
+- The log in page stays open: the privacy policy promises that account holders can delete their account there.
+- Set `FINDASH_APP_OPEN=1` in Vercel for Preview deployments to try the app before launch; set it for Production
+  on launch day. The tests run with the app open (`startSite()`), and `tests/api/app-gate.test.mjs` runs it closed
+  (`startSite({ appClosed: true })`).
+- On the public pages, every way in is a **Join the waitlist** button (`.button.solid` with the arrow) to
+  `/waitlist`: the nav's main button, the home page's intro, the sticky phone button, the restaurant page and
+  the 404. Never link a public page to `/dashboard` or `/stock` while the gate is closed; the help and developers
+  pages may mention them as documentation.
 
 ## Figma to FinDash, step by step
 

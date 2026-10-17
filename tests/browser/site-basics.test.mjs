@@ -187,7 +187,7 @@ test("an address with no page gets the 404 page, styled and with a way back, at 
     const response = await page.goto(site.url + address, { waitUntil: "networkidle" });
     assert.equal(response.status(), 404, address);
     assert.equal(await text(page, "h1"), "Page not found");
-    assert.ok(await page.locator('a[href="/dashboard"]').first().isVisible(), address);
+    assert.ok(await page.locator('main a[href="/waitlist"]').first().isVisible(), address);
     const background = await page.evaluate(function () {
       return getComputedStyle(document.body).backgroundColor;
     });
@@ -241,14 +241,14 @@ test("on a phone the landing page's main button is above the fold, and a sticky 
   const page = await openPage(browser, { viewport: { width: 360, height: 640 } });
   await visit(page, "/");
   const headerButton = await page.locator("header .enter-link").boundingBox();
-  assert.ok(headerButton.y + headerButton.height <= 640, "Open dashboard is on the first screen");
+  assert.ok(headerButton.y + headerButton.height <= 640, "Join the waitlist is on the first screen");
   assert.equal(await page.locator("#sticky-cta").isVisible(), false, "no sticky button while the others show");
 
   await page.locator("footer").scrollIntoViewIfNeeded();
   await page.waitForSelector("#sticky-cta", { state: "visible" });
   const sticky = await page.locator("#sticky-cta").boundingBox();
   assert.ok(sticky.y + sticky.height <= 640 && sticky.y > 500, "it sits at the bottom of the screen");
-  assert.equal(await page.getAttribute("#sticky-cta", "href"), "/dashboard");
+  assert.equal(await page.getAttribute("#sticky-cta", "href"), "/waitlist");
 
   await page.evaluate(function () {
     window.scrollTo(0, 0);
@@ -451,7 +451,7 @@ test("the restaurant page explains food cost, labor and prime cost, with sources
   }
   const sources = await page.locator('#benchmarks a[href^="https://"]').count();
   assert.ok(sources >= 3, "benchmarks name their sources");
-  assert.ok(await page.locator('main a[href="/dashboard"]').first().isVisible());
+  assert.ok(await page.locator('main a[href="/waitlist"]').first().isVisible());
   const found = await page.evaluate(function () {
     function oneLine(value) {
       return value.replace(/\s+/g, " ").trim();
@@ -539,22 +539,74 @@ test("the dashboard doesn't jump about while it loads", async function () {
   }
 });
 
-test("the home page slogan keeps its height whichever word is showing", async function () {
-  for (const width of [320, 360, 390, 412, 768, 1280]) {
-    const page = await openPage(browser, { viewport: { width: width, height: 800 } });
-    await visit(page, "/");
-    const heights = await page.evaluate(function () {
-      const words = ["non‑tech", "international", "freelancers", "small teams", "founders", "anyone"];
-      const rotator = document.getElementById("rotator");
-      const slogan = document.querySelector(".slogan");
-      return words.map(function (word) {
-        rotator.textContent = word;
-        return slogan.getBoundingClientRect().height;
-      });
-    });
-    assert.equal(new Set(heights).size, 1, width + "px: " + heights.join(", "));
-    await page.context().close();
+test("the home page's header moves as the page scrolls, and sections fade in as they come into view", async function () {
+  const page = await openPage(browser, { viewport: { width: 1280, height: 800 } });
+  await visit(page, "/");
+  /* How far through the header the page is, and how large the product is drawn. */
+  function header() {
+    const hero = document.querySelector(".hero");
+    const device = document.querySelector(".device");
+    return {
+      motion: document.documentElement.classList.contains("motion"),
+      progress: parseFloat(getComputedStyle(hero).getPropertyValue("--p")),
+      scale: new DOMMatrix(getComputedStyle(device).transform).a
+    };
   }
+  const atTop = await page.evaluate(header);
+  assert.equal(atTop.motion, true);
+  assert.equal(atTop.progress, 0);
+  assert.ok(atTop.scale < 0.95, "the product starts a little smaller: " + atTop.scale);
+
+  const firstScreen = await page.evaluate(function () {
+    return Array.from(document.querySelectorAll("[data-reveal], [data-reveal-item]")).filter(function (element) {
+      const box = element.getBoundingClientRect();
+      return box.top < window.innerHeight && box.bottom > 0 && !element.classList.contains("is-visible");
+    }).length;
+  });
+  assert.equal(firstScreen, 0, "nothing on the first screen waits to fade in");
+  assert.equal(await page.locator("#coming-next").evaluate(function (element) {
+    return getComputedStyle(element).opacity;
+  }), "0", "further down, sections wait for the visitor");
+
+  await page.evaluate(function () {
+    window.scrollTo(0, 500);
+  });
+  await page.waitForFunction(function () {
+    return parseFloat(getComputedStyle(document.querySelector(".hero")).getPropertyValue("--p")) > 0.3;
+  });
+  const scrolled = await page.evaluate(header);
+  assert.ok(scrolled.scale > atTop.scale, "the product grows as the page scrolls");
+
+  await page.locator("#coming-next").scrollIntoViewIfNeeded();
+  await page.waitForFunction(function () {
+    return getComputedStyle(document.getElementById("coming-next")).opacity === "1";
+  });
+  const order = await page.locator(".three-up li").evaluateAll(function (items) {
+    return items.map(function (item) {
+      return item.style.getPropertyValue("--i");
+    });
+  });
+  assert.deepEqual(order, ["0", "1", "2"], "a group's items come in one after another");
+  assert.deepEqual(page.errors, []);
+  await page.context().close();
+});
+
+test("visitors who ask for less motion get a still home page with everything showing", async function () {
+  const page = await openPage(browser, { viewport: { width: 1280, height: 800 } });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await visit(page, "/");
+  const still = await page.evaluate(function () {
+    const hidden = Array.from(document.querySelectorAll("[data-reveal], [data-reveal-group] > *")).filter(function (element) {
+      return getComputedStyle(element).opacity !== "1";
+    });
+    return {
+      motion: document.documentElement.classList.contains("motion"),
+      hidden: hidden.length,
+      device: getComputedStyle(document.querySelector(".device")).transform
+    };
+  });
+  assert.deepEqual(still, { motion: false, hidden: 0, device: "none" });
+  await page.context().close();
 });
 
 test("the about and contact pages say who FinDash is and how to reach it, in the HTML itself", async function () {

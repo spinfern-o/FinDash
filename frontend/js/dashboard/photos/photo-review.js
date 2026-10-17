@@ -14,6 +14,7 @@ import { showOwnerFigures } from "../figures-on-screen.js";
 import { selectMonth } from "../draw-dashboard.js";
 import { showStatus } from "../status-line.js";
 import { adoptCurrency } from "../import/currency-from-file.js";
+import { cleanCurrency } from "../line-details.js";
 import { stockReviewHtml, reviewedStock } from './stock-review.js';
 import { store, saveStock } from '../../stock/storage.js';
 import { fingerprint } from '../../stock/files.js';
@@ -467,6 +468,11 @@ export async function addReviewedInvoice() {
     lines: lines,
     addedAt: new Date().toISOString()
   };
+  // Kept so prices in different currencies are never compared.
+  const invoiceCurrency = cleanCurrency(doc.currency);
+  if (invoiceCurrency) {
+    invoice.currency = invoiceCurrency;
+  }
 
   let savedTogether = false;
   let adoptedFigures = false;

@@ -1,8 +1,9 @@
 /* What the owner buys, and the count sheet, in a real browser: two made-up
    invoices in two languages, with the supplier's item codes, are read from
-   photos and added; then the list, a price that moved, the count sheet
-   printed on its own, and its Excel copy. The readings are given straight to
-   the page, as if Claude had read them. */
+   photos and added; then the list, prices that wait for a package size,
+   confirming one and the change it shows, the count sheet printed on its
+   own, and its Excel copy. The readings are given straight to the page, as
+   if Claude had read them. */
 
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -122,15 +123,18 @@ test("an invoice's item codes are shown for checking, and its items are listed o
     ["Fresh chicken breast 鮮雞胸肉 · GH-101", "3 case 1 delivery, last Sep 19", "$164.40", "$1.37", "—"]);
 });
 
-test("a second invoice adds to the same items and shows which prices moved", async function () {
+test("a second invoice adds to the same items; a case's price waits until its size is confirmed", async function () {
   await addInvoice(SECOND);
   assert.equal(await text(page, ".item-log .scope"), "From 2 invoices");
   const rows = await visibleRows();
   assert.deepEqual(rows[0],
-    ["Fresh chicken breast 鮮雞胸肉 · GH-101", "6 case 2 deliveries, last Sep 21", "$328.80", "$1.37", "—"]);
+    ["Fresh chicken breast 鮮雞胸肉 · GH-101", "6 case 2 deliveries, last Sep 21", "$328.80", "$1.37",
+      "The price is not per this unit. Confirm what it is per to compare. Confirm size"],
+    "3 cases at $1.37 came to $164.40: billed by weight, not per case");
   assert.deepEqual(rows[1],
-    ["Broccoli 芥蘭花 · GH-300", "10 case 2 deliveries, last Sep 21", "$305.00", "$31.00", "▲ $1.00 (3.3%)"]);
-  assert.equal(await page.locator(".item-table .item-up").count(), 1);
+    ["Broccoli 芥蘭花 · GH-300", "10 case 2 deliveries, last Sep 21", "$305.00", "$31.00",
+      "Confirm the package size to compare prices. Confirm size"]);
+  assert.equal(await page.locator(".item-table .item-up").count(), 0, "no percentage until it means something");
   assert.equal(await page.locator(".item-table tbody tr").count(), 12, "the delivery fee is not an item");
 
   await page.click(".item-more");
@@ -145,11 +149,64 @@ test("a second invoice adds to the same items and shows which prices moved", asy
   assert.equal((await visibleRows()).length, 12);
 });
 
-test("the items are kept with the invoices, so they are there after a reload", async function () {
+/* Opens the size form on row `index` and fills it in. */
+async function confirmSize(index, fields) {
+  await page.locator(".item-table tbody > tr:not(.item-size-row)").nth(index).locator(".item-size").click();
+  const form = page.locator(".item-size-form");
+  await form.waitFor();
+  if (fields.billedPer) {
+    await form.locator('select[name="billedPer"]').selectOption(fields.billedPer);
+  }
+  if (fields.holds) {
+    await form.locator('input[name="packQuantity"]').fill(String(fields.holds));
+    await form.locator('select[name="packUnit"]').selectOption(fields.holdsUnit);
+  }
+  await form.locator('button[type="submit"]').click();
+}
+
+test("the size form asks for something before it saves anything", async function () {
+  await page.locator(".item-table tbody > tr").nth(1).locator(".item-size").click();
+  const form = page.locator(".item-size-form");
+  assert.equal(await form.locator('select[name="from"]').inputValue(), "2026-09-19",
+    "from the first delivery, so the earlier price can be compared too");
+  await form.locator('button[type="submit"]').click();
+  assert.equal(await text(page, ".item-size-form .message"),
+    "Enter what one package holds, or choose what the price is per.");
+  await form.locator('[data-items="size-cancel"]').click();
+  assert.equal(await page.locator(".item-size-form").count(), 0);
+});
+
+test("confirming what a case holds shows the change per case, and the size it is based on", async function () {
+  await confirmSize(1, { holds: 20, holdsUnit: "lb" });
+  await page.waitForFunction(function () {
+    return /Package size saved/.test(document.getElementById("status").textContent);
+  });
+  const broccoli = (await visibleRows())[1];
+  assert.equal(broccoli[4], "▲ $1.00/case (3.3%) 1 case = 20 lb Change size");
+  assert.equal(await page.locator(".item-table .item-up").count(), 1);
+
+  await confirmSize(0, { billedPer: "lb" });
+  await page.waitForFunction(function () {
+    return !document.querySelector(".item-size-form");
+  });
+  assert.equal((await visibleRows())[0][4], "— Priced per lb Change size", "the same $1.37 a pound both times");
+});
+
+test("the items and confirmed sizes are kept with the invoices, so they are there after a reload", async function () {
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForSelector(".item-log");
   assert.equal(await page.locator(".item-table tbody tr").count(), 12);
-  assert.match((await visibleRows())[1].join(" "), /▲ \$1\.00 \(3\.3%\)/);
+  assert.match((await visibleRows())[1].join(" "), /▲ \$1\.00\/case \(3\.3%\) 1 case = 20 lb/);
+});
+
+test("why a price isn't compared is said in Chinese when stock is in Chinese", async function () {
+  const rice = (await visibleRows()).findIndex(function (row) {
+    return row[0].startsWith("Rice");
+  });
+  await page.selectOption("#stock-language", "zh-CN");
+  assert.equal((await visibleRows())[rice][4], "请先确认包装规格，再比较价格。 确认规格");
+  await page.selectOption("#stock-language", "en");
+  assert.equal((await visibleRows())[rice][4], "Confirm the package size to compare prices. Confirm size");
 });
 
 test("the count sheet prints on its own: what to count, in the supplier's words, with a box for each", async function () {

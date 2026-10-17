@@ -1,6 +1,7 @@
 /* The financial part of a reviewed invoice uses the dashboard's usual shape
    and arithmetic. Shelf counts never become costs or multiply invoice prices. */
 import { roundToCents } from '../dashboard/numbers.js';
+import { cleanCurrency } from '../dashboard/line-details.js';
 
 /* A stable ID makes retrying a confirmation safe, including a lost response. */
 export function invoiceId(hash) { return 'stock-' + hash.slice(0, 34); }
@@ -24,11 +25,15 @@ export function financialInvoice(draft, month, corrections = []) {
       category: corrections[index]?.category || line.category
     };
   });
-  return {
+  const invoice = {
     id: invoiceId(draft.hash), kind: 'purchase', supplier: document.supplier || draft.name,
     number: document.document_number || '', date: document.date,
     year: Number(month.slice(0, 4)), monthNum: Number(month.slice(5, 7)),
     total: roundToCents(lines.reduce(function (sum, line) { return sum + line.amount; }, 0)),
     lines: lines, addedAt: new Date().toISOString()
   };
+  // Kept so prices in different currencies are never compared.
+  const currency = cleanCurrency(document.currency);
+  if (currency) { invoice.currency = currency; }
+  return invoice;
 }

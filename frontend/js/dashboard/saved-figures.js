@@ -11,6 +11,7 @@ import { escapeHtml, unescapeHtml } from "./format.js";
 import { ALL_COST_LINES } from "./cost-groups.js";
 import { roundToCents } from "./numbers.js";
 import { ADVICE_KEY } from "./cards/advice.js";
+import { cleanCurrency, linePriceDetails } from "./line-details.js";
 
 const FIGURES_KEY = "findash-data";
 const FORMAT_VERSION = 2;
@@ -71,8 +72,9 @@ function textOrBlank(value, maximumLength) {
 }
 
 /* What a line says about the item bought: its code, the name as printed,
-   how many and at what price. Only the details the invoice had are kept,
-   so saved figures stay small; invoices added before these were kept have
+   how many and at what price, and what the owner confirmed one package
+   holds or the price is per. Only the details the invoice had are kept, so
+   saved figures stay small; invoices added before these were kept have
    none. */
 function cleanItemDetails(line) {
   const details = {};
@@ -94,7 +96,7 @@ function cleanItemDetails(line) {
   if (Number.isFinite(line.unitPrice)) {
     details.unitPrice = line.unitPrice;
   }
-  return details;
+  return Object.assign(details, linePriceDetails(line));
 }
 
 /* An invoice as this page wrote it, or null. Text fields stay as they were
@@ -143,7 +145,7 @@ export function cleanInvoice(invoice) {
     date = invoice.date;
   }
 
-  return {
+  const cleaned = {
     id: textOrBlank(invoice.id, 40) || String(Math.random()),
     kind: kind,
     supplier: textOrBlank(invoice.supplier, 120),
@@ -155,6 +157,13 @@ export function cleanInvoice(invoice) {
     lines: lines,
     addedAt: textOrBlank(invoice.addedAt, 40)
   };
+  // The currency the invoice was in, when its reading named one, so prices
+  // in different currencies are never compared.
+  const currency = cleanCurrency(invoice.currency);
+  if (currency) {
+    cleaned.currency = currency;
+  }
+  return cleaned;
 }
 
 /* A month as this page wrote it, or null. */

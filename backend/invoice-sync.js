@@ -2,6 +2,7 @@
    multiplied by a guessed price. Rebuild only the dashboard's invoice shape. */
 import { ALL_COST_LINES } from '../frontend/js/dashboard/cost-groups.js';
 import { roundToCents } from '../frontend/js/dashboard/numbers.js';
+import { cleanCurrency, linePriceDetails } from '../frontend/js/dashboard/line-details.js';
 
 /* Required text is bounded rather than silently truncating an invoice id. */
 function text(value, maximum, label, optional = false) {
@@ -43,7 +44,8 @@ function invoiceLine(line) {
       kept[key] = line[key];
     }
   }
-  return kept;
+  // A confirmed package size or billing unit, for comparing prices.
+  return Object.assign(kept, linePriceDetails(line));
 }
 
 /* A stable id makes a repeated network confirmation safe to retry. */
@@ -70,11 +72,16 @@ export function reviewedInvoice(value) {
   if (Math.abs(total - lineTotal) > 0.015) {
     throw new Error('Invoice lines must add up to the reviewed total');
   }
-  return {
+  const invoice = {
     id: text(value.id, 40, 'id'), kind: 'purchase',
     supplier: text(value.supplier, 120, 'supplier', true),
     number: text(value.number, 60, 'number', true), date,
     year: value.year, monthNum: value.monthNum, total, lines,
     addedAt: text(value.addedAt, 40, 'recorded time', true)
   };
+  // The currency the invoice was in, so prices in different currencies are
+  // never compared.
+  const currency = cleanCurrency(value.currency);
+  if (currency) { invoice.currency = currency; }
+  return invoice;
 }

@@ -12,32 +12,25 @@
    Only lines with a quantity are items. A delivery fee, a surcharge or a
    credit has no quantity and is left out; free items (a price of 0) are
    kept, because they are still stock on the shelf. Nothing here changes the
-   money on the dashboard: that comes from the invoices' lines as before. */
+   money on the dashboard: that comes from the invoices' lines as before.
+
+   Prices are compared by price-comparison.js, only when they are for the
+   same amount of the same thing. What a case or bag holds is whatever the
+   owner confirmed (confirmPackage below), kept on the line of the delivery
+   it was confirmed from; later deliveries in the same unit use it until
+   the owner confirms another, and earlier ones keep their own. */
 
 import { roundToCents } from "./numbers.js";
+import { unitName } from "./units.js";
+import { comparePrices } from "./price-comparison.js";
+import { cleanBilledPer, cleanPack } from "./line-details.js";
+
+// Kept here too, where the item list and its tests have always found it.
+export { unitName };
 
 /* The cost lines whose items sit on a shelf until they are used, so they
    go on the count sheet: food and drink, staff meals and packaging. */
 export const COUNTED_LINES = ["cogs", "employee meals", "packaging"];
-
-/* "Cases" -> "case", "LBS" -> "lb", "Boxes" -> "box": the same unit however
-   a reading wrote it, so quantities in it can be added up. */
-export function unitName(unit) {
-  if (typeof unit !== "string") {
-    return "";
-  }
-  const name = unit.trim().toLowerCase();
-  if (/(ss|us)$/.test(name)) {
-    return name;
-  }
-  if (/(x|ch|sh)es$/.test(name)) {
-    return name.slice(0, -2);
-  }
-  if (name.length > 2 && name.endsWith("s")) {
-    return name.slice(0, -1);
-  }
-  return name;
-}
 
 /* "Broccoli (Chui Ho)  " -> "broccoli (chui ho)", for matching names. */
 function matchingText(text) {
@@ -45,7 +38,7 @@ function matchingText(text) {
 }
 
 /* What identifies the item on `line` from `supplier`. */
-function itemKey(supplier, line) {
+export function itemKey(supplier, line) {
   let identity;
   if (line.code) {
     identity = "code:" + matchingText(line.code);
@@ -112,24 +105,54 @@ function quantitiesByUnit(purchases) {
   });
 }
 
-/* The latest price paid that was not free, and the one before it. */
-function lastTwoPrices(purchases) {
-  const prices = [];
-  for (let index = purchases.length - 1; index >= 0 && prices.length < 2; index--) {
+/* The latest purchase that was not free, and the one before it. A free
+   item is stock, but its price of 0 is no baseline for a change. */
+function lastTwoPaid(purchases) {
+  const paid = [];
+  for (let index = purchases.length - 1; index >= 0 && paid.length < 2; index--) {
     const price = purchases[index].unitPrice;
     if (Number.isFinite(price) && price > 0) {
-      prices.push(price);
+      paid.push(purchases[index]);
     }
   }
-  let last = null;
-  let previous = null;
-  if (prices.length > 0) {
-    last = prices[0];
+  return { last: paid[0] || null, previous: paid[1] || null };
+}
+
+/* Gives each purchase the package definition and billing unit in effect
+   for it: its own, or the latest earlier one confirmed in the same unit.
+   packFrom is the date of the delivery it was confirmed from. */
+function applyConfirmedDetails(purchases) {
+  const latestByUnit = new Map();
+  for (const purchase of purchases) {
+    let inEffect = latestByUnit.get(purchase.unit) || { pack: null, billedPer: null, from: null };
+    if (purchase.ownPack || purchase.ownBilledPer) {
+      inEffect = { pack: purchase.ownPack, billedPer: purchase.ownBilledPer, from: purchase.date };
+      latestByUnit.set(purchase.unit, inEffect);
+    }
+    purchase.pack = inEffect.pack;
+    purchase.billedPer = inEffect.billedPer;
+    purchase.packFrom = inEffect.from;
   }
-  if (prices.length > 1) {
-    previous = prices[1];
+}
+
+/* Each unit the item was bought in, with the dates it came in that unit and
+   the package definition in effect for the latest of them: what the owner
+   picks from when confirming a package size. */
+function unitsBought(purchases) {
+  const units = new Map();
+  for (const purchase of purchases) {
+    if (!units.has(purchase.unit)) {
+      units.set(purchase.unit, { unit: purchase.unit, dates: [] });
+    }
+    const entry = units.get(purchase.unit);
+    if (!entry.dates.includes(purchase.date)) {
+      entry.dates.push(purchase.date);
+    }
+    entry.pack = purchase.pack;
+    entry.billedPer = purchase.billedPer;
+    entry.packFrom = purchase.packFrom;
   }
-  return { last: last, previous: previous };
+  return [...units.values()];
 }
 
 /* One item's purchases, summed up for the list. */
@@ -142,15 +165,21 @@ function summariseItem(item) {
     spent += purchase.amount;
   }
 
-  const prices = lastTwoPrices(purchases);
+  applyConfirmedDetails(purchases);
+  const paid = lastTwoPaid(purchases);
+  let comparison = { state: "single" };
+  if (paid.last && paid.previous) {
+    comparison = comparePrices(paid.last, paid.previous);
+  }
   let priceChange = null;
   let priceChangePercent = null;
-  if (prices.last !== null && prices.previous !== null && prices.last !== prices.previous) {
-    priceChange = Math.round((prices.last - prices.previous) * 1000) / 1000;
-    priceChangePercent = Math.round(((prices.last - prices.previous) / prices.previous) * 1000) / 10;
+  if (comparison.state === "change") {
+    priceChange = comparison.change;
+    priceChangePercent = comparison.percent;
   }
 
   return {
+    key: item.key,
     supplier: item.supplier,
     code: item.code,
     description: item.description,
@@ -166,15 +195,36 @@ function summariseItem(item) {
     lastPrice: latest.unitPrice,
     isFree: latest.amount === 0,
     priceChange: priceChange,
-    priceChangePercent: priceChangePercent
+    priceChangePercent: priceChangePercent,
+    priceComparison: comparison,
+    comparedUnits: comparedUnits(paid),
+    units: unitsBought(purchases)
   };
 }
 
-/* Every item bought, most money spent first. Each is { supplier, code,
+/* The units the two compared purchases were in, latest first, each once:
+   the ones a package size may need confirming for. */
+function comparedUnits(paid) {
+  const units = [];
+  for (const purchase of [paid.last, paid.previous]) {
+    if (purchase && !units.includes(purchase.unit)) {
+      units.push(purchase.unit);
+    }
+  }
+  return units;
+}
+
+/* Every item bought, most money spent first. Each is { key, supplier, code,
    description, original, category, unit, timesBought, quantities, spent,
    firstDate, lastDate, lastQuantity, lastPrice, isFree, priceChange,
-   priceChangePercent }. priceChange is the latest price minus the one
-   before it, or null when there is only one price or it has not moved. */
+   priceChangePercent, priceComparison, comparedUnits, units }.
+
+   priceComparison is what comparePrices() said about the latest price paid
+   against the one before ({ state: "single" } with fewer than two).
+   priceChange is the change per priceComparison.per, and priceChangePercent
+   the change as a share, both null unless the two could be compared and
+   the price moved. units lists each unit the item came in, with its
+   delivery dates and the package definition in effect. */
 export function itemsBought(invoices) {
   const items = new Map();
   for (const invoice of purchasesInDateOrder(invoices)) {
@@ -187,6 +237,7 @@ export function itemsBought(invoices) {
         items.set(key, newItem(invoice.supplier));
       }
       const item = items.get(key);
+      item.key = key;
 
       // The latest reading names the item; earlier ones may have been worded
       // differently.
@@ -199,7 +250,10 @@ export function itemsBought(invoices) {
         quantity: line.quantity,
         unit: unitName(line.unit),
         unitPrice: line.unitPrice,
-        amount: line.amount
+        amount: line.amount,
+        currency: invoice.currency || null,
+        ownPack: cleanPack(line.pack),
+        ownBilledPer: cleanBilledPer(line.billedPer)
       });
     }
   }
@@ -243,4 +297,45 @@ export function countSheetGroups(items) {
     groups.push({ line: line, items: inGroup });
   }
   return groups;
+}
+
+/* The invoices with a package size or billing unit confirmed for one item:
+   `definition` is { pack, billedPer } (either may be null), set on the
+   item's lines in `unit` on the delivery dated `fromDate`. Later deliveries
+   in that unit use it until another is confirmed; earlier ones are left as
+   they were. Returns { invoices, changed }: new invoices, and how many
+   lines were changed. */
+export function confirmPackage(invoices, key, unit, fromDate, definition) {
+  const pack = cleanPack(definition.pack);
+  const billedPer = cleanBilledPer(definition.billedPer);
+  let changed = 0;
+  const updated = invoices.map(function (invoice) {
+    if (invoice.kind === "sale" || purchaseDate(invoice) !== fromDate) {
+      return invoice;
+    }
+    let isChanged = false;
+    const lines = invoice.lines.map(function (line) {
+      const isThisItem = isItemLine(line) && itemKey(invoice.supplier, line) === key && unitName(line.unit) === unit;
+      if (!isThisItem) {
+        return line;
+      }
+      isChanged = true;
+      changed += 1;
+      const kept = Object.assign({}, line);
+      delete kept.pack;
+      delete kept.billedPer;
+      if (pack) {
+        kept.pack = pack;
+      }
+      if (billedPer) {
+        kept.billedPer = billedPer;
+      }
+      return kept;
+    });
+    if (!isChanged) {
+      return invoice;
+    }
+    return Object.assign({}, invoice, { lines: lines });
+  });
+  return { invoices: updated, changed: changed };
 }

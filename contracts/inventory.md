@@ -32,6 +32,22 @@ A movement is `{id,itemId,type,quantity,at,note?}`. Types:
 All quantities are finite/nonnegative; remaining stock cannot be negative. Unknown stock is
 `null`, not zero. Events are immutable and unique. The shared ledger validates all operations.
 
+## Invoice details for comparing prices
+
+Confirmed purchase invoices (the dashboard's financial records, not the ledger) may carry:
+- `currency` on the invoice: a three-letter code from the reading, e.g. `"USD"`. Prices from invoices in
+  different currencies are never compared; an invoice without one is taken to be in the dashboard's currency.
+- `pack` on a line: `{quantity, unit}`, what one of the line's `unit` (case, bag...) holds, as the owner
+  confirmed it. `unit` is one of `lb kg g l ml each`.
+- `billedPer` on a line: one of `lb kg g l ml each`, when the owner confirmed the printed `unitPrice` is per
+  that rather than per the line's `unit` (a case billed by the pound).
+
+`pack` and `billedPer` are set on the delivery they were confirmed from; later deliveries of the same item in
+the same unit use them until another is confirmed, and earlier ones keep their own, so history is never
+rewritten. Both are optional and validated in `frontend/js/dashboard/line-details.js` (browser and server);
+anything else is dropped. Conversions are only lb/kg/g, L/mL and each/dozen (`frontend/js/dashboard/units.js`);
+a price change is shown only when both prices are for the same amount (`price-comparison.js`).
+
 ## APIs
 
 - `GET /api/inventory` → `{inventory,revision}` (empty ledger and revision 0 for a new owner).

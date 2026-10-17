@@ -543,6 +543,7 @@ Where to start:
 | How a photo becomes an invoice | `photos/photo-import.js`, `photos/photo-review.js`, `api/read-document.js` |
 | How figures are remembered | `saved-figures.js` (this browser), `account-figures.js` (the account) |
 | What you buy and the count sheet | `items.js`, `cards/item-log.js`, `count-sheet.js` |
+| Comparing prices fairly | `units.js`, `price-comparison.js`, `line-details.js` |
 | How logging in works | `api/auth.js`, `lib/session.js`, `frontend/js/login.js` |
 | Who may use the paid features | `lib/ai-access.js` |
 | The cost groups | `frontend/js/dashboard/cost-groups.js` |

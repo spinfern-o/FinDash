@@ -59,6 +59,18 @@ test('confirmation preserves spreadsheets and previous purchases while committin
   assert.deepEqual((await client.get('/api/inventory')).json, { inventory, revision: 1 });
 });
 
+test('a confirmed invoice keeps its currency and any confirmed package size, and drops unusable ones', async function () {
+  const client = await owner();
+  const withDetails = { ...invoice('stock-invoice-details'), currency: 'usd',
+    lines: [{ ...invoice().lines[0], pack: { quantity: 25, unit: 'kg' }, billedPer: 'bag' }] };
+  const result = await client.put('/api/inventory', { inventory: shelfCount(), revision: 0, invoice: withDetails });
+  assert.equal(result.status, 200);
+  const saved = (await client.get('/api/figures')).json.figures.invoices[0];
+  assert.equal(saved.currency, 'USD');
+  assert.deepEqual(saved.lines[0].pack, { quantity: 25, unit: 'kg' });
+  assert.equal(saved.lines[0].billedPer, undefined, 'a bag is a package, not something a price can be per');
+});
+
 test('a lost-response retry is idempotent and changed contents cannot reuse the same invoice id', async function () {
   const client = await owner();
   const request = { inventory: shelfCount(), revision: 0, invoice: invoice() };

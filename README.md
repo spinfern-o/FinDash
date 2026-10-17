@@ -594,6 +594,7 @@ lib/                     Shared by the functions: Supabase, login cookies, daily
 middleware.js            Sends AI agents the Markdown version of a page, and Link headers
 skills/                  The agent skill (SKILL.md), published under .well-known/
 AGENTS.md                Instructions for AI coding agents working on this code
+DESIGN-SYSTEM.md         How the pages look (tokens, components, icons), and building from Figma
 supabase/migrations/     The SQL for saved figures, daily limits and the waitlist
 tests/                   The tests (npm test)
 .github/workflows/       Runs the tests on every pull request

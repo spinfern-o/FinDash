@@ -294,36 +294,24 @@ usage counts go with it.
 
 ### The waitlist
 
-`/waitlist` asks food businesses for an email and a few answers: what kind of business,
-which country, the languages the owner, the staff and the suppliers' invoices use, about
-how many supplier invoices come in a month, and (optionally) what's hardest about
-managing their money. It is for sizing the market before building inventory from photos
-or more languages. The choices are in `frontend/js/waitlist-options.js`; the page draws its
-form from them and `api/waitlist.js` accepts only them.
+`/waitlist` asks for an email address, and nothing else. `frontend/js/waitlist.js` checks
+it and sends it to `/api/waitlist` (`backend/api/waitlist.js`), which checks it again,
+refuses requests from other sites, quietly drops form robots (a hidden field only they
+fill in), and adds a row to the `waitlist` table in Supabase. Nobody is emailed
+automatically: no confirmation is sent, and you aren't notified of new names.
 
-Answers go to the `waitlist` table in Supabase. Anyone can add a row; nobody can read one
-through the site. To see them, open **Supabase → Table Editor → waitlist** (and
-**Export to CSV**), or run these in the **SQL Editor**:
+The table needs two SQL files from `supabase/migrations/`, run in order in **Supabase →
+SQL Editor**: `20261017000000_waitlist.sql` (the table), then
+`20261020000000_waitlist_email_only.sql` (lets a row be just an email). Until both have
+run, the page says the waitlist isn't open yet. Earlier sign-ups also answered a few
+questions about their business; those columns stay, empty for new rows.
+
+Anyone can add a row; nobody can read one through the site. To see the emails, open
+**Supabase → Table Editor → waitlist** (and **Export to CSV** for your email tool), or
+run this in the **SQL Editor**:
 
 ```sql
--- How many, by kind of business and country
-select business_type, country, count(*) from public.waitlist
-group by business_type, country order by count(*) desc;
-
--- Which languages, for owners, staff and supplier invoices
-select 'owner' as who, unnest(owner_languages) as language, count(*) from public.waitlist group by 1, 2
-union all
-select 'staff', unnest(staff_languages), count(*) from public.waitlist group by 1, 2
-union all
-select 'invoices', unnest(invoice_languages), count(*) from public.waitlist group by 1, 2
-order by who, count desc;
-
--- How much paperwork: supplier invoices a month
-select invoices_per_month, count(*) from public.waitlist group by 1 order by 2 desc;
-
--- In their own words
-select created_at, business_type, country, hardest_part from public.waitlist
-where hardest_part is not null order by created_at desc;
+select email, created_at from public.waitlist order by created_at;
 ```
 
 Each email is kept once. To take someone off the list (they email to ask, as the page
@@ -561,7 +549,7 @@ frontend/                    The website (Vercel serves this folder)
   index.html             Landing page
   dashboard.html         The dashboard
   help.html              Getting data in, glossary, how data is handled
-  waitlist.html          The waitlist (js/waitlist.js, js/waitlist-options.js)
+  waitlist.html          The waitlist: an email, nothing else (js/waitlist.js)
   about.html, contact.html   Who runs FinDash and how to reach it
   developers.html        The API, MCP servers, WebMCP tools and agent skill
   openapi.json           The API's OpenAPI description

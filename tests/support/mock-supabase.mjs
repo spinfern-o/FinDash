@@ -69,6 +69,7 @@ export async function startMockSupabase() {
     options: {
       confirmEmails: false,    // true: sign-ups need the emailed link first
       missingTables: false,    // true: answer as if the SQL was never run
+      waitlistNeedsAnswers: false, // true: as if the email-only waitlist SQL wasn't run
       signupError: null,       // { status, code, message }: refuse sign-ups with it
       tokenLifetimeSeconds: 3600
     },
@@ -78,6 +79,7 @@ export async function startMockSupabase() {
       mock.usage.clear();
       mock.waitlist.length = 0;
       mock.options.missingTables = false;
+      mock.options.waitlistNeedsAnswers = false;
       mock.options.signupError = null;
     },
     userId: function (email) {
@@ -323,6 +325,12 @@ export async function startMockSupabase() {
   function handleWaitlist(request, response, body) {
     if (request.method !== "POST") {
       return databaseError(response, 403, "42501", "permission denied for table waitlist");
+    }
+    // As the table was before 20261020000000_waitlist_email_only.sql: the
+    // business answers were still required.
+    if (mock.options.waitlistNeedsAnswers && !body.business_type) {
+      return databaseError(response, 400, "23502",
+        'null value in column "business_type" of relation "waitlist" violates not-null constraint');
     }
     const email = String(body.email).toLowerCase();
     const isListed = mock.waitlist.some(function (row) {

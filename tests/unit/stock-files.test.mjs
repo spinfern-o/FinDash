@@ -38,7 +38,7 @@ test('one unreadable file does not reject the rest of a multi-file selection', a
 test('switching language rereads pending source text before exposing it for review', async function () {
   store.user = { email: 'owner@example.test' };
   const document = { kind: 'purchase', legible: true, lines: [{ original: 'Rice', description: '大米' }] };
-  drafts.push({ id: 'draft', status: 'ready', language: 'en', document: { ...document, lines: [{ description: 'Rice' }] },
+  drafts.push({ owner: store.user.email, id: 'draft', status: 'ready', language: 'en', document: { ...document, lines: [{ description: 'Rice' }] },
     photo: { data: 'aGVsbG8=', mediaType: 'image/png', preview: 'data:image/png;base64,aGVsbG8=' } });
   const requests = [];
   globalThis.fetch = async function (url, options) {

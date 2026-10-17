@@ -3,6 +3,7 @@
 import { preparePhotoForUpload } from '../dashboard/photos/photo-reader.js';
 import { currentLanguage } from './language.js';
 import { store } from './storage.js';
+import { invoiceId } from './invoice.js';
 export const drafts = [];
 const waiting = [];
 let readers = 0;
@@ -16,12 +17,12 @@ function queueIsFull() {
 }
 
 /* The content digest catches duplicate uploads even when filenames differ. */
-async function fingerprint(file) {
+export async function fingerprint(file) {
   const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
   return Array.from(new Uint8Array(digest)).map(function (byte) { return byte.toString(16).padStart(2, '0'); }).join('');
 }
 function alreadyAdded(hash) {
-  return drafts.some(function (draft) { return draft.hash === hash; }) || store.inventory.movements.some(function (movement) {
+  return drafts.some(function (draft) { return draft.hash === hash; }) || store.confirmedInvoices.includes(invoiceId(hash)) || store.inventory.movements.some(function (movement) {
     return movement.note === 'source:' + hash;
   });
 }
@@ -30,30 +31,30 @@ function alreadyAdded(hash) {
 export async function addFiles(files) {
   for (const file of files) {
     if (queueIsFull()) {
-      drafts.push({ id: crypto.randomUUID(), name: file.name, status: 'failed', error: 'queueFull' });
+      drafts.push({ owner: store.user?.email || null, id: crypto.randomUUID(), name: file.name, status: 'failed', error: 'queueFull' });
       continue;
     }
     if (file.size > 20_000_000 || !/^image\/(jpeg|png|webp)$/.test(file.type)) {
-      drafts.push({ id: crypto.randomUUID(), name: file.name, status: 'failed', error: 'unsupported' });
+      drafts.push({ owner: store.user?.email || null, id: crypto.randomUUID(), name: file.name, status: 'failed', error: 'unsupported' });
       continue;
     }
     let hash;
     try {
       hash = await fingerprint(file);
     } catch {
-      drafts.push({ id: crypto.randomUUID(), name: file.name, status: 'failed', error: 'failed' });
+      drafts.push({ owner: store.user?.email || null, id: crypto.randomUUID(), name: file.name, status: 'failed', error: 'failed' });
       continue;
     }
     if (alreadyAdded(hash)) {
-      drafts.push({ id: crypto.randomUUID(), name: file.name, status: 'failed', error: 'duplicate' });
+      drafts.push({ owner: store.user?.email || null, id: crypto.randomUUID(), name: file.name, status: 'failed', error: 'duplicate' });
       continue;
     }
     // Another drop can finish hashing while this file is being read.
     if (queueIsFull()) {
-      drafts.push({ id: crypto.randomUUID(), name: file.name, status: 'failed', error: 'queueFull' });
+      drafts.push({ owner: store.user?.email || null, id: crypto.randomUUID(), name: file.name, status: 'failed', error: 'queueFull' });
       continue;
     }
-    const draft = { id: crypto.randomUUID(), name: file.name, hash: hash, status: 'reading', file: file, language: currentLanguage() };
+    const draft = { owner: store.user?.email || null, id: crypto.randomUUID(), name: file.name, hash: hash, status: 'reading', file: file, language: currentLanguage() };
     drafts.push(draft);
     waiting.push(draft);
     // Start accepted files immediately. A later file failing to read from
@@ -85,7 +86,7 @@ async function requestReading(photo, language, review) {
 }
 async function readInvoice(draft) {
   try {
-    if (!store.user) { throw new Error('authNeeded'); }
+    if (!store.user || draft.owner !== store.user.email) { throw new Error('authNeeded'); }
     const photo = draft.photo || await preparePhotoForUpload(draft.file);
     draft.photo = photo;
     draft.preview = photo.preview;
@@ -94,6 +95,7 @@ async function readInvoice(draft) {
     if (!result.checks.ok) {
       result = await requestReading(photo, readingLanguage, { previous: result.document, problems: result.checks.problems });
     }
+    if (draft.owner !== store.user?.email) { throw new Error('authNeeded'); }
     // A language change during a request must not label an English result
     // as Chinese. Queue a new reading before exposing it for review.
     if (draft.language !== readingLanguage) { waiting.push(draft); return; }

@@ -49,6 +49,7 @@
 <link rel="modulepreload" href="/js/dashboard/status-line.js">
 <link rel="modulepreload" href="/js/dashboard/agent-tools.js">
 <link rel="modulepreload" href="/js/dashboard/cards/item-log.js">
+<link rel="modulepreload" href="/js/dashboard/stock.js">
 <link rel="modulepreload" href="/js/dashboard/format.js">
 <link rel="modulepreload" href="/js/dashboard/months.js">
 <link rel="modulepreload" href="/js/dashboard/cards/card.js">
@@ -77,7 +78,15 @@
 <link rel="modulepreload" href="/js/dashboard/analysis.js">
 <link rel="modulepreload" href="/js/dashboard/items.js">
 <link rel="modulepreload" href="/js/dashboard/count-sheet.js">
+<link rel="modulepreload" href="/js/stock/storage.js">
+<link rel="modulepreload" href="/js/stock/language.js">
+<link rel="modulepreload" href="/js/stock/views.js">
+<link rel="modulepreload" href="/js/stock/forms.js">
+<link rel="modulepreload" href="/js/stock/changes.js">
 <link rel="modulepreload" href="/js/dashboard/import/currency-from-file.js">
+<link rel="modulepreload" href="/js/dashboard/photos/stock-review.js">
+<link rel="modulepreload" href="/js/stock/files.js">
+<link rel="modulepreload" href="/js/stock/invoice.js">
 <link rel="modulepreload" href="/js/dashboard/export/xlsx-writer.js">
 <link rel="modulepreload" href="/js/dashboard/export/downloads.js">
 <link rel="modulepreload" href="/js/dashboard/import/csv-reader.js">
@@ -87,11 +96,13 @@
 <link rel="modulepreload" href="/js/dashboard/import/column-mapping.js">
 <link rel="modulepreload" href="/js/dashboard/import/months-from-sheet.js">
 <link rel="modulepreload" href="/js/dashboard/photos/photo-reader.js">
+<link rel="modulepreload" href="/js/stock/ledger.js">
 <link rel="modulepreload" href="/js/dashboard/export/zip-writer.js">
 <link rel="modulepreload" href="/js/dashboard/import/period-cells.js">
 <!-- page-head: end -->
 <script src="js/theme-init.js"></script>
 <link rel="stylesheet" href="css/dashboard.css">
+<link rel="stylesheet" href="css/stock.css">
 </head>
 <body>
 <main>
@@ -200,6 +211,19 @@
     <section class="review" id="review" hidden aria-live="polite" aria-label="Check what was read from your photo"></section>
     <details class="inv-list" id="inv-list" hidden></details>
   </section>
+
+  <section class="stock-card" id="dashboard-stock" aria-labelledby="dashboard-stock-title">
+    <div class="stock-page-header">
+      <h2 id="dashboard-stock-title" data-text="dashboardStock">Stock on shelves</h2>
+      <label class="stock-language"><span data-text="language">Language</span><select id="stock-language"><option value="en">English</option><option value="zh-CN">简体中文</option></select></label>
+    </div>
+    <p data-text="dashboardStockHint">Add and count stock here. The Stock page uses the same records.</p>
+    <div class="stock-actions"><button class="btn primary" id="add-item" data-text="addItem" disabled>Add an item</button><a href="/stock#items" data-text="openStock">Open stock page</a></div>
+    <p id="stock-storage" role="status"></p>
+    <p id="stock-message" class="stock-danger" role="alert" hidden></p>
+    <div id="dashboard-stock-items"></div>
+  </section>
+  <dialog id="stock-dialog" aria-labelledby="dialog-title"></dialog>
 
   <div class="toolbar" id="toolbar">
     <div class="tool">

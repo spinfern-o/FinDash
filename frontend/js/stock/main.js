@@ -6,6 +6,8 @@ import { store, loadStock, saveStock, downloadBackup, parseInventory, clearGuest
 import { drafts, addFiles, onFilesChanged, discardDraft, rereadReadyDrafts } from './files.js';
 import { filesHtml, reviewHtml, itemsHtml, settingsHtml, printHtml } from './views.js';
 import { wireForms, showAddItem, showMovement, showInvoiceReview, canChange } from './forms.js';
+import { watchStockChanges } from './changes.js';
+import { invoiceId } from './invoice.js';
 const panel = document.getElementById('stock-panel');
 
 /* User-facing errors use localized messages, not raw provider diagnostics. */
@@ -44,7 +46,7 @@ function render() {
 function discardSavedDrafts() {
   if (store.dirty) { return; }
   for (const draft of [...drafts]) {
-    if (draft.hash && store.inventory.movements.some(function (movement) { return movement.note === 'source:' + draft.hash; })) { discardDraft(draft.id); }
+    if (draft.hash && (store.confirmedInvoices.includes(invoiceId(draft.hash)) || store.inventory.movements.some(function (movement) { return movement.note === 'source:' + draft.hash; }))) { discardDraft(draft.id); }
   }
 }
 function saved() {
@@ -106,6 +108,11 @@ async function start() {
   setLanguage(loadLanguage());
   wireForms(saved,message);
   onFilesChanged(render);
+  watchStockChanges(async function () {
+    if (store.busy || store.dirty || document.getElementById('stock-dialog').open) { return; }
+    await loadStock();
+    render();
+  });
   window.addEventListener('hashchange',function () { document.getElementById('stock-message').hidden = true; render(); });
   document.getElementById('add-item').addEventListener('click',showAddItem);
   document.getElementById('stock-language').addEventListener('change',function (event) {

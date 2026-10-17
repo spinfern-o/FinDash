@@ -5,6 +5,7 @@
 import { accountsAreSetUp, supabaseClient } from "../lib/supabase.js";
 import { currentSession, isSameSite } from "../lib/session.js";
 import { emptyInventory, validateInventory } from "../frontend/js/stock/ledger.js";
+import { reviewedInvoice } from './invoice-sync.js';
 
 const TABLE = "account_inventory";
 const MAXIMUM_BYTES = 1_000_000;
@@ -12,7 +13,7 @@ const MAXIMUM_BYTES = 1_000_000;
 /* Storage errors reveal setup or availability, never the owner's records. */
 function storageFailed(res, error) {
   console.error("[findash-error] inventory:", error.code || "storage failure");
-  if (error.code === "42P01" || error.code === "PGRST205") {
+  if (["42P01", "PGRST205", "PGRST202", "42883", "42703"].includes(error.code)) {
     return res.status(503).json({ error: "Inventory saving isn't set up on this site yet." });
   }
   return res.status(502).json({ error: "Inventory could not be saved or loaded right now." });
@@ -47,6 +48,27 @@ async function saveInventory(client, user, body, res) {
     }
   } catch (error) {
     return res.status(400).json({ error: error.message });
+  }
+  if (body.invoice !== undefined) {
+    let invoice;
+    try { invoice = reviewedInvoice(body.invoice); }
+    catch (error) { return res.status(400).json({ error: error.message }); }
+    const { data, error } = await client.rpc('confirm_stock_invoice', {
+      new_inventory: body.inventory, expected_revision: body.revision, new_invoice: invoice
+    });
+    if (error) {
+      if (['40001', '23505', 'FD001', 'FD002'].includes(error.code)) {
+        const duplicate = error.code === 'FD001';
+        return res.status(409).json({ conflict: true, duplicateInvoice: duplicate,
+          error: duplicate ? 'This supplier invoice is already in your financial records. Nothing was changed.' :
+            'Stock or this invoice changed. Reload before confirming again.' });
+      }
+      if (['22023', '23514'].includes(error.code)) {
+        return res.status(400).json({ error: 'The combined records are too large or invalid. Nothing was changed.' });
+      }
+      return storageFailed(res, error);
+    }
+    return res.status(200).json(data);
   }
   const row = {
     user_id: user.id,

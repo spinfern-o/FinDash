@@ -40,18 +40,26 @@ export function figuresToSave() {
    Figures saved while someone is logged in are marked as theirs. Once
    logged out, the mark stays: whatever is left in this browser came from
    that account. */
-export function saveOwnerFigures() {
+export function saveOwnerFigures(synced = false) {
   if (state.account && state.account.email) {
     state.ownerAccount = state.account.email.toLowerCase();
   }
   const saved = figuresToSave();
   saved.account = state.ownerAccount;
+  saved.synced = synced;
   try {
     localStorage.setItem(FIGURES_KEY, JSON.stringify(saved));
     return true;
   } catch {
     return false;
   }
+}
+
+/* A clean account copy can follow newer account data without asking the
+   owner to choose between the same records before and after another upload. */
+export function savedFiguresAreSynced() {
+  try { return JSON.parse(localStorage.getItem(FIGURES_KEY))?.synced === true; }
+  catch { return false; }
 }
 
 /* A piece of text no longer than `maximumLength`, or "" if it is not text. */

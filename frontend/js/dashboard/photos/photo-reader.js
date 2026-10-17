@@ -5,6 +5,8 @@
    model reads up to 2576 pixels on the long edge, and the hosting limit is
    4.5 MB a request. */
 
+import { currentLanguage } from '../../stock/language.js';
+
 const LONGEST_EDGE_READ = 2576;
 const LARGEST_UPLOAD_BYTES = 3_000_000;
 const PREVIEW_EDGE = 320;
@@ -87,7 +89,7 @@ export async function readDocument(photo, review) {
     response = await fetch("/api/read-document", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ image: photo.data, mediaType: photo.mediaType, review: review })
+      body: JSON.stringify({ image: photo.data, mediaType: photo.mediaType, review: review, language: currentLanguage() })
     });
   } catch {
     throw new Error("the photo could not be sent. Check your connection and try again.");

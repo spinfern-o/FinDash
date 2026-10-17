@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { drafts, addFiles, rereadReadyDrafts, onFilesChanged } from '../../frontend/js/stock/files.js';
 import { store, loadStock } from '../../frontend/js/stock/storage.js';
 import { emptyInventory } from '../../frontend/js/stock/ledger.js';
+import { invoiceId } from '../../frontend/js/stock/invoice.js';
 
 const originalFetch = globalThis.fetch;
 
@@ -61,4 +62,29 @@ test('a capabilities failure cannot silently replace account loading with guest 
   await loadStock();
   assert.equal(store.ready, false);
   assert.equal(store.note, 'accountFailed');
+});
+
+test('the same image under another filename is caught, waiting or already confirmed', async function () {
+  store.user = { email: 'owner@example.test' };
+  store.confirmedInvoices = [];
+  globalThis.fetch = function () { return new Promise(function () {}); };
+  /* A photo whose bytes are `text`. */
+  function photo(name, text) {
+    const bytes = new TextEncoder().encode(text);
+    return { name, type: 'image/jpeg', size: bytes.length, arrayBuffer: async function () { return bytes.buffer; } };
+  }
+  await addFiles([photo('IMG_0001.jpg', 'one invoice')]);
+  await addFiles([photo('invoice copy.jpg', 'one invoice')]);
+  // (Outside a browser the first photo can't be read, which doesn't matter here.)
+  assert.notEqual(drafts[0].error, 'duplicate');
+  assert.ok(drafts[0].hash, 'the first is fingerprinted by its contents');
+  assert.equal(drafts[1].error, 'duplicate', 'the same bytes under another name');
+
+  const confirmedHash = drafts[0].hash;
+  drafts.length = 0;
+  store.confirmedInvoices = [invoiceId(confirmedHash)];
+  await addFiles([photo('again.jpg', 'one invoice')]);
+  assert.equal(drafts.at(-1).error, 'duplicate', 'even after the first was confirmed and left the queue');
+  await addFiles([photo('another.jpg', 'a different invoice')]);
+  assert.notEqual(drafts.at(-1).error, 'duplicate');
 });

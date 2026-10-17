@@ -1,4 +1,4 @@
-/* The whole site, running locally for the tests: the pages in docs/ served
+/* The whole site, running locally for the tests: the pages in frontend/ served
    with the same security headers vercel.json sets, every request the
    middleware's matcher covers passed through the real middleware.js first,
    and every /api/* request handled by the real function in api/, talking to
@@ -22,7 +22,7 @@ const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const MIDDLEWARE_PATHS = middlewareConfig.matcher.map(function (pattern) {
   return new RegExp("^" + pattern + "$");
 });
-const PAGES = path.join(ROOT, "docs");
+const PAGES = path.join(ROOT, "frontend");
 const API = path.join(ROOT, "api");
 
 const CONTENT_TYPES = {
@@ -260,7 +260,7 @@ export async function startSite(options = {}) {
       return response.end("");
     }
 
-    // Like Vercel: an address with no page gets docs/404.html, as a 404.
+    // Like Vercel: an address with no page gets frontend/404.html, as a 404.
     const file = fileFor(decodeURIComponent(url.pathname));
     if (!file) {
       response.statusCode = 404;

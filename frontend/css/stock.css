@@ -1,0 +1,84 @@
+/* Functional workspace layout. Claude/Figma owns further visual refinement. */
+body { padding: 0; background-image: none; }
+[hidden] { display: none !important; }
+.stock-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100vh; }
+.stock-sidebar { padding: 32px 20px; border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 24px; background: var(--card); position: sticky; top: 0; height: 100vh; }
+.stock-sidebar nav { display: flex; flex-direction: column; gap: 8px; }
+.stock-sidebar nav a { padding: 12px; border-radius: 8px; text-decoration: none; }
+.stock-sidebar nav a[aria-current="page"] { background: var(--accent); color: var(--accent-ink); }
+.stock-settings-link { margin-top: 24px; border-top: 1px solid var(--line); }
+.stock-layout main { width: 100%; max-width: 1120px; padding: 40px clamp(18px, 4vw, 56px); min-width: 0; }
+.stock-page-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+h1 { margin: 4px 0 18px; font-size: clamp(24px, 4vw, 34px); }
+h2 { margin-top: 0; font-size: 20px; }
+.stock-eyebrow { color: var(--ink-2); font-size: 12px; letter-spacing: .06em; }
+.stock-storage { color: var(--ink-2); margin-bottom: 28px; }
+.stock-card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); padding: 24px; margin-bottom: 20px; }
+.stock-message { padding: 14px; border-left: 4px solid var(--accent); background: var(--card); overflow-wrap: anywhere; }
+.stock-drop { padding: 48px 24px; text-align: center; border: 2px dashed var(--line); border-radius: var(--radius); }
+.stock-drop.over { border-color: var(--accent); }
+.stock-hint, .stock-secondary { color: var(--ink-2); font-size: 14px; }
+.stock-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 18px 0; }
+.stock-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.stock-language, .stock-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.stock-field input, .stock-field select, .stock-language select { width: 100%; padding: 10px; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 7px; font: inherit; min-height: 44px; }
+.stock-field input:focus, a:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.stock-table-wrap { overflow-x: auto; }
+.stock-table { width: 100%; border-collapse: collapse; }
+.stock-table th, .stock-table td { padding: 14px 10px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+.stock-table th { color: var(--ink-2); font-weight: 500; }
+.stock-table .btn { padding: 8px 10px; min-height: 44px; }
+.stock-count { font-size: 22px; font-weight: 650; }
+dialog { max-width: 620px; width: calc(100% - 32px); max-height: 90vh; overflow: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: var(--ink); padding: 28px; }
+dialog::backdrop { background: #0008; }
+.stock-skip { position: absolute; left: 240px; top: -80px; background: var(--card); padding: 10px; z-index: 10; }
+.stock-skip:focus { top: 0; }
+.stock-review-line { border-top: 1px solid var(--line); padding-top: 20px; margin-top: 20px; }
+.stock-preview { max-width: 220px; max-height: 220px; object-fit: contain; }
+.stock-danger { color: var(--critical); }
+.stock-layout footer { margin-top: 40px; display: flex; gap: 20px; }
+@media (max-width: 760px) {
+ .stock-layout { display: block; }
+ .stock-sidebar { position: static; height: auto; padding: 16px; gap: 14px; }
+ .stock-sidebar nav { flex-direction: row; flex-wrap: wrap; gap: 4px; }
+ .stock-sidebar nav a { padding: 10px; }
+ .stock-settings-link { margin: 0; border: 0; }
+ .stock-language { max-width: 220px; margin: 0; }
+ .stock-layout main { padding-top: 24px; }
+ .stock-page-header { align-items: flex-start; }
+ .stock-skip { left: 10px; }
+}
+@media print {
+ .stock-sidebar, .stock-page-header .btn, .stock-storage, .stock-message, .stock-actions, footer, .stock-skip { display: none !important; }
+ .stock-layout { display: block; }
+ body, .stock-card { background: white; color: black; }
+ .stock-layout main { padding: 0; max-width: none; }
+}
+/* Self-hosted CJK fallback: Chinese labels and supplier text remain readable
+   even on devices without a Chinese system font. SIL OFL license in fonts/. */
+@font-face {
+ font-family: "FinDash Chinese";
+ font-style: normal;
+ font-weight: 400;
+ font-display: swap;
+ src: url("/fonts/noto-sans-sc.woff2") format("woff2");
+ unicode-range: U+2000-206F, U+2E80-9FFF, U+F900-FAFF, U+FF00-FFEF;
+}
+.stock-layout, .stock-layout button, .stock-layout input, .stock-layout select, .stock-layout dialog {
+ font-family: Inter, "FinDash Chinese", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+}
+/* On phones each item is a card, so all four daily actions remain visible
+   without discovering a horizontal table scrollbar. */
+@media (max-width: 760px) {
+ .stock-items-table, .stock-items-table tbody { display: block; width: 100%; }
+ .stock-items-table thead { display: none; }
+ .stock-items-table tr { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; border-bottom: 1px solid var(--line); padding: 16px 0; }
+ .stock-items-table td { display: block; border: 0; padding: 0; overflow-wrap: anywhere; }
+ .stock-items-table td:first-child, .stock-items-table td:last-child { grid-column: 1 / -1; }
+ .stock-items-table td[data-label]::before { content: attr(data-label); display: block; color: var(--ink-2); font-size: 12px; font-weight: 400; margin-bottom: 6px; }
+ .stock-items-table .stock-actions { margin: 4px 0; }
+ .stock-items-table .stock-actions .btn { flex: 1; padding-inline: 12px; }
+ .stock-history-table { min-width: 460px; }
+ .stock-history-table td { word-break: keep-all; }
+ .stock-layout footer { flex-wrap: wrap; }
+}

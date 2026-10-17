@@ -5,11 +5,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readMonthRecords, summariseMonths, templateColumns, glossaryEntries, COST_FIELDS, MAXIMUM_MONTHS }
-  from "../../docs/js/dashboard/analysis.js";
-import { readCsvGrid } from "../../docs/js/dashboard/import/csv-reader.js";
-import { fieldNamesOfColumns, rowsAsRecords } from "../../docs/js/dashboard/import/column-names.js";
-import { monthsFromCombinedSheet } from "../../docs/js/dashboard/import/months-from-sheet.js";
-import { LINE_LABELS } from "../../docs/js/dashboard/cost-groups.js";
+  from "../../frontend/js/dashboard/analysis.js";
+import { readCsvGrid } from "../../frontend/js/dashboard/import/csv-reader.js";
+import { fieldNamesOfColumns, rowsAsRecords } from "../../frontend/js/dashboard/import/column-names.js";
+import { monthsFromCombinedSheet } from "../../frontend/js/dashboard/import/months-from-sheet.js";
+import { LINE_LABELS } from "../../frontend/js/dashboard/cost-groups.js";
 
 const TEMPLATE_CSV = [
   "Month,Year,Revenue,Budget,Cost of goods sold,Labor,Employee meals,Payroll tax,Packaging,Credit card fees," +

@@ -50,7 +50,7 @@ function varies(response) {
 
 /* The text of each heading in a page's <main>, as a reader sees it. */
 function headings(file) {
-  const page = readFileSync(ROOT + "docs/" + file, "utf8");
+  const page = readFileSync(ROOT + "frontend/" + file, "utf8");
   const main = page.slice(page.indexOf("<main"), page.indexOf("</main>"));
   return Array.from(main.matchAll(/<h([1-3])[^>]*>([\s\S]*?)<\/h\1>/g), function (match) {
     return match[2].replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&#39;|&rsquo;/g, "'")
@@ -169,7 +169,7 @@ test("every page has a .md twin, and ?mode=agent answers with the view for agent
   const agent = await get("/?mode=agent", BROWSER);
   assert.equal(agent.status, 200);
   assert.equal(agent.headers.get("content-type"), "text/markdown; charset=utf-8");
-  assert.equal(await agent.text(), readFileSync(ROOT + "docs/llms.txt", "utf8"));
+  assert.equal(await agent.text(), readFileSync(ROOT + "frontend/llms.txt", "utf8"));
 });
 
 test("every page sends Link headers to its Markdown, the sitemap, llms.txt and the API's descriptions", async function () {
@@ -198,7 +198,7 @@ test("llms.txt links an index for each section, and each one links its parts", a
     assert.ok(text.includes(SITE + section + ".md"), section + " links its Markdown");
     const parts = Array.from(text.matchAll(/\(https:\/\/findash\.tech\/([a-z-]+)#([a-z-]+)\)/g));
     assert.ok(parts.length >= 1, section + " links its sections");
-    const page = readFileSync(ROOT + "docs/" + section.slice(1) + ".html", "utf8");
+    const page = readFileSync(ROOT + "frontend/" + section.slice(1) + ".html", "utf8");
     for (const part of parts) {
       assert.ok(page.includes('id="' + part[2] + '"'), section + "#" + part[2] + " exists");
     }
@@ -228,7 +228,7 @@ test("robots.txt names the Schema Map, which lists a feed of every page's struct
   }
   // The same objects the pages carry, word for word.
   for (const [address, file] of Object.entries(PAGES)) {
-    const page = readFileSync(ROOT + "docs/" + file, "utf8");
+    const page = readFileSync(ROOT + "frontend/" + file, "utf8");
     for (const block of page.matchAll(/<script type="application\/ld\+json">\n([\s\S]*?)\n<\/script>/g)) {
       for (const node of JSON.parse(block[1])["@graph"]) {
         const inFeed = items.find(function (item) {

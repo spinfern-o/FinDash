@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- page-head: start (tools/build-pages.py writes this) -->
+<title>Daily Stock and Invoice Review · FinDash</title>
+<meta name="description" content="Review supplier invoice photos in English or Chinese, count stock by location, and record deliveries, usage and waste. Your P&amp;L stays separate.">
+<meta name="robots" content="noindex">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="FinDash">
+<meta property="og:title" content="Daily Stock and Invoice Review · FinDash">
+<meta property="og:description" content="Review supplier invoice photos in English or Chinese, count stock by location, and record deliveries, usage and waste. Your P&amp;L stays separate.">
+<meta property="og:url" content="https://findash.tech/stock">
+<meta property="og:image" content="https://findash.tech/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="FinDash: revenue, costs and budget on one monthly dashboard">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="ai-catalog" type="application/ai-catalog+json" href="/.well-known/ai-catalog.json">
+<link rel="api-catalog" href="/.well-known/api-catalog">
+<meta name="theme-color" content="#050505">
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+<link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/css/site.css">
+<script type="module" src="/js/cookie-notice.js"></script>
+<link rel="alternate" type="text/markdown" href="https://findash.tech/stock.md">
+<!-- page-head: end -->
+<script src="/js/theme-init.js"></script>
+<link rel="stylesheet" href="/css/dashboard.css">
+<link rel="stylesheet" href="/css/stock.css">
+</head>
+<body>
+<a class="stock-skip" href="#workspace">Skip to workspace / 跳至工作区</a>
+<div class="stock-layout">
+  <aside class="stock-sidebar">
+    <a class="wordmark" href="/">FinDash</a>
+    <label class="stock-language" for="stock-language"><span data-text="language">Language</span>
+      <select id="stock-language"><option value="en">English</option><option value="zh-CN">简体中文</option></select>
+    </label>
+    <nav aria-label="Workspace" id="stock-navigation">
+      <a href="#files" data-view="files" data-text="files">Files</a>
+      <a href="#review" data-view="review"><span data-text="review">To review</span> <span id="review-count">0</span></a>
+      <a href="#items" data-view="items" data-text="items">Stock</a>
+      <a href="/dashboard" data-text="dashboard">Profit and loss</a>
+      <a href="#settings" data-view="settings" class="stock-settings-link" data-text="settings">Settings</a>
+    </nav>
+    <a href="/help" data-text="help">Help</a>
+    <a href="/login" id="stock-account" data-text="login">Log in for invoice reading</a>
+  </aside>
+  <main id="workspace" tabindex="-1">
+    <div class="stock-page-header">
+      <div><p class="stock-eyebrow" data-text="eyebrow">YOUR DAILY RECORDS</p><h1 id="view-title">Add your records</h1></div>
+      <button type="button" class="btn primary" id="add-item" data-text="addItem">Add an item</button>
+    </div>
+    <p id="stock-storage" class="stock-storage" role="status"></p>
+    <p id="stock-message" class="stock-message" role="status" aria-live="polite" hidden></p>
+    <div id="stock-panel"></div>
+    <dialog id="stock-dialog" aria-labelledby="dialog-title"></dialog>
+    <footer><a href="/about">About</a><a href="/developers">Developers</a><a href="mailto:support.findash@findash.tech?subject=FinDash" data-text="contact">Contact</a><a href="/privacy" data-text="privacy">Privacy</a><a href="/terms" data-text="terms">Terms</a><a href="/help" data-text="help">Help</a></footer>
+  </main>
+</div>
+<script type="module" src="/js/stock/main.js"></script>
+<script type="module" src="/js/error-reporter.js"></script>
+</body>
+</html>

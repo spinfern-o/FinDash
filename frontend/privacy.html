@@ -86,6 +86,10 @@
       <dt>Saved figures (while logged in)</dt>
       <dd>The worked-out monthly totals and the invoice lines you confirmed, so they're there on any computer
           you log in on. Not your files and not your photos.</dd>
+      <dt>Daily stock records</dt>
+      <dd>Original and translated item names, units, storage locations, shelf counts, and confirmed delivery, usage and waste history. Without a login these stay in this browser; while logged in they are saved separately to your account with Supabase. Stock never changes your P&amp;L automatically.</dd>
+      <dt>Pending invoice readings</dt>
+      <dd>Photo previews and unconfirmed readings stay only in memory for the current visit. They disappear when the page closes. Only confirmed item text and counts enter the stock record.</dd>
       <dt>Photos of invoices (while logged in)</dt>
       <dd>Sent to Claude, Anthropic's AI model, to be read. We don't keep the photo; only the lines you
           confirm are kept, as above.</dd>
@@ -124,6 +128,7 @@
   </section>
 
   <section id="browser">
+    <p>Guest stock is stored separately from account stock. The Stock workspace settings let you download or restore a JSON backup, or clear guest stock from this browser. Account stock is held in page memory and saved to the account, not cached in browser storage.</p>
     <h2>What stays in your browser</h2>
     <p><b>Browser storage:</b> FinDash keeps your worked-out monthly figures, confirmed invoices and latest
        advice in your browser's own storage, so they're there next time, along with your display preferences,
@@ -141,7 +146,7 @@
     <ul>
       <li><b>Vercel</b>: hosts the site and its server functions, keeps server logs and runs Web Analytics.
           <a href="https://vercel.com/legal/privacy-policy">Vercel's privacy policy</a></li>
-      <li><b>Supabase</b>: accounts, saved figures and the waitlist.
+      <li><b>Supabase</b>: accounts, saved figures, daily stock records and the waitlist.
           <a href="https://supabase.com/privacy">Supabase's privacy policy</a></li>
       <li><b>Anthropic</b> (Claude): reads photos, writes advice and matches column names.
           <a href="https://www.anthropic.com/legal/privacy">Anthropic's privacy policy</a></li>
@@ -157,6 +162,7 @@
     <ul>
       <li><b>Your account, saved figures and daily usage counts:</b> until you remove them with <b>Forget my
           data</b> or delete your account.</li>
+      <li><b>Daily stock records:</b> guest stock stays until you clear it in Stock settings or clear browser storage. Account stock stays until you clear it in Stock settings or your login is deleted. Deleting the login also deletes its stock record.</li>
       <li><b>The waitlist:</b> until you ask to be taken off it, or the waitlist closes.</li>
       <li><b>Photos, advice requests and column names:</b> not stored by FinDash. Anthropic handles them under
           its own terms and policy, linked above.</li>

@@ -1,4 +1,4 @@
-/* Vercel Routing Middleware: runs before the pages in docs/ are served.
+/* Vercel Routing Middleware: runs before the pages in frontend/ are served.
 
    An AI agent that sends "Accept: text/markdown", or asks for /help.md, gets
    the page as Markdown; ?mode=agent gets the view for agents; an address

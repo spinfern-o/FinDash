@@ -19,6 +19,18 @@ or a service business.
 - [Working on the code](#working-on-the-code)
 - [The Java command-line app](#the-java-command-line-app)
 
+## Daily stock workspace and parallel development
+
+Website source is now in `frontend/`; server implementations are in `backend/`. Root `api/`
+keeps stable Vercel routes. See [frontend ownership](frontend/AGENTS.md), [backend ownership](backend/AGENTS.md),
+and the [shared inventory contract](contracts/inventory.md). Claude/Figma can refine the frontend
+independently of backend changes. Rebase older `docs/` work onto `frontend/` before integrating it.
+
+`/stock` provides English/Chinese files, review, shelf counts and stock movements. Manual items
+work in this browser without signup; signed-in stock uses a separate account table. Apply
+`supabase/migrations/20261018000000_account_inventory.sql` before using account stock. PDF/count-sheet
+reading and translation of the legacy financial report are not part of this slice.
+
 ## What it does
 
 - **Reads your figures.** Drop in an Excel or CSV file: the template, or a layout of
@@ -47,7 +59,7 @@ or a service business.
 Your spreadsheet is opened and added up by your own browser. It never leaves it. Only
 these things are ever sent anywhere, always through this site's own server (the browser
 never contacts Supabase or Claude itself). The help page lists the same nine, and the
-[privacy policy](docs/privacy.html) names every service involved.
+[privacy policy](frontend/privacy.html) names every service involved.
 
 | When | What is sent | To |
 | --- | --- | --- |
@@ -176,7 +188,7 @@ for money taken in adds to revenue. The photo itself is not kept.
 
 ## Running your own copy
 
-The site is static pages in `docs/` plus small server functions in `api/`, hosted on
+The site is static pages in `frontend/` plus small server functions in `api/`, hosted on
 **Vercel**. Accounts use **Supabase**, the AI features use **Claude** (Anthropic), and
 emails go through any SMTP service (these steps use **Resend**). Every service is
 optional: without its settings, the features that need it are switched off, and the
@@ -274,7 +286,7 @@ limit. Set a monthly spending limit in the Anthropic Console as well.
 
 **Delete my account** on the login page removes that person's saved figures (from the
 account and the browser), logs them out, and opens an email to the site's owner
-(`OWNER_EMAIL` in `docs/js/login.js`) asking for the login to be deleted. Deleting a login
+(`OWNER_EMAIL` in `frontend/js/login.js`) asking for the login to be deleted. Deleting a login
 needs Supabase admin rights, which the site deliberately never has, so the owner finishes
 it: **Supabase → Authentication → Users**, find the email, **Delete user**. Their daily
 usage counts go with it.
@@ -285,7 +297,7 @@ usage counts go with it.
 which country, the languages the owner, the staff and the suppliers' invoices use, about
 how many supplier invoices come in a month, and (optionally) what's hardest about
 managing their money. It is for sizing the market before building inventory from photos
-or more languages. The choices are in `docs/js/waitlist-options.js`; the page draws its
+or more languages. The choices are in `frontend/js/waitlist-options.js`; the page draws its
 form from them and `api/waitlist.js` accepts only them.
 
 Answers go to the `waitlist` table in Supabase. Anyone can add a row; nobody can read one
@@ -319,7 +331,7 @@ says), delete their row in the Table Editor.
 ### Speed
 
 The fonts (Inter and JetBrains Mono, under the SIL Open Font License) are served from
-`docs/fonts/`, not Google Fonts, so a page needs no other site to draw its text and
+`frontend/fonts/`, not Google Fonts, so a page needs no other site to draw its text and
 the Content-Security-Policy in `vercel.json` allows fonts from this site only. Fonts
 are cached for a year (their names never change), icons and images for a week. The
 dashboard's head lists every script it imports (`modulepreload`), which
@@ -337,13 +349,13 @@ anyone's figures.
 ### Search engines and sharing
 
 Every page has its own title and description, a canonical address on
-`https://findash.tech`, and a preview for when a link is shared (`docs/og-image.png`,
+`https://findash.tech`, and a preview for when a link is shared (`frontend/og-image.png`,
 1200 × 630). `tools/build-pages.py` writes those tags into every page; change a title or
 description there and run `python3 tools/build-pages.py`. `tools/og-image/` redraws the
 share image.
 
-`docs/robots.txt` lets search engines read every page except `/api/`, and points them at
-`docs/sitemap.xml`, which lists the pages worth finding. The log in, thank-you and 404
+`frontend/robots.txt` lets search engines read every page except `/api/`, and points them at
+`frontend/sitemap.xml`, which lists the pages worth finding. The log in, thank-you and 404
 pages say `noindex` and are left out. If the site moves to another address, change
 `SITE` in `tools/build-pages.py`, the addresses in `robots.txt` and `sitemap.xml`, and the
 `og:image` lines, then run the script.
@@ -383,14 +395,14 @@ that say plainly what something is and answer the questions people actually ask.
   definition or a question, run the script again; a test checks the two still match
   word for word.
 - **The help page's glossary** is written into the page by the same script, from
-  `docs/js/glossary.js`, so crawlers see it too. After changing a definition, run it
+  `frontend/js/glossary.js`, so crawlers see it too. After changing a definition, run it
   again.
 - **`/restaurant-profit-and-loss`** is a page for the people FinDash was first built
   for: food cost, labor and prime cost, with the demo restaurant's figures and sourced
   benchmarks. If the demo figures change, update its example table.
 - **The dashboard's heading** has plain fallback text for crawlers that don't run its
   script.
-- **`docs/llms.txt`** describes FinDash for AI tools in plain text: what it is, when an
+- **`frontend/llms.txt`** describes FinDash for AI tools in plain text: what it is, when an
   agent should (and shouldn't) recommend it, and how an agent should use it. The help,
   dashboard and developers pages each have a smaller one (`/help/llms.txt` and so on).
 - **Every page as Markdown.** An AI agent that asks for a page with the header
@@ -406,8 +418,8 @@ that say plainly what something is and answer the questions people actually ask.
 - **`/about` and `/contact`** say who runs FinDash and how to reach it, which AI tools
   check before recommending a site. The structured data names the support address as a
   `ContactPoint`.
-- **`docs/schema-feed.jsonl`** has every page's structured data in one file (NLWeb Schema
-  Feeds), listed in `docs/schemamap.xml`, which `robots.txt` names. The script writes both.
+- **`frontend/schema-feed.jsonl`** has every page's structured data in one file (NLWeb Schema
+  Feeds), listed in `frontend/schemamap.xml`, which `robots.txt` names. The script writes both.
 
 ### For developers and AI agents
 
@@ -415,12 +427,12 @@ that say plainly what something is and answer the questions people actually ask.
 
 - **The API** (`/api/v1`): monthly figures in, a profit and loss summary out, with the
   template's columns and the glossary. No account or key, no AI model, nothing stored.
-  `docs/openapi.json` describes it and `/.well-known/api-catalog` (RFC 9727) points to it.
+  `frontend/openapi.json` describes it and `/.well-known/api-catalog` (RFC 9727) points to it.
   Every error is JSON with a code and a hint.
 - **Two MCP servers** over Streamable HTTP: `/api/mcp` (the same jobs as tools) and
   `/api/mcp/docs` (read and search the pages). Each has an MCP Server Card at its address
   plus `/server-card`, listed in `/.well-known/ai-catalog.json`.
-- **WebMCP tools on the dashboard** (`docs/js/dashboard/agent-tools.js`), for agents in
+- **WebMCP tools on the dashboard** (`frontend/js/dashboard/agent-tools.js`), for agents in
   browsers that support it: load figures, read the dashboard, pick the month, save the
   template.
 - **An agent skill**, `skills/findash/SKILL.md`, published by the script at
@@ -428,7 +440,7 @@ that say plainly what something is and answer the questions people actually ask.
 
 The API and both MCP servers are one server function, `api/agent.js` (Vercel's Hobby plan
 allows twelve), reached through the rewrites in `vercel.json`, and they use the
-dashboard's own arithmetic through `docs/js/dashboard/analysis.js`, so they always agree
+dashboard's own arithmetic through `frontend/js/dashboard/analysis.js`, so they always agree
 with the page. To check the live site after a deploy:
 
 ```bash
@@ -458,7 +470,7 @@ that it does none of these, which is also what people searching for them need to
 3. **Email:** Resend (or another service) connected, as above.
 4. **Plans:** Vercel's free Hobby plan is for non-commercial use, and Supabase's free
    plan pauses after a week without activity. Check both.
-5. **Legal:** `docs/privacy.html` and `docs/terms.html` describe what the site actually
+5. **Legal:** `frontend/privacy.html` and `frontend/terms.html` describe what the site actually
    does, but have them read by someone qualified where you operate. The terms name no
    governing law yet. Some countries (Germany, for one) also require a postal address on
    a business website. Once there is one to publish, put it in `POSTAL_ADDRESS` in
@@ -527,22 +539,22 @@ Where to start:
 
 | To understand... | Read |
 | --- | --- |
-| How the dashboard starts | `docs/js/dashboard/main.js` |
-| What the page keeps track of | `docs/js/dashboard/state.js` |
-| How the cards are drawn | `docs/js/dashboard/draw-dashboard.js`, then `cards/` |
+| How the dashboard starts | `frontend/js/dashboard/main.js` |
+| What the page keeps track of | `frontend/js/dashboard/state.js` |
+| How the cards are drawn | `frontend/js/dashboard/draw-dashboard.js`, then `cards/` |
 | How a spreadsheet becomes months | `import/sheet-import.js`, `import/months-from-sheet.js` |
 | How a photo becomes an invoice | `photos/photo-import.js`, `photos/photo-review.js`, `api/read-document.js` |
 | How figures are remembered | `saved-figures.js` (this browser), `account-figures.js` (the account) |
 | What you buy and the count sheet | `items.js`, `cards/item-log.js`, `count-sheet.js` |
-| How logging in works | `api/auth.js`, `lib/session.js`, `docs/js/login.js` |
+| How logging in works | `api/auth.js`, `lib/session.js`, `frontend/js/login.js` |
 | Who may use the paid features | `lib/ai-access.js` |
-| The cost groups | `docs/js/dashboard/cost-groups.js` |
+| The cost groups | `frontend/js/dashboard/cost-groups.js` |
 | What the tests check | `tests/browser/dashboard.test.mjs`, then the rest of `tests/` |
 
 ### Project layout
 
 ```
-docs/                    The website (Vercel serves this folder)
+frontend/                    The website (Vercel serves this folder)
   index.html             Landing page
   dashboard.html         The dashboard
   help.html              Getting data in, glossary, how data is handled
@@ -609,7 +621,7 @@ data/                    The Java app's input CSVs
 ## The Java command-line app
 
 The project began as a Java console app, and it still works: it reads two CSV files from
-`data/`, prints a month's figures, compares any two months, and writes `docs/data.json`
+`data/`, prints a month's figures, compares any two months, and writes `frontend/data.json`
 (the demo figures the website opens on).
 
 You'll need JDK 21 or newer and Maven. Run it from the project root, since the CSV paths
@@ -663,7 +675,7 @@ month num,cogs,packaging,rent,utilities,maintenance,hardware,insurance,marketing
 - A month in `dashboard.csv` with no row in `expenses.csv` is skipped, with a message.
   A month with no revenue prints `NaN`, since every ratio divides by revenue.
 
-### `docs/data.json`
+### `frontend/data.json`
 
 Each run writes every month with its finished figures (revenue, all fourteen lines under
 `lines`, the four group totals, gross and net profit, budget and budget used), so whatever

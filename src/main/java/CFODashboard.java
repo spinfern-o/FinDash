@@ -11,7 +11,7 @@ import java.util.Scanner;
  * The FinDash command-line app.
  *
  * Reads data/dashboard.csv (month, revenue, budget) and data/expenses.csv
- * (the cost lines), joins them on the month number, writes docs/data.json for
+ * (the cost lines), joins them on the month number, writes frontend/data.json for
  * the web dashboard, then lets you look at any month in the terminal and
  * compare it with another.
  *
@@ -22,7 +22,7 @@ import java.util.Scanner;
  *   Expenses         one month's cost lines and their four groups
  *   ColumnMapper     which column holds which field
  *   CsvFile          reading cells out of a CSV file
- *   DataJsonWriter   writing docs/data.json
+ *   DataJsonWriter   writing frontend/data.json
  *   ConsoleReport    printing a month, or two side by side
  */
 public class CFODashboard {
@@ -160,7 +160,7 @@ public class CFODashboard {
             System.out.println(month.monthNumber + " - " + month.monthName);
         }
 
-        DataJsonWriter.write(months, "docs/data.json");
+        DataJsonWriter.write(months, "frontend/data.json");
 
         Scanner input = new Scanner(System.in);
         while (true) {

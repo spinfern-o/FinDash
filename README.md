@@ -46,7 +46,7 @@ or a service business.
 
 Your spreadsheet is opened and added up by your own browser. It never leaves it. Only
 these things are ever sent anywhere, always through this site's own server (the browser
-never contacts Supabase or Claude itself). The help page lists the same eight, and the
+never contacts Supabase or Claude itself). The help page lists the same nine, and the
 [privacy policy](docs/privacy.html) names every service involved.
 
 | When | What is sent | To |
@@ -56,6 +56,7 @@ never contacts Supabase or Claude itself). The help page lists the same eight, a
 | Adding a photo | the photo, to be read (it isn't kept) | Claude |
 | Pressing **Get advice** | each month's totals: revenue, the four cost groups, net profit, budget | Claude |
 | A column name isn't recognised | the column names only, never the numbers | Claude |
+| Joining the waitlist | email and answers about the business (never figures) | Supabase (the waitlist) |
 | Pressing the forecast model's button (if one is set up) | the net profit figure for each month | the forecast service |
 | Something on the page breaks | the error message and which file it came from | this site's own log |
 | Every page visit | which page, the linking site, browser, device type, country (no cookies) | Vercel Web Analytics |
@@ -206,6 +207,8 @@ nothing.
    paste it and press **Run**:
    - `20261011000000_account_figures.sql`: where saved figures are kept
    - `20261012000000_ai_usage_limits.sql`: the daily limits on paid features
+   - `20261017000000_waitlist.sql`: the waitlist (until it is run, the waitlist page
+     says it isn't open yet)
 
    Running a file twice does no harm. Until the first is run, figures stay in the browser;
    until the second is run, photos, advice and column matching say "not set up yet".
@@ -275,6 +278,43 @@ account and the browser), logs them out, and opens an email to the site's owner
 needs Supabase admin rights, which the site deliberately never has, so the owner finishes
 it: **Supabase → Authentication → Users**, find the email, **Delete user**. Their daily
 usage counts go with it.
+
+### The waitlist
+
+`/waitlist` asks food businesses for an email and a few answers: what kind of business,
+which country, the languages the owner, the staff and the suppliers' invoices use, about
+how many supplier invoices come in a month, and (optionally) what's hardest about
+managing their money. It is for sizing the market before building inventory from photos
+or more languages. The choices are in `docs/js/waitlist-options.js`; the page draws its
+form from them and `api/waitlist.js` accepts only them.
+
+Answers go to the `waitlist` table in Supabase. Anyone can add a row; nobody can read one
+through the site. To see them, open **Supabase → Table Editor → waitlist** (and
+**Export to CSV**), or run these in the **SQL Editor**:
+
+```sql
+-- How many, by kind of business and country
+select business_type, country, count(*) from public.waitlist
+group by business_type, country order by count(*) desc;
+
+-- Which languages, for owners, staff and supplier invoices
+select 'owner' as who, unnest(owner_languages) as language, count(*) from public.waitlist group by 1, 2
+union all
+select 'staff', unnest(staff_languages), count(*) from public.waitlist group by 1, 2
+union all
+select 'invoices', unnest(invoice_languages), count(*) from public.waitlist group by 1, 2
+order by who, count desc;
+
+-- How much paperwork: supplier invoices a month
+select invoices_per_month, count(*) from public.waitlist group by 1 order by 2 desc;
+
+-- In their own words
+select created_at, business_type, country, hardest_part from public.waitlist
+where hardest_part is not null order by created_at desc;
+```
+
+Each email is kept once. To take someone off the list (they email to ask, as the page
+says), delete their row in the Table Editor.
 
 ### Speed
 
@@ -506,6 +546,7 @@ docs/                    The website (Vercel serves this folder)
   index.html             Landing page
   dashboard.html         The dashboard
   help.html              Getting data in, glossary, how data is handled
+  waitlist.html          The waitlist (js/waitlist.js, js/waitlist-options.js)
   about.html, contact.html   Who runs FinDash and how to reach it
   developers.html        The API, MCP servers, WebMCP tools and agent skill
   openapi.json           The API's OpenAPI description
@@ -544,8 +585,8 @@ docs/                    The website (Vercel serves this folder)
       items.js           What the owner buys, item by item, from the invoices
       count-sheet.js     The count sheet made from those items, printed or for Excel
 api/                     Server functions: accounts, saved figures, photo reading, advice,
-                         column matching, forecast, capabilities, error reports, and
-                         agent.js: the public API and the MCP servers
+                         column matching, forecast, capabilities, error reports, the
+                         waitlist, and agent.js: the public API and the MCP servers
 lib/                     Shared by the functions: Supabase, login cookies, daily limits,
                          the API (agent-api.js) and MCP servers (mcp-servers.js); and the
                          Markdown versions of the pages (markdown-pages.js, written by
@@ -553,7 +594,7 @@ lib/                     Shared by the functions: Supabase, login cookies, daily
 middleware.js            Sends AI agents the Markdown version of a page, and Link headers
 skills/                  The agent skill (SKILL.md), published under .well-known/
 AGENTS.md                Instructions for AI coding agents working on this code
-supabase/migrations/     The SQL for saved figures and daily limits
+supabase/migrations/     The SQL for saved figures, daily limits and the waitlist
 tests/                   The tests (npm test)
 .github/workflows/       Runs the tests on every pull request
 forecast/                The optional forecast service (Python, Chronos)

@@ -2,9 +2,9 @@
    uses, so the tests never touch a real project:
      Auth (GoTrue)  sign up, log in, refresh, who-am-I, change password,
                     password reset, log out
-     Database       the account_figures table, and the claim_ai_use
-                    function, each with the same row-level rules as the
-                    real SQL in supabase/migrations/
+     Database       the account_figures and waitlist tables, and the
+                    claim_ai_use function, each with the same row-level
+                    rules as the real SQL in supabase/migrations/
 
    It runs inside the test's own process, so a test can look at and change
    its state directly (users, figures, usage, options). */
@@ -64,6 +64,7 @@ export async function startMockSupabase() {
     refreshOf: new Map(),      // access token -> its refresh token
     figures: new Map(),        // user id -> { figures, updated_at }
     usage: new Map(),          // "userId|feature|day" -> uses
+    waitlist: [],              // rows people added; nobody can read them back
     options: {
       confirmEmails: false,    // true: sign-ups need the emailed link first
       missingTables: false,    // true: answer as if the SQL was never run
@@ -73,6 +74,7 @@ export async function startMockSupabase() {
     reset: function () {
       mock.figures.clear();
       mock.usage.clear();
+      mock.waitlist.length = 0;
       mock.options.missingTables = false;
       mock.options.signupError = null;
     },
@@ -287,12 +289,33 @@ export async function startMockSupabase() {
     return sendJson(response, 200, uses <= body.daily_limit);
   }
 
+  /* The waitlist table: anyone, logged in or not, may add a row; nobody
+     may read, change or delete one. Each email once, whatever its case. */
+  function handleWaitlist(request, response, body) {
+    if (request.method !== "POST") {
+      return databaseError(response, 403, "42501", "permission denied for table waitlist");
+    }
+    const email = String(body.email).toLowerCase();
+    const isListed = mock.waitlist.some(function (row) {
+      return row.email.toLowerCase() === email;
+    });
+    if (isListed) {
+      return databaseError(response, 409, "23505",
+        'duplicate key value violates unique constraint "waitlist_email_once"');
+    }
+    mock.waitlist.push(Object.assign({ created_at: new Date().toISOString() }, body));
+    return sendJson(response, 201);
+  }
+
   function handleDatabase(request, response, url, body, bearer) {
     if (mock.options.missingTables) {
       if (url.pathname.startsWith("/rest/v1/rpc/")) {
         return databaseError(response, 404, "PGRST202", "Could not find the function in the schema cache");
       }
       return databaseError(response, 404, "PGRST205", "Could not find the table in the schema cache");
+    }
+    if (url.pathname === "/rest/v1/waitlist") {
+      return handleWaitlist(request, response, body);
     }
     const email = emailFromToken(bearer);
     if (!email) {

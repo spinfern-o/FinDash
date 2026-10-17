@@ -638,6 +638,10 @@ a.nav-tag:hover {
 .about-more a {
   color: var(--accent);
 }
+/* The waitlist button under "Coming next". */
+.coming-actions {
+  margin-top: 18px;
+}
 .band {
   margin: 0;
   display: grid;

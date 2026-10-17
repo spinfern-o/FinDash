@@ -77,6 +77,9 @@ PAGES = {
     "developers.html": ("/developers", "FinDash API and MCP Server for Developers and AI Agents",
                         "A free API and MCP server: send a small business's monthly revenue and costs, get profit, "
                         "margin and budget vs actual back. No key needed.", True),
+    "waitlist.html": ("/waitlist", "Join the Waitlist: Inventory From Photos, in Your Language · FinDash",
+                      "Tell us about your food business and we'll email you when inventory counts from photos "
+                      "and FinDash in more languages are ready. No payment, no spam.", True),
     "about.html": ("/about", "About FinDash: A Free P&L Dashboard for Small Businesses",
                    "Why FinDash exists, how it reads your figures without uploading your spreadsheet, what it "
                    "doesn't do, and how it's built.", True),
@@ -574,8 +577,8 @@ def text_of(element):
             yield from text_of(child)
 
 
-SITE_LINKS = [("Home", "/"), ("Dashboard", "/dashboard"), ("Help", "/help"), ("Developers", "/developers"),
-              ("About", "/about"), ("Contact", "/contact"), ("Privacy", "/privacy"), ("Terms", "/terms"),
+SITE_LINKS = [("Home", "/"), ("Dashboard", "/dashboard"), ("Help", "/help"), ("Waitlist", "/waitlist"),
+              ("Developers", "/developers"), ("About", "/about"), ("Contact", "/contact"), ("Privacy", "/privacy"), ("Terms", "/terms"),
               ("llms.txt", "/llms.txt"), ("Sitemap", "/sitemap.xml")]
 
 # The sections with an llms.txt of their own, for an agent working in one area.

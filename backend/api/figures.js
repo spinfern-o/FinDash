@@ -32,7 +32,7 @@ const MAXIMUM_INVOICES = 5000;
 /* The table has not been created yet: the site's owner has not run the SQL
    in supabase/migrations/. */
 function isMissingTable(error) {
-  return error.code === "42P01" || error.code === "PGRST205";
+  return ["42P01", "PGRST205", "PGRST202", "42883", "42703"].includes(error.code);
 }
 
 function storageFailed(res, error, message) {
@@ -81,16 +81,27 @@ async function saveFigures(res, client, user, body) {
   if (problem) {
     return res.status(400).json({ error: problem });
   }
-  const updatedAt = new Date().toISOString();
-  const { error } = await client.from(TABLE).upsert({
-    user_id: user.id,
-    figures: body.figures,
-    updated_at: updatedAt
+  const hasExpectedTime = Object.hasOwn(body, 'expectedUpdatedAt');
+  if (hasExpectedTime && body.expectedUpdatedAt !== null &&
+      (typeof body.expectedUpdatedAt !== 'string' || body.expectedUpdatedAt.length > 50 ||
+       !Number.isFinite(Date.parse(body.expectedUpdatedAt)))) {
+    return res.status(400).json({ error: 'expectedUpdatedAt must be the timestamp last read, or null' });
+  }
+  const { data, error } = await client.rpc('save_account_figures', {
+    new_figures: body.figures,
+    check_updated_at: hasExpectedTime,
+    expected_updated_at: hasExpectedTime ? body.expectedUpdatedAt : null
   });
   if (error) {
+    if (error.code === '40001') {
+      return res.status(409).json({ conflict: true, error: 'Financial records changed in another tab. Reload before saving again.' });
+    }
+    if (['22023', '23514'].includes(error.code)) {
+      return res.status(400).json({ error: 'These figures are too large or invalid to save.' });
+    }
     return storageFailed(res, error, "Your figures couldn't be saved to your account right now.");
   }
-  return res.status(200).json({ updatedAt: updatedAt });
+  return res.status(200).json({ updatedAt: data.updatedAt });
 }
 
 async function deleteFigures(res, client, user) {
@@ -116,6 +127,13 @@ export default async function handler(req, res) {
   const session = await currentSession(req, res);
   if (!session) {
     return res.status(401).json({ error: "Log in to save your figures to your account." });
+  }
+  // A different tab may have switched accounts while this page still holds
+  // the previous owner's financial records. Honor the loaded-owner guard.
+  const expectedOwner = req.headers['x-findash-owner'];
+  if (expectedOwner !== undefined && (typeof expectedOwner !== 'string' ||
+      expectedOwner.toLowerCase() !== String(session.user.email).toLowerCase())) {
+    return res.status(401).json({ error: 'The signed-in account changed. Export your work before reloading.' });
   }
   const client = supabaseClient(session.accessToken);
 

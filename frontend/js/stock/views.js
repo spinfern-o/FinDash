@@ -11,7 +11,7 @@ export function field(name, key, value = '', type = 'text', extra = '') {
   return `<label class="stock-field"><span>${words(key)}</span><input name="${name}" type="${type}" value="${html(value)}" required ${extra}></label>`;
 }
 function fileRows() {
-  return drafts.map(function (draft) {
+  return drafts.filter(function (draft) { return (draft.owner || null) === (store.user?.email || null); }).map(function (draft) {
     const state = words(draft.status);
     let action = '';
     if (draft.status === 'ready') { action = `<button class="btn" data-review="${draft.id}">${words('check')}</button>`; }
@@ -26,7 +26,7 @@ export function reviewHtml() {
   if (!drafts.length) { return `<section class="stock-card"><p>${words('emptyReview')}</p></section>`; }
   return `<p class="stock-hint">${words('pendingHint')}</p><ul style="list-style:none;padding:0">${fileRows()}</ul>`;
 }
-export function itemsHtml() {
+export function itemRowsHtml() {
   let content = `<p>${words('emptyItems')}</p>`;
   if (store.inventory.items.length) {
     let rows = '';
@@ -41,7 +41,10 @@ export function itemsHtml() {
     }
     content = `<label class="stock-field"><span>${words('search')}</span><input id="stock-search" type="search"></label><div class="stock-table-wrap"><table class="stock-table stock-items-table"><thead><tr><th>${words('item')}</th><th>${words('unit')}</th><th>${words('location')}</th><th>${words('onHand')}</th><th>${words('action')}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
-  return `<section class="stock-card"><div class="stock-actions"><button class="btn" id="print-stock">${words('print')}</button></div>${content}</section><section class="stock-card"><h2>${words('movements')}</h2>${historyHtml()}</section><p class="stock-hint">${words('stockOnly')}</p>`;
+  return content;
+}
+export function itemsHtml() {
+  return `<section class="stock-card"><div class="stock-actions"><button class="btn" id="print-stock">${words('print')}</button></div>${itemRowsHtml()}</section><section class="stock-card"><h2>${words('movements')}</h2>${historyHtml()}</section><p class="stock-hint">${words('stockOnly')}</p>`;
 }
 function historyHtml() {
   const recent = store.inventory.movements.slice(-12).reverse();

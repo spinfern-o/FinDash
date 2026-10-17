@@ -1,6 +1,8 @@
 /* The stock workspace: a sidebar and a work area, in the look of the FinDash
-   Figma file (colours, type and buttons from site.css and dashboard.css). */
-body { padding: 0; background-image: none; }
+   Figma file (colours, type and buttons from site.css and dashboard.css).
+   The dashboard loads this file too, for its stock section, so rules for
+   the workspace's page are scoped to .stock-layout. */
+body:has(.stock-layout) { padding: 0; background-image: none; }
 [hidden] { display: none !important; }
 .stock-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 100vh; }
 .stock-sidebar { padding: 32px 20px; border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 24px; background: var(--card); position: sticky; top: 0; height: 100vh; }
@@ -11,8 +13,8 @@ body { padding: 0; background-image: none; }
 .stock-settings-link { margin-top: 24px; }
 .stock-layout main { width: 100%; max-width: 1120px; padding: 40px clamp(18px, 4vw, 56px); min-width: 0; }
 .stock-page-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
-h1 { margin: 8px 0 18px; font-family: var(--font-serif), "FinDash Chinese", serif; font-weight: 400; font-size: clamp(36px, 5vw, 48px); line-height: 0.95; letter-spacing: -0.03em; }
-h2 { margin-top: 0; font-family: var(--font-serif), "FinDash Chinese", serif; font-weight: 400; font-size: 26px; letter-spacing: -0.03em; }
+.stock-layout h1 { margin: 8px 0 18px; font-family: var(--font-serif), "FinDash Chinese", serif; font-weight: 400; font-size: clamp(36px, 5vw, 48px); line-height: 0.95; letter-spacing: -0.03em; }
+.stock-layout h2 { margin-top: 0; font-family: var(--font-serif), "FinDash Chinese", serif; font-weight: 400; font-size: 26px; letter-spacing: -0.03em; }
 .stock-eyebrow { margin: 0; font-family: var(--mono), "FinDash Chinese", monospace; color: var(--caption); font-size: 12px; letter-spacing: -0.01em; }
 .stock-storage { color: var(--ink-2); margin-bottom: 28px; }
 .stock-card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); padding: 24px; margin-bottom: 20px; }
@@ -53,7 +55,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.4); }
 @media print {
  .stock-sidebar, .stock-page-header .btn, .stock-storage, .stock-message, .stock-actions, footer, .stock-skip { display: none !important; }
  .stock-layout { display: block; }
- body, .stock-card { background: white; color: black; }
+ body:has(.stock-layout), .stock-card { background: white; color: black; }
  .stock-layout main { padding: 0; max-width: none; }
 }
 /* Self-hosted CJK fallback: Chinese labels and supplier text remain readable
@@ -66,7 +68,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.4); }
  src: url("/fonts/noto-sans-sc.woff2") format("woff2");
  unicode-range: U+2000-206F, U+2E80-9FFF, U+F900-FAFF, U+FF00-FFEF;
 }
-.stock-layout, .stock-layout button, .stock-layout input, .stock-layout select, .stock-layout dialog {
+#dashboard-stock, #stock-dialog, .stock-layout, .stock-layout button, .stock-layout input, .stock-layout select, .stock-layout dialog {
  font-family: var(--font-sans), "FinDash Chinese", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
 }
 /* On phones each item is a card, so all four daily actions remain visible
@@ -84,3 +86,10 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.4); }
  .stock-history-table td { word-break: keep-all; }
  .stock-layout footer { flex-wrap: wrap; }
 }
+
+/* The P&L page shares stock forms and rows without changing its page layout. */
+#dashboard-stock { margin-top: 24px; }
+#dashboard-stock h2 { margin: 0; }
+#dashboard-stock .stock-language { max-width: 180px; margin: 0; }
+#dashboard-stock .stock-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+@media print { #dashboard-stock { display: none; } }

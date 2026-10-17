@@ -308,6 +308,74 @@ export async function startMockSupabase() {
     return databaseError(response, 405, "PGRST000", "method not allowed");
   }
 
+  /* Postgres timestamps advance even when two saves happen in one millisecond. */
+  function nextSavedTime(previous) {
+    return new Date(Math.max(Date.now(), Date.parse(previous || '1970-01-01') + 1)).toISOString();
+  }
+
+  /* JSONB object order is irrelevant to idempotent confirmations. */
+  function sameJson(first, second) {
+    return JSON.stringify(inJsonbKeyOrder(first)) === JSON.stringify(inJsonbKeyOrder(second));
+  }
+
+  /* The same transaction semantics as save_account_figures in the migration. */
+  function handleSaveFigures(response, body, userId) {
+    const previous = mock.figures.get(userId);
+    if (body.check_updated_at && (previous?.updated_at || null) !== body.expected_updated_at) {
+      return databaseError(response, 409, '40001', 'Financial records changed');
+    }
+    let figures = JSON.parse(JSON.stringify(body.new_figures));
+    let protectedIds = previous?.stock_invoice_ids || [];
+    if (!body.check_updated_at) {
+      const protectedInvoices = (previous?.figures.invoices || []).filter(function (invoice) { return protectedIds.includes(invoice.id); });
+      figures.invoices = figures.invoices.filter(function (invoice) { return !protectedIds.includes(invoice.id); }).concat(protectedInvoices);
+    } else {
+      protectedIds = protectedIds.filter(function (id) { return figures.invoices.some(function (invoice) { return invoice.id === id; }); });
+    }
+    if (figures.invoices.length > 5000 || Buffer.byteLength(JSON.stringify(figures)) > 1_000_000) {
+      return databaseError(response, 400, '22023', 'Figures exceed storage limit');
+    }
+    const updatedAt = nextSavedTime(previous?.updated_at);
+    mock.figures.set(userId, { figures, stock_invoice_ids: protectedIds, updated_at: updatedAt });
+    return sendJson(response, 200, { updatedAt });
+  }
+
+  /* Check everything before either assignment, modeling a SQL transaction. */
+  function handleConfirmStock(response, body, userId) {
+    const stock = mock.inventory.get(userId);
+    const saved = mock.figures.get(userId);
+    const invoice = body.new_invoice;
+    const figures = JSON.parse(JSON.stringify(saved?.figures || { v: 2, months: [], invoices: [] }));
+    const protectedIds = [...(saved?.stock_invoice_ids || [])];
+    const existing = figures.invoices.find(function (entry) { return entry.id === invoice.id; });
+    if (existing && !sameJson(existing, invoice)) {
+      return databaseError(response, 409, 'FD002', 'Invoice id has different contents');
+    }
+    if (existing && protectedIds.includes(invoice.id) && sameJson(stock?.inventory, body.new_inventory)) {
+      return sendJson(response, 200, { revision: stock.revision, figuresUpdatedAt: saved.updated_at,
+        invoiceAdded: false, figures: saved.figures });
+    }
+    if ((stock?.revision || 0) !== body.expected_revision) {
+      return databaseError(response, 409, '40001', 'Stock changed');
+    }
+    if (!existing && invoice.supplier.trim() && invoice.number.trim() && invoice.date && figures.invoices.some(function (entry) {
+      return String(entry.supplier || '').trim().toLowerCase() === invoice.supplier.trim().toLowerCase() &&
+        String(entry.number || '').trim().toLowerCase() === invoice.number.trim().toLowerCase() && entry.date === invoice.date;
+    })) {
+      return databaseError(response, 409, 'FD001', 'Supplier invoice already recorded');
+    }
+    if (!existing) { figures.invoices.push(invoice); }
+    if (figures.invoices.length > 5000 || Buffer.byteLength(JSON.stringify(figures)) > 1_000_000) {
+      return databaseError(response, 400, '22023', 'Figures exceed storage limit');
+    }
+    if (!protectedIds.includes(invoice.id)) { protectedIds.push(invoice.id); }
+    const updatedAt = nextSavedTime(saved?.updated_at);
+    const revision = body.expected_revision + 1;
+    mock.inventory.set(userId, { inventory: body.new_inventory, revision, updated_at: updatedAt });
+    mock.figures.set(userId, { figures, updated_at: updatedAt, stock_invoice_ids: protectedIds });
+    return sendJson(response, 200, { revision, figuresUpdatedAt: updatedAt, invoiceAdded: !existing, figures });
+  }
+
   /* claim_ai_use(feature_name, daily_limit), as the SQL function does it. */
   function handleClaimAiUse(response, body, userId) {
     if (!["photo", "advice", "columns"].includes(body.feature_name)) {
@@ -368,6 +436,12 @@ export async function startMockSupabase() {
     }
     if (url.pathname === "/rest/v1/rpc/claim_ai_use" && request.method === "POST") {
       return handleClaimAiUse(response, body, userId);
+    }
+    if (url.pathname === '/rest/v1/rpc/save_account_figures' && request.method === 'POST') {
+      return handleSaveFigures(response, body, userId);
+    }
+    if (url.pathname === '/rest/v1/rpc/confirm_stock_invoice' && request.method === 'POST') {
+      return handleConfirmStock(response, body, userId);
     }
     return databaseError(response, 404, "PGRST205", "no table " + url.pathname);
   }

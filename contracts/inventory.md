@@ -36,10 +36,12 @@ All quantities are finite/nonnegative; remaining stock cannot be negative. Unkno
 
 - `GET /api/inventory` → `{inventory,revision}` (empty ledger and revision 0 for a new owner).
 - `PUT /api/inventory` with `{inventory,revision}` → `{revision}`.
+- Invoice confirmation adds optional `invoice` (the standard reviewed purchase shape). One SQL transaction saves the stock and merges the invoice into the latest financial figures. Response: `{revision,figuresUpdatedAt,invoiceAdded,figures}`; use that committed financial snapshot with its token. The invoice ID is stable across retries. Matching retries are no-ops; changed contents, stale stock or an already-recorded supplier/number/date return 409 without either write.
+- `PUT /api/figures` accepts `expectedUpdatedAt` (null for a known empty account) and returns 409 on stale financial data. Legacy requests without the token preserve invoices synced from stock. Explicit current-client removal and DELETE remain available. Send the optional owner header on financial requests too.
 - Send `X-FinDash-Owner` with the email returned by `/api/auth?action=me` on GET and PUT; PUT requires it and rejects an account switch.
 - Existing session cookies + same-site checks; RLS isolates each owner.
 - 401 needs login; 409 means stale revision (do not overwrite); 503 means setup is incomplete.
-- Apply `supabase/migrations/20261018000000_account_inventory.sql` before enabling account stock.
+- Apply `supabase/migrations/20261018000000_account_inventory.sql` and then `supabase/migrations/20261019000000_stock_invoice_sync.sql` before deploying the new handlers. The second migration is required for financial PUT as well as invoice/stock confirmation. Missing RPCs fail with 503; there is no partial-save fallback.
 - `POST /api/read-document`: existing image payload plus optional `language:'zh-CN'`.
   `document.lines[].description` is Chinese; `original` preserves printed text. English remains default.
 
@@ -47,12 +49,12 @@ All quantities are finite/nonnegative; remaining stock cannot be negative. Unkno
 
 Manual entry works without signup and is saved on this browser, with a JSON backup/restore.
 Signed-in stock saves only to the account and remains in memory until saved. Guest and account
-records are separate and never automatically merged. Stock never changes P&L totals.
+records are separate and never automatically merged. The P&L page and Stock page use the same ledger. Counts, delivery, usage and waste only change quantities; confirmed invoice costs update P&L through the existing invoice arithmetic. The owner can exclude costs already included in a monthly spreadsheet.
 
 Invoice images use the existing authenticated, rate-limited reader. Multiple images can be
 queued; at most two run concurrently. Readings and photo previews are not persisted. A digest
 flags a repeated image. Review confirms source text, translation, unit, location and actual
-shelf count before saving. Invoice quantity is displayed separately and is never added twice.
+shelf count before saving. Invoice quantity is displayed separately and is never added twice. A posting-month picker and editable cost category accompany financial confirmation. The dashboard invoice review offers the same explicit stock-count fields. Open tabs refresh after a record-change signal (no business data in the signal) or when focused; pending forms and unsaved edits are protected. Drafts stay bound to the account that uploaded them.
 
 This slice does not read PDF/count-sheet uploads, translate the legacy financial dashboard,
 automatically merge item synonyms, or synchronize offline account changes. Printed count
@@ -63,3 +65,9 @@ sheets and manually entering counts are available. A live migration/deployment i
 Work on separate branches. Frontend work based on an old `docs/` branch must be rebased and
 its paths mapped to `frontend/`. Keep API fields and stable IDs while refining Figma layouts.
 Run `python3 tools/build-pages.py`, `npm test`, and `python3 tools/build-pages.py --check`.
+
+The optional `tools/check-stock-sync-sql.mjs` smoke check executes the real migrations and
+PL/pgSQL in an isolated PostgreSQL database using PGlite (verified with 0.5.10). Install it
+outside the repository, then set `FINDASH_PGLITE_MODULE` to that package's `dist/index.js`
+and run the script. It checks transaction rollback, safe retries, financial revision
+conflicts, legacy-save protection and RLS without touching production.

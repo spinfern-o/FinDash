@@ -16,7 +16,7 @@
 
 import { state, isShowingOwnerFigures } from "./state.js";
 import { escapeHtml, formatLocalDate } from "./format.js";
-import { figuresToSave, cleanSavedFigures, saveOwnerFigures, forgetSavedFigures } from "./saved-figures.js";
+import { figuresToSave, cleanSavedFigures, saveOwnerFigures, forgetSavedFigures, savedFiguresAreSynced } from "./saved-figures.js";
 import { describeOwnerSource } from "./owner-figures.js";
 import { showOwnerFigures, showDemoFigures } from "./figures-on-screen.js";
 import { showStatus } from "./status-line.js";
@@ -27,6 +27,8 @@ const ACCOUNT_NOTE = "While you're logged in, your figures (not your file or pho
 
 let isSaving = false;
 let saveAgainWhenDone = false;
+let accountVersion = 0;
+let refreshing = false;
 
 /* True when changes should be saved to the account right away. Not while
    the owner is still choosing between two different sets of figures. */
@@ -37,10 +39,11 @@ export function isSavingToAccount() {
 /* Sends a request to /api/figures. Returns the answer, or throws an Error
    whose message is a sentence an owner can read. The error's status is the
    HTTP status (0 when the site could not be reached). */
-async function figuresRequest(method, body) {
-  const options = { method: method, credentials: "same-origin" };
+async function figuresRequest(method, body, owner = state.account?.email) {
+  const options = { method: method, credentials: "same-origin", cache: "no-store", headers: {} };
+  if (owner) { options.headers['X-FinDash-Owner'] = owner; }
   if (body !== undefined) {
-    options.headers = { "Content-Type": "application/json" };
+    options.headers['Content-Type'] = 'application/json';
     options.body = JSON.stringify(body);
   }
 
@@ -119,29 +122,57 @@ function areSameFigures(first, second) {
   return firstShown === secondShown;
 }
 
+/* A new reviewed invoice extends a clean browser copy. A replacement monthly
+   spreadsheet or an edited/deleted invoice still needs the owner's choice. */
+function onlyNewInvoices(inAccount, inBrowser) {
+  if (JSON.stringify(inAccount.months) !== JSON.stringify(inBrowser.months) || inAccount.from !== inBrowser.from ||
+      inAccount.invoices.length < inBrowser.invoices.length) { return false; }
+  return inBrowser.invoices.every(function (invoice) {
+    const saved = inAccount.invoices.find(function (candidate) { return candidate.id === invoice.id; });
+    return saved && JSON.stringify(saved) === JSON.stringify(invoice);
+  });
+}
+
 /* Puts the account's figures on screen and keeps a copy in this browser. */
 function useAccountFigures(figures) {
+  accountVersion += 1;
   state.ownerMonths = figures.months;
   state.ownerInvoices = figures.invoices;
   state.ownerSourceName = figures.from;
-  saveOwnerFigures();
+  saveOwnerFigures(true);
   showOwnerFigures(`Loaded from your account: ${describeOwnerSource()}.`);
 }
 
 /* One attempt to make the account match what is on screen: the figures, or
    nothing when the owner's figures are gone. Returns true when it worked. */
 async function sendFiguresToAccount() {
+  const account = state.account;
   try {
     if (isShowingOwnerFigures()) {
-      await figuresRequest("PUT", { figures: figuresToSave() });
+      const answer = await figuresRequest("PUT", { figures: figuresToSave(), expectedUpdatedAt: state.account.updatedAt });
+      if (state.account !== account) { return false; }
+      account.updatedAt = answer.updatedAt;
     } else {
       await figuresRequest("DELETE");
+      if (state.account !== account) { return false; }
+      account.updatedAt = null;
     }
     if (state.account) {
-      state.account.hasUnsavedChanges = false;
+      state.account.hasUnsavedChanges = saveAgainWhenDone;
+      if (!saveAgainWhenDone && isShowingOwnerFigures()) { saveOwnerFigures(true); }
     }
     return true;
   } catch (error) {
+    if (state.account !== account) { return false; }
+    if (error.status === 409 && state.account) {
+      try {
+        const latest = await figuresRequest('GET');
+        state.account.updatedAt = latest.updatedAt;
+        const inAccount = cleanSavedFigures(latest.figures);
+        const inBrowser = cleanSavedFigures(figuresToSave());
+        if (inAccount && inBrowser) { askWhichToKeep(inAccount, latest.updatedAt, inBrowser); }
+      } catch { /* The unsaved warning below remains available. */ }
+    }
     if (error.status === 401) {
       // The login ran out. The figures are still in this browser.
       state.account = null;
@@ -164,15 +195,27 @@ async function saveToAccountNow() {
 
   if (saveAgainWhenDone) {
     saveAgainWhenDone = false;
-    if (state.account) {
+    if (succeeded && isSavingToAccount()) {
       return saveToAccountNow();
     }
   }
   return succeeded;
 }
 
+/* Adopt the exact financial snapshot committed with a shelf count. Its
+   concurrency token must never be paired with older local figures. */
+export function acceptConfirmedFigures(figures, updatedAt, owner) {
+  if (!state.account || state.account.email !== owner || state.account.hasUnsavedChanges || state.account.isWaitingForChoice) { return false; }
+  const cleaned = cleanSavedFigures(figures);
+  if (!cleaned) { return false; }
+  state.account.updatedAt = updatedAt;
+  useAccountFigures(cleaned);
+  return true;
+}
+
 /* Called after every change to the owner's figures. */
 export function saveToAccountSoon() {
+  accountVersion += 1;
   if (!isSavingToAccount()) {
     return;
   }
@@ -219,6 +262,7 @@ function askWhichToKeep(inAccount, accountSavedAt, inBrowser) {
   document.getElementById("keep-account").addEventListener("click", function () {
     hideChoice();
     state.account.isWaitingForChoice = false;
+    state.account.hasUnsavedChanges = false;
     useAccountFigures(inAccount);
   });
 
@@ -245,7 +289,7 @@ function belongToAnotherAccount(email) {
 export async function startSavingToAccount(user) {
   let answer;
   try {
-    answer = await figuresRequest("GET");
+    answer = await figuresRequest("GET", undefined, user.email);
   } catch (error) {
     // Saving to accounts may not be set up on this site yet; the dashboard
     // works as before, in this browser only.
@@ -253,7 +297,7 @@ export async function startSavingToAccount(user) {
     return;
   }
 
-  state.account = { email: user.email, hasUnsavedChanges: false, isWaitingForChoice: false };
+  state.account = { email: user.email, hasUnsavedChanges: false, isWaitingForChoice: false, updatedAt: answer.updatedAt };
   showPrivacyNote(true);
 
   const inAccount = cleanSavedFigures(answer.figures);
@@ -284,6 +328,11 @@ export async function startSavingToAccount(user) {
     return;
   }
 
+  if (inAccount && inBrowser && state.ownerAccount === String(user.email).toLowerCase() && savedFiguresAreSynced() && onlyNewInvoices(inAccount, inBrowser)) {
+    useAccountFigures(inAccount);
+    return;
+  }
+
   if (!inAccount && inBrowser) {
     // Figures added before logging in become this person's.
     saveOwnerFigures();
@@ -301,6 +350,28 @@ export async function startSavingToAccount(user) {
   }
 }
 
+/* Pick up a confirmed stock invoice on an already-open financial dashboard.
+   Local edits and reconciliation choices always take precedence over refresh. */
+export async function refreshAccountFigures() {
+  if (refreshing || !state.account || state.account.hasUnsavedChanges || state.account.isWaitingForChoice || isSaving || state.photoReview) { return; }
+  refreshing = true;
+  const account = state.account;
+  const version = accountVersion;
+  try {
+    const answer = await figuresRequest('GET');
+    if (state.account !== account || accountVersion !== version || state.account.hasUnsavedChanges || state.account.isWaitingForChoice || state.photoReview || isSaving) { return; }
+    const figures = cleanSavedFigures(answer.figures);
+    const current = cleanSavedFigures(figuresToSave());
+    state.account.updatedAt = answer.updatedAt;
+    if (figures && (!current || !areSameFigures(figures, current))) { useAccountFigures(figures); }
+    else if (!figures && current) { forgetSavedFigures(); showDemoFigures(); }
+  } catch {
+    showStatus('Could not refresh your account', 'Your figures have not been changed. Check your connection and try again.', true);
+  } finally {
+    refreshing = false;
+  }
+}
+
 /* For "Forget my data" while logged in. Returns true once the account's copy
    is gone; on failure says so and returns false, and nothing is removed. */
 export async function forgetFiguresInAccount() {
@@ -311,6 +382,7 @@ export async function forgetFiguresInAccount() {
     return false;
   }
   hideChoice();
+  state.account.updatedAt = null;
   state.account.isWaitingForChoice = false;
   state.account.hasUnsavedChanges = false;
   return true;
@@ -320,6 +392,7 @@ export async function forgetFiguresInAccount() {
    next person at this computer cannot see them, unless a change never
    reached the account, in which case removing them would lose it. */
 export function stopSavingToAccount() {
+  accountVersion += 1;
   const account = state.account;
   state.account = null;
   showPrivacyNote(false);

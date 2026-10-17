@@ -1,18 +1,21 @@
-/* On phones, a "Join the waitlist" button stays at the bottom of the screen
-   once both of the page's own (in the header and under the product) have
-   scrolled out of sight, so the way in is never more than a tap away.
-   Wider screens never show it (landing.css). */
+/* On phones, the way in (Join the waitlist, or Open the dashboard once
+   FinDash is open) stays at the bottom of the screen once the page's own
+   buttons (in the header and under the product) have scrolled out of
+   sight, so it is never more than a tap away. Both versions are on the
+   page; site.css shows one. Wider screens never show it (landing.css). */
 
-const stickyButton = document.getElementById("sticky-cta");
-const watched = [document.querySelector("header .enter-link"), document.querySelector(".intro .cta-row")];
+const stickyButtons = document.querySelectorAll(".sticky-cta");
+const watched = [...document.querySelectorAll("header .enter-link"), document.querySelector(".intro .cta-row")];
 const inView = new Set();
 
 function update() {
-  stickyButton.hidden = inView.size > 0;
+  for (const button of stickyButtons) {
+    button.hidden = inView.size > 0;
+  }
 }
 
 function start() {
-  if (!stickyButton || !("IntersectionObserver" in window)) {
+  if (!stickyButtons.length || !("IntersectionObserver" in window)) {
     return;
   }
   const observer = new IntersectionObserver(function (entries) {

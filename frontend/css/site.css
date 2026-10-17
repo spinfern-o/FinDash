@@ -141,6 +141,13 @@ a {
 [hidden] {
   display: none !important;
 }
+/* The way in: before launch, the waitlist's version of a button or
+   sentence; once the app is open, the app's. /app-state.js marks the page
+   "app-open" before it is drawn (lib/app-gate.js). */
+html:not(.app-open) .app-only,
+html.app-open .waitlist-only {
+  display: none !important;
+}
 ::selection {
   background: var(--accent-soft);
   color: var(--accent-soft-ink);

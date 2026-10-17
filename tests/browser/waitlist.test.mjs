@@ -1,6 +1,6 @@
-/* The waitlist page in a real browser: it asks only for an email, a bad
-   one is pointed out before anything is sent, a good one is kept and
-   thanked, and the page fits on a phone. */
+/* The waitlist page in a real browser, as it is before launch: it asks
+   only for an email, a bad one is pointed out before anything is sent, a
+   good one is kept and thanked, and the page fits on a phone. */
 
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -12,7 +12,7 @@ let browser;
 const pages = [];
 
 before(async function () {
-  site = await startSite();
+  site = await startSite({ appClosed: true });
   browser = await launchBrowser();
 });
 
@@ -30,7 +30,7 @@ async function waitlistPage(options) {
 
 test("the form asks for an email and nothing else", async function () {
   const page = await waitlistPage();
-  assert.equal(await text(page, "h1"), "Join the waitlist");
+  assert.equal(await text(page, "h1"), "Join FinDash");
   const fields = await page.$$eval("#waitlist-form input, #waitlist-form select, #waitlist-form textarea",
     function (controls) {
       return controls.map(function (control) {

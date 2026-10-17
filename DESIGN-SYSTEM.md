@@ -275,10 +275,16 @@ Rules:
 - Set `FINDASH_APP_OPEN=1` in Vercel for Preview deployments to try the app before launch; set it for Production
   on launch day. The tests run with the app open (`startSite()`), and `tests/api/app-gate.test.mjs` runs it closed
   (`startSite({ appClosed: true })`).
-- On the public pages, every way in is a **Join the waitlist** button (`.button.solid` with the arrow) to
-  `/waitlist`: the nav's main button, the home page's intro, the sticky phone button, the restaurant page and
-  the 404. Never link a public page to `/dashboard` or `/stock` while the gate is closed; the help and developers
-  pages may mention them as documentation.
+- Every way in on the public pages comes in two versions: the waitlist's (class `waitlist-only`: **Join the
+  waitlist** to `/waitlist`) and the app's (class `app-only`: **Open the dashboard** to `/dashboard`, **Log in**,
+  **Open daily stock**). That covers the nav's main button and menu, the footer, the home page's intro, steps,
+  "Daily stock" section and sticky phone button, the restaurant page, the 404 and the waitlist page.
+- Every page's head loads `/app-state.js`, which `middleware.js` answers from `FINDASH_APP_OPEN`: it adds
+  `app-open` to `<html>` before the page is drawn, and `site.css` hides whichever version doesn't apply. No
+  cookie, no flash. Browsers keep the answer for a minute.
+- Give a new way in both versions. Keep headings the same in both states (put the difference in the text or
+  buttons under them): the Markdown copies for agents leave out both versions.
+- The help and developers pages may mention `/dashboard` and `/stock` as documentation.
 
 ## Figma to FinDash, step by step
 

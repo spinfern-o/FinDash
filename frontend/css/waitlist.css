@@ -37,3 +37,15 @@
   letter-spacing: -0.03em;
   color: var(--ink);
 }
+
+/* Once FinDash is open, the page offers the way in instead of the form. */
+.open-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 24px;
+}
+.open-actions a {
+  text-align: center;
+  text-decoration: none;
+}

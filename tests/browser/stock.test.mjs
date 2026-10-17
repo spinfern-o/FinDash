@@ -95,6 +95,26 @@ test('Chinese invoice review preserves original, waits for shelf count and does 
   await page.context().close();
 });
 
+test('a photo chosen in the file picker is read, though the page reloads its stock as the picker closes', async function () {
+  const page = await openPage(browser);
+  await signUp(page,site,newEmail('picker'),'test password');
+  const invoice = readFixture('invoice-reading.json');
+  invoice.lines = [invoice.lines[2]];
+  invoice.total_printed = 76;
+  invoice.subtotal_printed = 76;
+  site.anthropic.replies.photoFirstLook = invoice;
+  await page.goto(site.url + '/stock#files');
+  await page.locator('#add-item:enabled').waitFor();
+  // Closing the picker gives the page focus back, which reloads its stock
+  // from the account at the moment the chosen file arrives.
+  await page.evaluate(function () { window.dispatchEvent(new Event('focus')); });
+  await page.locator('#stock-files').setInputFiles(photoFile('picked.png'));
+  await page.locator('[data-review]').waitFor({ timeout: 8000 });
+  assert.equal(await page.locator('#stock-message').isVisible(), false, 'no message saying the photo was refused');
+  assert.deepEqual(page.errors,[]);
+  await page.context().close();
+});
+
 test('account load failures never replace a saved account ledger with an empty browser copy', async function () {
   const page = await openPage(browser,{ignore:/503/});
   await signUp(page,site,newEmail('stock-failure'),'test password');

@@ -2,7 +2,7 @@
    deliveries/usage/waste. Finance remains a separate destination. */
 import { emptyInventory } from './ledger.js';
 import { words, loadLanguage, setLanguage, currentLanguage } from './language.js';
-import { store, loadStock, saveStock, downloadBackup, parseInventory, clearGuestStock } from './storage.js';
+import { store, loadStock, whenStockLoaded, saveStock, downloadBackup, parseInventory, clearGuestStock } from './storage.js';
 import { drafts, addFiles, onFilesChanged, discardDraft, rereadReadyDrafts } from './files.js';
 import { filesHtml, reviewHtml, itemsHtml, buyingHtml, checksHtml, settingsHtml, printHtml, printBuyingHtml } from './views.js';
 import { wireForms, showAddItem, showMovement, showInvoiceReview, showItemSettings, showResolveCheck, canChange } from './forms.js';
@@ -63,9 +63,14 @@ function saved() {
   window.location.hash = 'items';
   render();
 }
+/* Reading a photo changes no stock, so only a stock that couldn't be loaded
+   stops it. Returning from the file picker reloads the stock; the files
+   wait for that rather than being turned away. */
 async function handleFiles(files) {
-  if (!canChange()) { message(store.note); return; }
+  await whenStockLoaded();
+  if (!store.ready) { message(store.note === 'accountFailed' ? 'accountFailed' : 'loading'); return; }
   try { await addFiles(files); } catch { message('failed'); }
+  render();
 }
 /* Desktop drops and phone/desktop file pickers feed the same queue. */
 function wireDrop(drop) {

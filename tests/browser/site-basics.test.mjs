@@ -187,7 +187,7 @@ test("an address with no page gets the 404 page, styled and with a way back, at 
     const response = await page.goto(site.url + address, { waitUntil: "networkidle" });
     assert.equal(response.status(), 404, address);
     assert.equal(await text(page, "h1"), "Page not found");
-    assert.ok(await page.locator('main a[href="/waitlist"]').first().isVisible(), address);
+    assert.ok(await page.locator('main a[href="/dashboard"]').first().isVisible(), address + ": the way into the app");
     const background = await page.evaluate(function () {
       return getComputedStyle(document.body).backgroundColor;
     });
@@ -240,20 +240,22 @@ test("no page scrolls sideways on a phone, a tablet or a small laptop", async fu
 test("on a phone the landing page's main button is above the fold, and a sticky one follows", async function () {
   const page = await openPage(browser, { viewport: { width: 360, height: 640 } });
   await visit(page, "/");
-  const headerButton = await page.locator("header .enter-link").boundingBox();
-  assert.ok(headerButton.y + headerButton.height <= 640, "Join the waitlist is on the first screen");
-  assert.equal(await page.locator("#sticky-cta").isVisible(), false, "no sticky button while the others show");
+  // The tests run with the app open, so the way in is Open the dashboard.
+  const headerButton = await page.locator("header .enter-link >> visible=true").boundingBox();
+  assert.ok(headerButton.y + headerButton.height <= 640, "Open the dashboard is on the first screen");
+  assert.equal(await page.locator(".sticky-cta >> visible=true").count(), 0, "no sticky button while the others show");
 
   await page.locator("footer").scrollIntoViewIfNeeded();
-  await page.waitForSelector("#sticky-cta", { state: "visible" });
-  const sticky = await page.locator("#sticky-cta").boundingBox();
+  await page.waitForSelector("#sticky-cta-app", { state: "visible" });
+  const sticky = await page.locator("#sticky-cta-app").boundingBox();
   assert.ok(sticky.y + sticky.height <= 640 && sticky.y > 500, "it sits at the bottom of the screen");
-  assert.equal(await page.getAttribute("#sticky-cta", "href"), "/waitlist");
+  assert.equal(await page.getAttribute("#sticky-cta-app", "href"), "/dashboard");
+  assert.ok(await page.locator("#sticky-cta").isHidden(), "the waitlist's sticky button stays out of sight");
 
   await page.evaluate(function () {
     window.scrollTo(0, 0);
   });
-  await page.waitForSelector("#sticky-cta", { state: "hidden" });
+  await page.waitForSelector("#sticky-cta-app", { state: "hidden" });
   await page.context().close();
 });
 
@@ -276,9 +278,9 @@ test("the cookie notice shows once, links to the privacy policy, and stays dismi
 
   // With the sticky button showing too, the two stack rather than overlap.
   await page.locator("footer").scrollIntoViewIfNeeded();
-  await page.waitForSelector("#sticky-cta", { state: "visible" });
+  await page.waitForSelector("#sticky-cta-app", { state: "visible" });
   const noticeBox = await notice.boundingBox();
-  const stickyBox = await page.locator("#sticky-cta").boundingBox();
+  const stickyBox = await page.locator("#sticky-cta-app").boundingBox();
   assert.ok(noticeBox.y + noticeBox.height <= stickyBox.y, "the notice sits above the button");
 
   await notice.locator("button").click();
@@ -451,7 +453,7 @@ test("the restaurant page explains food cost, labor and prime cost, with sources
   }
   const sources = await page.locator('#benchmarks a[href^="https://"]').count();
   assert.ok(sources >= 3, "benchmarks name their sources");
-  assert.ok(await page.locator('main a[href="/waitlist"]').first().isVisible());
+  assert.ok(await page.locator('main a[href="/dashboard"]').first().isVisible(), "the way into the app");
   const found = await page.evaluate(function () {
     function oneLine(value) {
       return value.replace(/\s+/g, " ").trim();

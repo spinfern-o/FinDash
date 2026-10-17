@@ -1,6 +1,6 @@
 /* Draws frontend/og-image.png, the 1200 x 630 picture shown when a link to
-   FinDash is shared, from og-image.html next to this file. Needs the
-   internet for the Inter font, and the test browser (npm install, then
+   FinDash is shared, from og-image.html next to this file, with the site's
+   own fonts from frontend/fonts. Needs the test browser (npm install, then
    npx playwright install chromium).
 
    node tools/og-image/render.mjs */

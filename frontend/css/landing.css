@@ -1,267 +1,59 @@
-:root {
-  color-scheme: dark;
-  --ground: #050505;
-  --card: #121212;
-  --card-2: #161616;
-  --line: rgba(245, 245, 245, 0.1);
-  --line-soft: rgba(245, 245, 245, 0.06);
-  --ink: #f5f5f5;
-  --ink-2: #b3b3b3;
-  --ink-3: #8c8c8c;
-  /* Brand colour. Not red: on a finance product red reads as "loss", and the
-       dashboard keeps it for exactly that. Matches the dashboard's buttons. */
-  --accent: #8b93f8;
-  --accent-2: #a5b4fc;
-  --accent-ink: #0b0b14;
-  --critical: #e5484d;
-  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+/* The home page, laid out like the home page of the FinDash Figma file (the
+   "Area" kit): a display headline over the product in a device frame, then
+   sections divided by thin rules, each with a mono caption, a serif heading
+   and plain text, the kit's numbered lists, comparison table and three
+   steps, a centred call to action and the questions people ask. Colours,
+   type, buttons, the nav and the footer come from site.css. */
+
+main {
+  padding: 0 var(--gutter);
+}
+main > section,
+main > .photo {
+  max-width: var(--page-width);
+  margin-left: auto;
+  margin-right: auto;
 }
 
-html[data-theme="light"] {
-  color-scheme: light;
-  --ground: #f6f6f7;
-  --card: #ffffff;
-  --card-2: #f1f1f2;
-  --line: rgba(10, 10, 10, 0.12);
-  --line-soft: rgba(10, 10, 10, 0.06);
-  --ink: #0a0a0a;
-  --ink-2: #4b4b50;
-  --ink-3: #68686e;
-  --accent: #4f46e5;
-  --accent-2: #6366f1;
-  --accent-ink: #ffffff;
-  --critical: #d6333b;
-}
-
-* {
-  box-sizing: border-box;
-}
-html {
-  -webkit-text-size-adjust: 100%;
-}
-
-body {
-  margin: 0;
-  background: var(--ground);
-  background-image: radial-gradient(var(--line) 0.7px, transparent 0.7px);
-  background-size: 26px 26px;
-  color: var(--ink);
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  line-height: 1.5;
-}
-
-a {
-  color: inherit;
-}
-.frame {
-  max-width: 1180px;
-  margin: 0 auto;
-  border-inline: 1px solid var(--line);
-  min-height: 100vh;
-  position: relative;
-}
-
-.cross {
-  position: absolute;
-  width: 13px;
-  height: 13px;
-  color: var(--line);
-  pointer-events: none;
-  z-index: 2;
-}
-.cross::before,
-.cross::after {
-  content: "";
-  position: absolute;
-  background: currentColor;
-}
-.cross::before {
-  left: 50%;
-  top: 0;
-  width: 1px;
-  height: 100%;
-  transform: translateX(-50%);
-}
-.cross::after {
-  top: 50%;
-  left: 0;
-  height: 1px;
-  width: 100%;
-  transform: translateY(-50%);
-}
-.cross.tl {
-  top: 92px;
-  left: -6.5px;
-}
-.cross.tr {
-  top: 92px;
-  right: -6.5px;
-}
-
-/* The crosses straddle the frame's edges. Until the window is wider than
-   the frame (1180px, plus half a cross each side), those edges are the
-   screen's, so half of one hung outside and the page scrolled sideways. */
-@media (max-width: 1199px) {
-  .cross {
-    display: none;
-  }
-}
-
-/* ---- header ---- */
-header {
-  min-height: 92px;
-  padding: 22px 5%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  border-bottom: 1px solid var(--line);
-}
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-family: var(--mono);
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-decoration: none;
-  text-transform: uppercase;
-}
-.brand svg {
-  flex: none;
-  color: var(--accent);
-}
-.brand .period {
-  color: var(--accent);
-}
-nav.links {
-  display: flex;
-  align-items: center;
-  gap: 28px;
-}
-.nav-tag {
-  font-family: var(--mono);
-  font-size: 12px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-}
-.enter-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  text-decoration: none;
-  color: var(--accent-ink);
-  background: var(--accent);
-  border: 1px solid var(--accent);
-  border-radius: 8px;
-  padding: 11px 20px;
-  transition:
-    filter 0.15s,
-    transform 0.15s;
-}
-.enter-link:hover {
-  filter: brightness(1.1);
-  transform: translateY(-1px);
-}
-/* Log in sits beside Open dashboard as the quieter of the two: accounts are
-     optional, and the dashboard should stay the obvious first click. */
-.login-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  text-decoration: none;
-  color: var(--ink);
-  background: transparent;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 11px 18px;
-  transition:
-    border-color 0.15s,
-    color 0.15s;
-}
-.login-link:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-/* ---- hero ---- */
+/* ---- the header: headline, buttons, the product ---- */
 .hero {
-  min-height: 600px;
-  padding: 84px 24px 64px;
+  padding-top: clamp(32px, 6vw, 72px);
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  position: relative;
 }
-.theme-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  flex: none;
-  background: var(--card);
-  border: 1px solid var(--line);
-  color: var(--ink-2);
-  cursor: pointer;
-  transition:
-    border-color 0.12s,
-    color 0.12s;
+.eyebrow {
+  margin: 0 0 28px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  color: var(--caption);
 }
-.theme-toggle:hover {
-  border-color: var(--ink-3);
-  color: var(--ink);
-}
-.theme-toggle:focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 2px;
-}
-.theme-toggle svg {
-  display: none;
-}
-html:not([data-theme="light"]) .theme-toggle svg.icon-sun {
-  display: block;
-}
-html[data-theme="light"] .theme-toggle svg.icon-moon {
-  display: block;
-}
-/* The slogan under the page's heading, at headline size. */
+/* The kit's display headline. Its size keeps the first line on one line
+   from a small laptop up. */
 .slogan {
   margin: 0;
-  max-width: 22ch;
-  font-size: clamp(36px, 6.4vw, 72px);
-  font-weight: 800;
-  letter-spacing: -0.045em;
-  line-height: 1.08;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(42px, 7.2vw, 96px);
+  line-height: 0.95;
+  letter-spacing: -0.0425em;
 }
 .slogan .line-2 {
   display: block;
-  margin-top: 2px;
 }
 .rotator-wrap {
   position: relative;
   display: inline-block;
   vertical-align: bottom;
 }
-/* On the narrowest phones the longer words don't fit beside "Built for",
-   so the line would wrap for some words and not others and the page below
-   would jump each time. There, the word always has its own line. */
-@media (max-width: 380px) {
+/* On phones the longer words don't fit beside "Built for", so the line
+   would wrap for some words and not others and the page below would jump
+   each time. There, the word always has its own line. */
+@media (max-width: 640px) {
   .rotator-wrap {
     display: block;
   }
@@ -270,7 +62,7 @@ html[data-theme="light"] .theme-toggle svg.icon-moon {
   display: inline-block;
   white-space: nowrap;
   color: var(--accent);
-  font-style: normal;
+  font-style: italic;
   will-change: opacity, filter, transform;
   transition:
     opacity 0.35s ease,
@@ -283,37 +75,34 @@ html[data-theme="light"] .theme-toggle svg.icon-moon {
   transform: translateY(-6px);
 }
 .lede {
-  margin-top: 26px;
-  max-width: 48ch;
+  margin: 32px 0 0;
+  max-width: 54ch;
   font-size: 16px;
-  line-height: 1.7;
+  line-height: 1.55;
   color: var(--ink-2);
 }
 .example-line {
-  margin: 18px 0 0;
+  margin: 24px 0 0;
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  max-width: 100%;
   font-family: var(--mono);
   font-size: 12px;
-  letter-spacing: 0.02em;
-  color: var(--ink-3);
-  border: 1px solid var(--line);
-  background: var(--card);
-  border-radius: 999px;
-  padding: 9px 16px 9px 7px;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  color: var(--ink-2);
+  background: var(--card-2);
+  border-radius: var(--radius-pill);
+  padding: 7px 16px 7px 7px;
+  text-align: left;
 }
 .example-tag {
-  display: inline-flex;
-  align-items: center;
+  flex: none;
   background: var(--accent);
   color: var(--accent-ink);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  border-radius: 999px;
-  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  padding: 4px 10px;
 }
 #example-text {
   transition: opacity 0.25s ease;
@@ -324,471 +113,467 @@ html[data-theme="light"] .theme-toggle svg.icon-moon {
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 14px;
-}
-.cta {
-  display: inline-flex;
-  align-items: center;
   gap: 12px;
-  background: var(--accent);
-  color: var(--accent-ink);
-  padding: 16px 30px;
-  border: 1px solid var(--accent);
-  border-radius: 10px;
-  font-size: 15px;
-  font-weight: 700;
-  text-decoration: none;
-  transition:
-    filter 0.15s,
-    transform 0.15s;
-}
-.cta:hover {
-  filter: brightness(1.08);
-  transform: translateY(-1px);
-}
-.cta.ghost {
-  background: transparent;
-  color: var(--ink);
-  border-color: var(--line);
-}
-.cta.ghost:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  filter: none;
-  transform: none;
-}
-.cta svg {
-  flex: none;
 }
 .cta-note {
-  margin-top: 18px;
+  margin-top: 16px;
   font-family: var(--mono);
   font-size: 12px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: -0.01em;
   color: var(--ink-3);
 }
 
-/* ---- trust row ---- */
-.trust {
-  margin-top: 56px;
+/* The product in a device frame, standing on a sage block. The frame rises
+   above the block and is cut off at its foot, as in the kit. */
+.hero-visual {
+  position: relative;
   width: 100%;
+  margin-top: clamp(36px, 4vw, 56px);
+  padding-top: clamp(20px, 5vw, 96px);
+  overflow: hidden;
 }
-.trust-label {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  font-family: var(--mono);
-  font-size: 12px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--ink-3);
+.hero-block {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 72%;
+  background: #8e9c78;
+  border-radius: var(--radius-image);
 }
-.trust-label span.rule {
-  width: 32px;
-  height: 1px;
-  background: var(--line);
+.device {
+  position: relative;
+  width: min(907px, 80%);
+  margin: 0 auto -18%;
+  aspect-ratio: 907 / 644;
+  padding: 16px 18px 0;
+  background: #000000;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-bottom: 0;
+  border-radius: 24px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
 }
-.trust-items {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 22px;
-}
-.trust-items span {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  border: 1px solid var(--line);
-  background: var(--card);
-  color: var(--ink-2);
-  padding: 11px 18px;
-  border-radius: 999px;
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-.trust-items svg {
-  flex: none;
-  color: var(--accent);
+.device img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top left;
+  border-radius: 16px;
+  background: #ffffff;
 }
 
-/* ---- preview strip ---- */
+/* ---- sections: a thin rule above, the kit's spacing ---- */
+.section {
+  border-top: 1px solid var(--line);
+  padding: clamp(56px, 7vw, 80px) 0 clamp(48px, 6vw, 60px);
+}
+.section-text {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(24px, 4vw, 50px);
+  padding-right: min(400px, 30%);
+}
+.section-text > *,
+.split-text > *,
+.specs-text > * {
+  margin: 0;
+}
+/* "What is FinDash?": the kit's Heading 1, set here rather than by a class so
+   the heading reads the same in the HTML that search engines and AI agents
+   see. */
+.section-text h2 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(40px, 5.4vw, 60px);
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+}
+.about-lede,
+.section-more {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.section-more {
+  margin: 8px 0 0;
+}
+.section-more a,
+.specs-text a {
+  color: var(--ink);
+  text-underline-offset: 3px;
+}
+
+/* The kit's row of four, each under a thin rule with an icon. */
+.benefits {
+  list-style: none;
+  margin: 0;
+  padding: 40px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.benefits li {
+  flex: 1 1 0;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  border-top: 1px solid var(--line);
+  padding: 40px 20px 40px 0;
+}
+.benefits svg {
+  color: var(--ink);
+}
+.benefits h3,
+.three-up h3 {
+  margin: 4px 0 0;
+}
+.benefits p,
+.three-up p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+
+/* ---- photos: the kit's, as decoration ---- */
+.photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-image);
+}
+.photo-wide {
+  aspect-ratio: 1200 / 620;
+  margin-bottom: clamp(64px, 9vw, 120px);
+}
+
+/* ---- the kit's numbered list beside a photo ---- */
+.split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding-bottom: clamp(64px, 9vw, 120px);
+}
+.split-text {
+  border-top: 1px solid var(--line);
+  padding: 60px 0 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 40px;
+}
+.split-text .heading-1,
+.split-text .paragraph {
+  padding-right: 80px;
+}
+.numbered {
+  list-style: none;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+.numbered li {
+  display: flex;
+  gap: 30px;
+  border-top: 1px solid var(--line);
+  padding: 20px 80px 20px 0;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.numbered span {
+  flex: none;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+.numbered p {
+  margin: 0;
+  color: var(--ink);
+}
+.photo-tall {
+  min-height: 480px;
+}
+
+/* ---- the sample figures, as the kit's comparison table ---- */
+.specs {
+  border-top: 1px solid var(--line-strong);
+  padding-bottom: clamp(64px, 9vw, 120px);
+}
+.specs-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+  text-align: center;
+  padding: clamp(56px, 7vw, 80px) min(240px, 12%);
+}
 .preview {
-  margin: 68px 5% 0;
-  padding: 28px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--card);
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  margin-top: 20px;
 }
 .preview .cell {
-  padding: 4px 2px;
+  min-width: 0;
+  padding: 32px 30px;
+  border-left: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.preview .cell:first-child {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+.preview .cell:nth-child(2) {
+  border-left: 0;
 }
 .preview .cell p {
   margin: 0;
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-3);
+  font-size: 12px;
+  letter-spacing: -0.01em;
+  color: var(--caption);
 }
 .preview .cell strong {
   display: block;
-  margin-top: 9px;
-  font-size: 21px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  margin: 18px 0 10px;
+  font-size: clamp(30px, 3.4vw, 40px);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.045em;
+  color: var(--ink);
 }
 .preview .cell small {
   display: block;
-  margin-top: 4px;
-  font-size: 12px;
-  color: var(--ink-3);
-  font-weight: 600;
+  font-size: 13px;
+  color: var(--ink-2);
 }
 .preview .cell small.bad,
 .preview .cell strong.bad {
   color: var(--critical);
 }
-.preview-cap {
-  grid-column: 1/-1;
-  margin: 0;
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--accent);
-}
-.preview-cap a {
-  color: inherit;
-}
 
-/* ---- forecast chart ---- */
-.forecast {
-  margin: 40px 5% 0;
-  padding: 30px 28px 24px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--card);
-}
+/* ---- the forecast example ---- */
 .forecast-head {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 16px;
+  gap: 24px 40px;
 }
-.forecast-head .tag {
-  display: block;
-  margin-bottom: 10px;
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--accent);
+.forecast-head > div:first-child {
+  flex: 1 1 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
-.forecast-head h2 {
+.forecast-head > div:first-child > * {
   margin: 0;
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  max-width: 34ch;
-}
-.forecast-head p {
-  margin: 8px 0 0;
-  max-width: 46ch;
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--ink-3);
 }
 .forecast-legend {
   display: flex;
   flex-direction: column;
   gap: 8px;
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-  flex: none;
+  font-size: 12px;
+  letter-spacing: -0.01em;
+  color: var(--ink-2);
 }
-.forecast-legend span {
-  display: flex;
+.forecast-legend > span {
+  display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 .legend-dot {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  background: var(--accent);
-  flex: none;
+  background: var(--ink);
 }
 .legend-dot.proj {
   background: transparent;
-  border: 1.5px dashed var(--accent-2);
-}
-a.nav-tag {
-  text-decoration: none;
-}
-a.nav-tag:hover {
-  color: var(--ink);
+  border: 2px solid var(--accent);
 }
 .forecast-chart {
-  margin-top: 22px;
-  width: 100%;
-  height: auto;
   display: block;
+  width: 100%;
+  max-width: 900px;
+  height: auto;
+  margin: 40px auto 0;
+  overflow: visible;
 }
 .forecast-chart .grid-line {
-  stroke: var(--line-soft);
+  stroke: var(--line);
   stroke-width: 1;
 }
 .forecast-chart .divider {
-  stroke: var(--line);
+  stroke: var(--line-strong);
   stroke-width: 1;
-  stroke-dasharray: 3 4;
+  stroke-dasharray: 2 4;
 }
 .forecast-chart .line-actual {
   fill: none;
-  stroke: var(--accent);
+  stroke: var(--ink);
   stroke-width: 2.5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 .forecast-chart .line-projected {
   fill: none;
-  stroke: var(--accent-2);
+  stroke: var(--accent);
   stroke-width: 2.5;
+  stroke-dasharray: 7 6;
   stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-dasharray: 6 6;
 }
 .forecast-chart .dot-actual {
-  fill: var(--accent);
-  stroke: var(--card);
-  stroke-width: 2;
+  fill: var(--ink);
 }
 .forecast-chart .dot-projected {
-  fill: var(--card);
-  stroke: var(--accent-2);
-  stroke-width: 2;
+  fill: var(--ground);
+  stroke: var(--accent);
+  stroke-width: 2.5;
 }
 .forecast-chart .axis-label {
-  fill: var(--ink-3);
+  fill: var(--ink-2);
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 9px;
 }
 .forecast-chart .proj-label {
-  fill: var(--ink-3);
+  fill: var(--caption);
   font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 9px;
 }
 .forecast-chart .zero-line {
-  stroke: var(--line);
+  stroke: var(--line-strong);
   stroke-width: 1;
 }
 .forecast-chart .zero-label {
-  fill: var(--ink-3);
+  fill: var(--ink-2);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: 9px;
 }
 .forecast-note {
-  margin: 14px 0 0;
-  font-size: 12px;
-  color: var(--ink-3);
-}
-
-/* ---- for-everyone band ---- */
-.audience {
-  margin: 72px 5% 0;
-}
-.section-title {
-  margin: 0 0 14px;
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-}
-.preview-title {
-  grid-column: 1/-1;
-  margin: -6px 0 4px;
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-.about-more {
-  margin: 18px 0 0;
-  font-size: 14px;
-  color: var(--ink-2);
-}
-.about-more a {
-  color: var(--accent);
-}
-/* The waitlist button under "Coming next". */
-.coming-actions {
-  margin-top: 18px;
-}
-.band {
-  margin: 0;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1px;
-  background: var(--line);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  overflow: hidden;
-}
-.band .item {
-  background: var(--card-2);
-  padding: 26px 22px;
-}
-.band .item h3 {
-  margin: 0 0 8px;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-.band .item p {
-  margin: 0;
+  margin: 24px 0 0;
   font-size: 13px;
-  line-height: 1.6;
   color: var(--ink-3);
 }
-.band .item .tag {
-  display: block;
-  margin-bottom: 12px;
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--accent);
-}
 
-/* ---- footer ---- */
-footer {
+/* ---- the kit's three steps ---- */
+.steps-section {
+  padding-bottom: clamp(64px, 9vw, 120px);
+}
+.steps-head {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
   flex-wrap: wrap;
-  gap: 14px;
-  padding: 26px 5%;
-  border-top: 1px solid var(--line);
-  font-family: var(--mono);
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-  margin-top: 72px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
 }
-footer a {
+.steps-head .heading-1 {
+  margin: 0;
+}
+.three-up {
+  list-style: none;
+  margin: clamp(48px, 6vw, 80px) 0 0;
+  padding: 0;
   display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.three-up li {
+  flex: 1 1 0;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  border-top: 1px solid var(--line);
+  padding: 60px 30px 20px 0;
+}
+.step-number {
+  margin-bottom: 40px;
+  font-size: 80px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--ink-faint);
+}
+
+/* ---- the kit's centred call to action ---- */
+.centered-cta {
+  border-top: 1px solid var(--line);
+  padding: clamp(72px, 9vw, 120px) min(300px, 15%);
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  text-decoration: none;
-  color: var(--ink-2);
+  gap: 40px;
+  text-align: center;
 }
-footer a:hover {
-  color: var(--accent);
+.centered-cta > * {
+  margin: 0;
+}
+.coming-actions {
+  width: 100%;
+}
+.coming-actions .button {
+  width: 100%;
 }
 
-a:focus-visible,
-button:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
+/* ---- questions ---- */
+.faq {
+  padding-bottom: clamp(64px, 9vw, 120px);
+}
+.faq .heading-1 {
+  margin: 24px 0 40px;
 }
 
-@media (max-width: 900px) {
-  .nav-tag {
-    display: none;
+/* ---- narrower screens ---- */
+@media (max-width: 960px) {
+  .section-text {
+    padding-right: 0;
+  }
+  .split {
+    grid-template-columns: 1fr;
+  }
+  .split-text {
+    padding-bottom: 40px;
+  }
+  .split-text .heading-1,
+  .split-text .paragraph,
+  .numbered li {
+    padding-right: 0;
+  }
+  .photo-tall {
+    min-height: 0;
+    aspect-ratio: 590 / 711;
+    max-height: 560px;
   }
   .preview {
     grid-template-columns: repeat(2, 1fr);
   }
-  .band {
-    grid-template-columns: repeat(2, 1fr);
+  .preview .cell:nth-child(3) {
+    border-left: 0;
+  }
+  .specs-text,
+  .centered-cta {
+    padding-left: 0;
+    padding-right: 0;
   }
 }
-/* ---- what FinDash is, and the questions people ask ---- */
-.eyebrow {
-  margin: 0 0 18px;
-  font-weight: 600;
-  line-height: 1.5;
-  font-family: var(--mono);
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--accent);
-}
-.about,
-.faq {
-  margin: 40px 5% 0;
-  padding: 30px 28px 26px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--card);
-}
-.about .tag,
-.faq .tag {
-  display: block;
-  margin-bottom: 10px;
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--accent);
-}
-.about h2,
-.faq h2 {
-  margin: 0 0 14px;
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-}
-.about-lede {
-  margin: 0;
-  max-width: 70ch;
-  font-size: 16px;
-  line-height: 1.65;
-  color: var(--ink-2);
-}
-.about-list {
-  margin: 18px 0 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px 28px;
-}
-.about-list li {
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--ink-3);
-}
-.about-list b {
-  color: var(--ink);
-}
-@media (max-width: 640px) {
-  .about,
-  .faq {
-    margin-inline: 20px;
-    padding: 24px 20px 20px;
-  }
-  .about-list {
+@media (max-width: 560px) {
+  .preview {
     grid-template-columns: 1fr;
+  }
+  .preview .cell {
+    border-left: 0;
+  }
+  .device {
+    padding: 8px 9px 0;
+    border-radius: 16px;
+  }
+  .device img {
+    border-radius: 10px;
   }
 }
 
@@ -800,46 +585,11 @@ button:focus-visible {
 @media (max-width: 640px) {
   .sticky-cta:not([hidden]) {
     display: flex;
-    justify-content: center;
     width: 100%;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
   }
   /* Room under the footer so the bar never covers its last line. */
-  footer {
+  .site-footer {
     padding-bottom: 96px;
-  }
-  nav.links {
-    gap: 10px;
-  }
-  .login-link {
-    padding: 9px 12px;
-    font-size: 12px;
-  }
-  .enter-link {
-    padding: 9px 14px;
-    font-size: 12px;
-  }
-  .hero {
-    padding: 60px 20px 52px;
-  }
-  header {
-    padding: 18px 20px;
-  }
-  .trust-label span.rule {
-    display: none;
-  }
-  footer {
-    flex-direction: column;
-    text-align: center;
-  }
-  .preview {
-    grid-template-columns: 1fr;
-    margin-inline: 20px;
-  }
-  .band {
-    grid-template-columns: 1fr;
-  }
-  .audience {
-    margin-inline: 20px;
   }
 }

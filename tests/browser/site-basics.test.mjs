@@ -479,7 +479,7 @@ test("fonts come from this site, not Google, and are cached", async function () 
     const html = await (await page.request.get(site.url + address)).text();
     assert.ok(!html.includes("fonts.googleapis") && !html.includes("fonts.gstatic"), address);
   }
-  for (const font of ["/fonts/inter.woff2", "/fonts/jetbrains-mono.woff2"]) {
+  for (const font of ["/fonts/dm-sans.woff2", "/fonts/crimson-text.woff2", "/fonts/roboto-mono.woff2"]) {
     assert.equal((await page.request.get(site.url + font)).status(), 200, font);
   }
   const { readFileSync } = await import("node:fs");
@@ -494,8 +494,11 @@ test("fonts come from this site, not Google, and are cached", async function () 
   assert.match(fontRule.headers[0].value, /immutable/);
   await visit(page, "/");
   assert.ok(await page.evaluate(function () {
-    return document.fonts.check("700 16px Inter");
-  }), "Inter loaded from /fonts/");
+    return document.fonts.check('700 16px "DM Sans"');
+  }), "DM Sans loaded from /fonts/");
+  assert.ok(await page.evaluate(function () {
+    return document.fonts.check('400 60px "Crimson Text"');
+  }), "Crimson Text loaded from /fonts/");
   await page.context().close();
 });
 

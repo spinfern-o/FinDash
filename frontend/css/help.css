@@ -1,197 +1,102 @@
-/* Same tokens as the dashboard, so moving between the two feels like one product. */
-:root {
-  color-scheme: dark;
-  --ground: #050505;
-  --card: #121212;
-  --card-2: #161616;
-  --line: rgba(245, 245, 245, 0.1);
-  --line-soft: rgba(245, 245, 245, 0.06);
-  --ink: #f5f5f5;
-  --ink-2: #b3b3b3;
-  --ink-3: #8c8c8c;
-  --accent: #8b93f8;
-  --accent-ink: #0b0b14;
-  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-html[data-theme="light"] {
-  color-scheme: light;
-  --ground: #f6f6f7;
-  --card: #ffffff;
-  --card-2: #f1f1f2;
-  --line: rgba(10, 10, 10, 0.12);
-  --line-soft: rgba(10, 10, 10, 0.06);
-  --ink: #0a0a0a;
-  --ink-2: #4b4b50;
-  --ink-3: #68686e;
-  --accent: #4f46e5;
-  --accent-ink: #ffffff;
-}
-* {
-  box-sizing: border-box;
-}
+/* The reading pages: help, about, contact, developers, privacy, terms, the
+   restaurant page, the thank-you page and the 404. The kit's editorial look:
+   a big serif title, then sections divided by a thin rule rather than boxed
+   in. Colours, type and the nav and footer come from site.css. */
+
 html {
-  -webkit-text-size-adjust: 100%;
   scroll-padding-top: 16px;
 }
-body {
-  margin: 0;
-  background: var(--ground);
-  color: var(--ink);
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  font-size: 15px;
-  line-height: 1.6;
-  padding: clamp(24px, 5vw, 56px) clamp(16px, 4vw, 32px);
-}
 main {
-  max-width: 780px;
+  max-width: calc(780px + 2 * var(--gutter));
   margin: 0 auto;
-}
-a {
-  color: inherit;
-}
-.masthead {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px 16px;
-  margin-bottom: 28px;
-}
-.masthead-left {
-  display: flex;
-  align-items: baseline;
-  gap: 18px;
-  flex-wrap: wrap;
-}
-.wordmark {
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  text-decoration: none;
-}
-.nav-link {
-  display: inline-block;
-  padding: 6px 2px;   /* a tap target at least 24px tall */
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-  text-decoration: none;
-}
-.nav-link:hover {
-  color: var(--ink);
-}
-.btn {
-  display: inline-block;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  background: var(--accent);
-  color: var(--accent-ink);
-  border-radius: 10px;
-  padding: 8px 14px;
-}
-.theme-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  color: var(--ink-2);
-  cursor: pointer;
-}
-.theme-toggle svg {
-  display: none;
-}
-html:not([data-theme="light"]) .theme-toggle svg.icon-sun {
-  display: block;
-}
-html[data-theme="light"] .theme-toggle svg.icon-moon {
-  display: block;
-}
-a:focus-visible,
-button:focus-visible,
-summary:focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 2px;
+  padding: clamp(32px, 6vw, 72px) var(--gutter) clamp(48px, 8vw, 96px);
 }
 
 h1 {
-  font-size: clamp(28px, 5vw, 36px);
-  font-weight: 800;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(40px, 6vw, 60px);
+  line-height: 0.95;
   letter-spacing: -0.03em;
-  line-height: 1.15;
-  margin: 0 0 8px;
+  margin: 0 0 24px;
 }
 .lede {
   color: var(--ink-2);
-  margin: 0 0 22px;
+  font-size: 17px;
+  line-height: 1.5;
+  margin: 0 0 32px;
   max-width: 60ch;
 }
 .toc {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin: 0 0 30px;
+  margin: 0 0 40px;
   padding: 0;
   list-style: none;
 }
 .toc a {
   display: inline-block;
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
   text-decoration: none;
-  color: var(--ink-2);
-  border: 1px solid var(--line);
-  background: var(--card);
-  border-radius: 999px;
-  padding: 6px 13px;
+  color: var(--accent-soft-ink);
+  background: var(--accent-soft);
+  border-radius: var(--radius-pill);
+  padding: 10px 18px;
 }
 .toc a:hover {
-  color: var(--ink);
-  border-color: var(--ink-3);
+  background: var(--accent-hover);
+  color: #ffffff;
 }
 section {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 22px 24px;
-  margin-bottom: 18px;
+  border-top: 1px solid var(--line);
+  padding: 40px 0 28px;
 }
 h2 {
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  margin: 0 0 10px;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(28px, 3.6vw, 36px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  margin: 0 0 20px;
 }
 h3 {
-  font-size: 15px;
-  font-weight: 700;
-  margin: 20px 0 6px;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin: 28px 0 10px;
 }
 p,
 li {
   color: var(--ink-2);
+  line-height: 1.55;
 }
 p {
-  margin: 0 0 10px;
+  margin: 0 0 14px;
 }
 b,
 strong {
   color: var(--ink);
 }
+main a {
+  color: var(--ink);
+  text-decoration-color: var(--accent);
+  text-underline-offset: 3px;
+}
+main a:hover {
+  color: var(--accent);
+}
 ol,
 ul {
-  margin: 0 0 10px;
+  margin: 0 0 14px;
   padding-left: 22px;
 }
 li {
-  margin: 3px 0;
+  margin: 4px 0;
 }
 dl {
   margin: 0;
@@ -201,31 +106,32 @@ dl {
 }
 dt,
 dd {
-  padding: 10px 0;
-  border-bottom: 1px solid var(--line-soft);
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
   margin: 0;
 }
 dt {
   font-weight: 700;
   color: var(--ink);
-  padding-right: 18px;
+  padding-right: 24px;
 }
 dd {
   color: var(--ink-2);
+  line-height: 1.55;
 }
 dl > :nth-last-child(-n + 2) {
   border-bottom: 0;
 }
+/* The small mono line above each group of glossary terms. */
 .group-label {
   margin: 0;
   grid-column: 1/-1;
   font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-  padding: 16px 0 4px;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--caption);
+  padding: 28px 0 8px;
   border-bottom: 1px solid var(--line);
 }
 .group-label:first-child {
@@ -244,10 +150,27 @@ dl > :nth-last-child(-n + 2) {
   grid-column: 1/-1;
   padding-top: 0;
 }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  text-decoration: none;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-radius: var(--radius-pill);
+  padding: 14px 22px;
+}
+main a.btn {
+  color: var(--accent-ink);
+}
+.btn:hover,
+main a.btn:hover {
+  background: var(--accent-hover);
+  color: #ffffff;
+}
 @media (max-width: 560px) {
-  section {
-    padding: 18px 16px;
-  }
   dl {
     grid-template-columns: 1fr;
   }
@@ -256,30 +179,39 @@ dl > :nth-last-child(-n + 2) {
     border-bottom: 0;
   }
   dd {
-    padding-top: 2px;
+    padding-top: 4px;
   }
 }
 /* Tables of figures (the restaurant page): scroll sideways on a narrow
    screen rather than squeezing the columns. */
 .table-wrap {
   overflow-x: auto;
-  margin: 12px 0;
+  margin: 16px 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
 }
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 14px;
 }
 .data-table th,
 .data-table td {
-  padding: 8px 10px;
+  padding: 14px 18px;
   text-align: left;
   border-bottom: 1px solid var(--line);
   white-space: nowrap;
 }
+.data-table tr:last-child td {
+  border-bottom: 0;
+}
 .data-table thead th {
-  color: var(--ink-3);
-  font-weight: 600;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--caption);
+  border-bottom-color: var(--line-strong);
 }
 .data-table td {
   font-variant-numeric: tabular-nums;
@@ -288,17 +220,13 @@ dl > :nth-last-child(-n + 2) {
    rather than wrapping a command. */
 .code-block {
   overflow-x: auto;
-  margin: 12px 0;
-  padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  margin: 16px 0;
+  padding: 16px 18px;
+  background: var(--card-2);
+  border-radius: var(--radius-control);
   font-family: var(--mono);
   font-size: 12px;
   line-height: 1.6;
   white-space: pre;
-}
-footer {
-  margin-top: 24px;
-  font-size: 12px;
-  color: var(--ink-3);
+  color: var(--ink);
 }

@@ -330,7 +330,8 @@ says), delete their row in the Table Editor.
 
 ### Speed
 
-The fonts (Inter and JetBrains Mono, under the SIL Open Font License) are served from
+The fonts (DM Sans, Crimson Text and Roboto Mono, from the FinDash Figma file, and Noto Sans SC
+for Chinese on the stock page, all under the SIL Open Font License) are served from
 `frontend/fonts/`, not Google Fonts, so a page needs no other site to draw its text and
 the Content-Security-Policy in `vercel.json` allows fonts from this site only. Fonts
 are cached for a year (their names never change), icons and images for a week. The
@@ -352,7 +353,8 @@ Every page has its own title and description, a canonical address on
 `https://findash.tech`, and a preview for when a link is shared (`frontend/og-image.png`,
 1200 × 630). `tools/build-pages.py` writes those tags into every page; change a title or
 description there and run `python3 tools/build-pages.py`. `tools/og-image/` redraws the
-share image.
+share image, and `tools/home-preview/` retakes the pictures of the dashboard on the home page
+and in its structured data (run it after changing how the dashboard looks).
 
 `frontend/robots.txt` lets search engines read every page except `/api/`, and points them at
 `frontend/sitemap.xml`, which lists the pages worth finding. The log in, thank-you and 404
@@ -573,16 +575,18 @@ frontend/                    The website (Vercel serves this folder)
   llms.txt               What FinDash is, in plain text for AI tools
   og-image.png           The preview shown when a link is shared
   screenshot-dashboard.jpg   The dashboard, for search engines' app listings
-  fonts/                 Inter and JetBrains Mono, with their licences
+  fonts/                 DM Sans, Crimson Text, Roboto Mono and Noto Sans SC, with their licences
+  images/                The home page's pictures: the dashboard, and two photos from the Figma file
   favicon.ico, icon-*.png, apple-touch-icon.png, site.webmanifest   Icons
   data.json              The demo figures, written by the Java app
-  css/                   One stylesheet per page, and site.css shared by all
+  css/                   site.css (shared by every page: colours, type, buttons, nav, footer),
+                         and one stylesheet per kind of page
   js/
     glossary.js          Plain-language definitions for the ? buttons and the help page
     error-reporter.js    Sends errors on the page to the site's log
     cookie-notice.js     The one-time note that only login cookies are used
     sticky-cta.js        The landing page's Open dashboard button that follows on phones
-    theme-init.js, theme-toggle.js   Light and dark mode
+    theme-init.js, theme-toggle.js   Light mode, or dark when the visitor switches
     landing.js, login.js, thanks.js   Each page's own script
     dashboard/
       main.js            Starts the dashboard
@@ -611,9 +615,10 @@ supabase/migrations/     The SQL for saved figures, daily limits and the waitlis
 tests/                   The tests (npm test)
 .github/workflows/       Runs the tests on every pull request
 forecast/                The optional forecast service (Python, Chronos)
-tools/                   build-pages.py (head tags, structured data, the glossary, the
-                         Markdown versions of the pages, the skill index, the schema feed),
-                         og-image/ (the share image)
+tools/                   build-pages.py (head tags, every page's nav and footer, structured
+                         data, the glossary, the Markdown versions of the pages, the skill
+                         index, the schema feed), og-image/ (the share image), home-preview/
+                         (the pictures of the dashboard)
 src/main/java/           The Java command-line app
 data/                    The Java app's input CSVs
 ```

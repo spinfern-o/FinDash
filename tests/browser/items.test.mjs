@@ -196,7 +196,8 @@ test("the count sheet prints on its own: what to count, in the supplier's words,
   assert.ok(await page.locator("#count-sheet").isVisible());
   assert.ok(await page.locator("#count-sheet .count-box >> nth=0").isVisible());
   assert.ok(await page.locator("#sheet").isHidden());
-  assert.ok(await page.locator(".masthead").isHidden());
+  assert.ok(await page.locator(".site-nav").isHidden());
+  assert.ok(await page.locator(".site-footer").isHidden());
 
   // Once printing is over the page is as it was, and the report prints
   // without the list or the sheet.

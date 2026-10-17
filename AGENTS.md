@@ -19,8 +19,9 @@ Vercel Routing Middleware in `middleware.js`, and the original Java command-line
   (`/api/mcp`, `/api/mcp/docs`) through rewrites in `vercel.json`. Vercel's Hobby plan allows twelve functions,
   so add new agent endpoints as routes there rather than as new files.
 - `lib/`: code shared by the functions and the middleware.
-- `tools/build-pages.py`: writes every generated part of the site (page heads, structured data, the glossary,
-  the Markdown versions of the pages in `lib/markdown-pages.js`, the agent-skills index, the schema feed).
+- `tools/build-pages.py`: writes every generated part of the site (page heads, every page's nav bar and footer,
+  structured data, the glossary, the Markdown versions of the pages in `lib/markdown-pages.js`, the agent-skills
+  index, the schema feed).
 - `skills/findash/SKILL.md`: the agent skill, published at `/.well-known/agent-skills/`.
 - `DESIGN-SYSTEM.md`: the design tokens, components, icons and styling, and how to build a page from a Figma design.
 - `tests/`: unit, API and browser tests, against stand-ins for Supabase and Claude.
@@ -37,8 +38,9 @@ python3 tools/build-pages.py --check    # fails if generated files are out of da
 
 ## Rules
 
-- Never edit generated content by hand: the blocks between `page-head` and `glossary` markers in `frontend/*.html`,
-  `lib/markdown-pages.js`, `frontend/.well-known/agent-skills/`, `frontend/schema-feed.jsonl`. Change the source and run
+- Never edit generated content by hand: the blocks between `page-head`, `site-nav`, `site-footer` and `glossary`
+  markers in `frontend/*.html`, `lib/markdown-pages.js`, `frontend/.well-known/agent-skills/`,
+  `frontend/schema-feed.jsonl`. Change the source and run
   `tools/build-pages.py`.
 - Every figure the dashboard, the API and the MCP tools show comes from the same arithmetic. Don't duplicate it:
   change it in `frontend/js/dashboard/` and the API follows.

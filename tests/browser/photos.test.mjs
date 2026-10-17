@@ -202,7 +202,7 @@ test("photos switched off: says so and sends nothing", async function () {
 test("no date, and text from the photo is shown as text, never run as markup", async function () {
   const edgePage = await withReading(reading({}));
   assert.match(await text(edgePage, "#review .review-meta"), /No date found/);
-  assert.match(await edgePage.locator("#review h3").innerHTML(), /&lt;b&gt;/);
+  assert.match(await edgePage.locator("#review .review-top h3").innerHTML(), /&lt;b&gt;/);
   assert.equal(await edgePage.locator("#review img").count(), 1);   // only the thumbnail
   assert.equal(await edgePage.locator('#review select[data-line="0"]').inputValue(), "maintenance");
   const now = new Date();

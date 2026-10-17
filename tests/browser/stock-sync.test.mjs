@@ -106,10 +106,10 @@ test('dashboard invoice review can confirm a shelf count and save both records t
   await page.setInputFiles('#file', photoFile());
   await page.locator('#review-add').waitFor();
   await page.locator('#review details summary').click();
-  await page.locator('[data-stock-line="0"]').check();
-  await page.locator('[data-stock-unit="0"]').fill('袋');
-  await page.locator('[data-stock-location="0"]').fill('后仓');
-  await page.locator('[data-stock-count="0"]').fill('8');
+  await page.locator('[data-stock-review] [name="include-0"]').check();
+  await page.locator('[data-stock-review] [name="unit-0"]').fill('袋');
+  await page.locator('[data-stock-review] [name="location-0"]').fill('后仓');
+  await page.locator('[data-stock-review] [name="count-0"]').fill('8');
   await page.click('#review-add');
   await page.locator('#review').waitFor({ state: 'hidden' });
   await graphHasInvoice(page);
@@ -190,10 +190,10 @@ test('dashboard confirmation retries the same invoice after a failed save withou
   await dashboard(page);
   await page.setInputFiles('#file', photoFile());
   await page.locator('#review details summary').click();
-  await page.locator('[data-stock-line="0"]').check();
-  await page.locator('[data-stock-unit="0"]').fill('袋');
-  await page.locator('[data-stock-location="0"]').fill('后仓');
-  await page.locator('[data-stock-count="0"]').fill('8');
+  await page.locator('[data-stock-review] [name="include-0"]').check();
+  await page.locator('[data-stock-review] [name="unit-0"]').fill('袋');
+  await page.locator('[data-stock-review] [name="location-0"]').fill('后仓');
+  await page.locator('[data-stock-review] [name="count-0"]').fill('8');
   let fail = true;
   await page.route('**/api/inventory', function (route) {
     if (route.request().method() === 'PUT' && fail) {

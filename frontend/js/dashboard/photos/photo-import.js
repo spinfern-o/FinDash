@@ -114,10 +114,8 @@ export function wirePhotoReview() {
   const panel = document.getElementById("review");
 
   panel.addEventListener("change", function (event) {
-    if (event.target.matches('[data-stock-line]')) {
-      panel.querySelector(`[data-stock-fields="${event.target.dataset.stockLine}"]`).hidden = !event.target.checked;
-    }
-    if (event.target.matches("select")) {
+    // The stock lines keep their own fields in step (stock/review-lines.js).
+    if (event.target.matches("select") && !event.target.closest("[data-stock-review]")) {
       updateReview();
     }
   });

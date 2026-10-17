@@ -4,8 +4,9 @@ import { emptyInventory } from './ledger.js';
 import { words, loadLanguage, setLanguage, currentLanguage } from './language.js';
 import { store, loadStock, saveStock, downloadBackup, parseInventory, clearGuestStock } from './storage.js';
 import { drafts, addFiles, onFilesChanged, discardDraft, rereadReadyDrafts } from './files.js';
-import { filesHtml, reviewHtml, itemsHtml, settingsHtml, printHtml } from './views.js';
-import { wireForms, showAddItem, showMovement, showInvoiceReview, canChange } from './forms.js';
+import { filesHtml, reviewHtml, itemsHtml, buyingHtml, checksHtml, settingsHtml, printHtml, printBuyingHtml } from './views.js';
+import { wireForms, showAddItem, showMovement, showInvoiceReview, showItemSettings, showResolveCheck, canChange } from './forms.js';
+import { buyingList, buyingListCsv } from './buying.js';
 import { watchStockChanges } from './changes.js';
 import { invoiceId } from './invoice.js';
 const panel = document.getElementById('stock-panel');
@@ -16,20 +17,28 @@ function message(key) {
   element.textContent = words(key);
   element.hidden = false;
 }
+// The buying list and delivery problems are tabs within Stock.
+const STOCK_TABS = ['buying','checks'];
+// Quantities the owner changed on the buying list, by item id, kept for
+// this visit so printing or switching tabs doesn't undo them.
+const buyingEdits = new Map();
 function view() {
   const requested = window.location.hash.slice(1);
-  return ['files','review','items','settings'].includes(requested) ? requested : 'files';
+  return ['files','review','items','settings', ...STOCK_TABS].includes(requested) ? requested : 'files';
 }
 function render() {
   const current = view();
   document.getElementById('view-title').textContent = words(current + 'Title');
+  const section = STOCK_TABS.includes(current) ? 'items' : current;
   for (const link of document.querySelectorAll('[data-view]')) {
-    if (link.dataset.view === current) { link.setAttribute('aria-current','page'); } else { link.removeAttribute('aria-current'); }
+    if (link.dataset.view === section) { link.setAttribute('aria-current','page'); } else { link.removeAttribute('aria-current'); }
   }
   document.getElementById('review-count').textContent = drafts.filter(function (draft) { return draft.status === 'ready' || draft.status === 'reading'; }).length;
   document.getElementById('add-item').disabled = !canChange();
   document.getElementById('stock-storage').textContent = words(store.note || 'loading');
   if (current === 'items') { panel.innerHTML = itemsHtml(); }
+  else if (current === 'buying') { panel.innerHTML = buyingHtml(buyingEdits); }
+  else if (current === 'checks') { panel.innerHTML = checksHtml(); }
   else if (current === 'review') { panel.innerHTML = reviewHtml(); }
   else if (current === 'settings') { panel.innerHTML = settingsHtml(); }
   else { panel.innerHTML = filesHtml(); }
@@ -69,11 +78,42 @@ function wireDrop(drop) {
   });
 }
 function printCountSheet() {
-  const previous = panel.innerHTML;
-  panel.innerHTML = printHtml();
-  function restore() { panel.innerHTML = previous; render(); }
+  printPage(printHtml());
+}
+/* Shows `content` alone while printing, then the page as it was. */
+function printPage(content) {
+  panel.innerHTML = content;
+  function restore() { render(); }
   window.addEventListener('afterprint', restore, { once:true });
   window.print();
+}
+/* The buying list as the owner left it: the suggested quantities, or what
+   they changed them to. Rows set to nothing, and items never counted, are
+   left out. */
+function settledBuyingRows() {
+  const list = buyingList(store.inventory);
+  const rows = [];
+  for (const input of panel.querySelectorAll('[data-buy]')) {
+    const entry = list.find(function (candidate) { return candidate.item.id === input.dataset.buy; });
+    const quantity = Number(input.value);
+    if (!entry || !Number.isFinite(quantity) || quantity <= 0) { continue; }
+    const item = entry.item;
+    rows.push({ supplier: item.reorder.supplier || '', description: item.description, original: item.original,
+      location: item.location, quantity: quantity, unit: item.unit });
+  }
+  return rows;
+}
+function downloadBuyingList() {
+  const rows = settledBuyingRows().map(function (row) {
+    return [row.supplier, row.description, row.original, row.location, row.quantity, row.unit];
+  });
+  const csv = buyingListCsv(rows, [words('preferredSupplier'), words('item'), words('original'), words('location'), words('buyQuantity'), words('unit')]);
+  const address = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = address;
+  link.download = 'findash-buying-list-' + new Date().toISOString().slice(0, 10) + '.csv';
+  link.click();
+  URL.revokeObjectURL(address);
 }
 /* Delegation keeps controls working after a file finishes in the background. */
 async function handleClick(event) {
@@ -83,6 +123,10 @@ async function handleClick(event) {
   else if (button.dataset.review) { showInvoiceReview(button.dataset.review); }
   else if (button.dataset.discard) { discardDraft(button.dataset.discard); render(); }
   else if (button.dataset.movement) { showMovement(button.dataset.item,button.dataset.movement); }
+  else if (button.dataset.settings) { showItemSettings(button.dataset.settings); }
+  else if (button.dataset.resolve) { showResolveCheck(button.dataset.resolve); }
+  else if (button.id === 'print-buying') { printPage(printBuyingHtml(settledBuyingRows())); }
+  else if (button.id === 'download-buying') { downloadBuyingList(); }
   else if (button.id === 'backup-stock') { downloadBackup(); }
   else if (button.id === 'restore-stock') { document.getElementById('restore-file').click(); }
   else if (button.id === 'clear-stock') {
@@ -123,6 +167,7 @@ async function start() {
   panel.addEventListener('click',handleClick);
   panel.addEventListener('change',handleChange);
   panel.addEventListener('input',function (event) {
+    if (event.target.dataset.buy) { buyingEdits.set(event.target.dataset.buy, event.target.value); return; }
     if (event.target.id !== 'stock-search') { return; }
     const query = event.target.value.toLocaleLowerCase();
     for (const row of panel.querySelectorAll('[data-stock-row]')) { row.hidden = !row.textContent.toLocaleLowerCase().includes(query); }

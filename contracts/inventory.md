@@ -32,6 +32,40 @@ A movement is `{id,itemId,type,quantity,at,note?}`. Types:
 All quantities are finite/nonnegative; remaining stock cannot be negative. Unknown stock is
 `null`, not zero. Events are immutable and unique. The shared ledger validates all operations.
 
+### What the owner confirmed about buying an item (optional item fields)
+
+- `packs`: up to 10 `{unit, contains}`: one of a supplier's `unit` holds `contains` of the item's own unit
+  ("1 case = 6 bag"). Never the item's own unit; each unit once.
+- `reorder`: `{minimum?, target?, supplier?, buyUnit?}`. `target >= minimum`; `buyUnit` must be one of the
+  item's `packs`. The buying list (`frontend/js/stock/buying.js`) lists items below `minimum`; it suggests
+  `target − onHand` (or `minimum − onHand`), rounded up to whole `buyUnit` packs only when that pack is
+  confirmed. Unknown stock gets no suggestion; a count older than 7 days is flagged.
+- `supplierCodes`: up to 20 `{supplier, code}` the owner confirmed are this item. A supplier's code belongs to
+  at most one item across the ledger. Review finds an item by it (`frontend/js/stock/matching.js`); an item
+  with exactly the same supplier wording is only suggested. Editing these changes only later matches.
+
+`updateItem(inventory, itemId, {packs?, reorder?, supplierCodes?})` changes only these; name, unit, location
+and movements stay. `null` or an empty list removes a field.
+
+### Delivery checks (optional ledger field `checks`, up to 2000)
+
+A line that didn't arrive in full, or wasn't checked yet, keeps a check until resolved:
+`{id, at, source, supplier?, number?, itemId?, original, category?, billed:{quantity,unit},
+received:{quantity,unit}, status, unitPrice?, possibleValue?, currency?, state, credit?, history}`.
+- `status`: `short`, `damaged`, `missing` or `unchecked`. `billed` is exactly what the invoice printed;
+  `received` is in the item's unit.
+- `possibleValue` only when the price is per the billed unit and what arrived converts to it; it is a figure
+  to check with the supplier, never a credit.
+- `state`: `open`, `resolved` or `credited`; only an open check can change, so a credit is recorded once.
+  `credited` requires `credit: {amount, reference?, invoiceId?}`. `history` (1–30 entries) starts `open`
+  and ends at the current state; entries are added, never rewritten.
+- Taking a credit off the P&L is the owner's choice: a purchase invoice with one negative line, id
+  `credit-<check id>` (first 40 characters), saved with the ledger through the same atomic RPC.
+
+Review never applies a shelf count and a delivery for the same line: the owner picks one (or neither).
+Older ledgers without these fields stay valid; a page from before this change refuses a ledger that has
+them rather than overwriting it.
+
 ## Invoice details for comparing prices
 
 Confirmed purchase invoices (the dashboard's financial records, not the ledger) may carry:

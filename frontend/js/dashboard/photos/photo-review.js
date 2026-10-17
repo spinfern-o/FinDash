@@ -15,7 +15,7 @@ import { selectMonth } from "../draw-dashboard.js";
 import { showStatus } from "../status-line.js";
 import { adoptCurrency } from "../import/currency-from-file.js";
 import { cleanCurrency } from "../line-details.js";
-import { stockReviewHtml, reviewedStock } from './stock-review.js';
+import { stockReviewHtml, wireStockReview, hasStockLines, reviewedStock } from './stock-review.js';
 import { store, saveStock } from '../../stock/storage.js';
 import { fingerprint } from '../../stock/files.js';
 import { invoiceId } from '../../stock/invoice.js';
@@ -311,6 +311,7 @@ export function showReview(file, preview, result, owner = state.account?.email) 
     <p class="review-foot">Only add ${onlyAdd} that your monthly file doesn't already count.
       The photo itself isn't kept.${photosWaitingHtml()}</p>`;
   panel.hidden = false;
+  wireStockReview(panel, doc);
   updateReview();
   panel.scrollIntoView({ block: "nearest" });
 }
@@ -479,7 +480,7 @@ export async function addReviewedInvoice() {
   const button = panel.querySelector('#review-add');
   button.disabled = true;
   try {
-    if (panel.querySelector('[data-stock-line]:checked')) {
+    if (hasStockLines(panel)) {
       if (!state.account || state.account.hasUnsavedChanges || state.account.isWaitingForChoice ||
           state.account.email !== store.user?.email || state.photoReview.owner !== state.account.email) {
         throw new Error('Finish saving or choosing your financial figures before confirming stock.');
@@ -491,7 +492,7 @@ export async function addReviewedInvoice() {
       if (store.pendingInvoice?.id === invoice.id) {
         invoice = store.pendingInvoice;
         inventory = store.inventory;
-      } else { inventory = reviewedStock(panel, doc, source); }
+      } else { inventory = reviewedStock(panel, doc, source, invoice.id); }
       savedTogether = await saveStock(inventory, invoice);
       renderDashboardStock();
       if (!savedTogether) { throw new Error(words(store.note)); }

@@ -34,8 +34,18 @@ The P&L dashboard now uses the same stock-entry forms and ledger as `/stock`. Co
 costs can update the graphs in the same transaction as shelf counts; exclude costs already in a
 monthly spreadsheet. Counts and movements update quantities without creating another purchase cost.
 Open pages refresh on focus and after record changes while protecting pending forms and unsaved edits.
-PDF/count-sheet
-reading and translation of the legacy financial report are not part of this slice.
+
+Invoice review on both pages asks **"Did everything arrive?"** for each line (in full, short, damaged,
+not at all, or not checked yet; nothing counts as arrived until the owner says so), then whether to add
+what arrived to the last count or count the shelf now, never both. Lines that didn't arrive in full stay
+under **Stock → Delivery problems** until resolved; a credit the supplier confirms is recorded once and
+only taken off the P&L when the owner ticks it. A supplier's item code, once confirmed, finds the same
+item on later invoices, and pack sizes ("1 case = 6 bag") are remembered. Each item's **Settings** hold a
+minimum, a target, a supplier and pack sizes; **Stock → Buying list** shows what is below its minimum
+and how much brings it to the target (whole packs only when confirmed), to print or download.
+Code: `frontend/js/stock/review-lines.js`, `receiving.js`, `buying.js`, `matching.js`.
+
+PDF/count-sheet reading and translation of the legacy financial report are not part of this slice.
 
 ## What it does
 

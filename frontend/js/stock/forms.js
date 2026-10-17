@@ -1,11 +1,15 @@
 /* One focused form per action. Counts are absolute; delivery, usage and
-   waste are movements in the item's confirmed unit and location. */
-import { addItem, recordMovement, stockOnHand } from './ledger.js';
+   waste are movements in the item's confirmed unit and location. Item
+   settings hold what the owner confirmed about buying an item; resolving a
+   delivery check records what the supplier did about it. */
+import { addItem, recordMovement, stockOnHand, updateItem, replaceCheck } from './ledger.js';
 import { store, saveStock } from './storage.js';
 import { drafts, discardDraft } from './files.js';
 import { words } from './language.js';
 import { field, html } from './views.js';
-import { financialInvoice, invoiceMonth } from './invoice.js';
+import { financialInvoice, invoiceMonth, invoiceId } from './invoice.js';
+import { reviewLinesHtml, wireReviewLines, applyReviewedLines } from './review-lines.js';
+import { resolvedCheck, creditInvoice } from './receiving.js';
 import { ALL_COST_LINES, LINE_LABELS } from '../dashboard/cost-groups.js';
 let refreshed = function () {};
 let report = function () {};
@@ -40,12 +44,14 @@ async function submit(form, operation) {
     dialog.close();
     refreshed();
     if (!saved) { report(store.note); }
-  } catch {
+  } catch (problem) {
     const error = document.getElementById('form-error');
-    error.textContent = words('invalid');
+    error.textContent = words(FORM_PROBLEMS.includes(problem.message) ? problem.message : 'invalid');
     error.hidden = false;
   }
 }
+// Problems a form names by their own message rather than the general one.
+const FORM_PROBLEMS = ['chooseItem', 'creditNeeded'];
 export function showAddItem() {
   if (!canChange()) { report(store.note); return; }
   open(words('addItem'), `<form id="manual-item"><p>${words('manualTranslation')}</p>${field('original','original','','text','maxlength="160"')}${field('description','description','','text','maxlength="160"')}<div class="stock-grid">${field('unit','unit','','text','maxlength="40"')}${field('location','location','','text','maxlength="120"')}</div><p class="stock-hint">${words('unitHint')}</p>${field('quantity','onHand','','number','min="0" max="1000000000" step="any"')}${buttons('save')}</form>`);
@@ -72,52 +78,140 @@ export function showMovement(itemId, type) {
     submit(form, function () { return recordMovement(store.inventory, { id:id(), itemId:itemId, type:type, quantity:number(form,'quantity'), note:value(form,'note') }); });
   });
 }
-/* Every invoice line is editable, with source wording alongside translation.
-   Newly received stock is included in the physical count, never added twice. */
+/* Every invoice line is editable, with source wording alongside translation,
+   and checked against what arrived (review-lines.js). */
 export function showInvoiceReview(draftId) {
   if (!canChange()) { return; }
   const draft = drafts.find(function (entry) { return entry.id === draftId && entry.status === 'ready'; });
   if (!draft) { return; }
   if (draft.owner !== store.user?.email) { report('sessionExpired'); return; }
-  let lines = '';
-  draft.document.lines.forEach(function (line,index) {
-    const track = ['cogs','packaging'].includes(line.category);
+  function categoryHtml(line, index) {
     const options = ALL_COST_LINES.map(function (category) {
       return `<option value="${category}" ${category === line.category ? 'selected' : ''}>${html(words('cost-'+category) === 'cost-'+category ? LINE_LABELS[category] : words('cost-'+category))}</option>`;
     }).join('');
-    lines += `<fieldset class="stock-review-line"><legend>${html(line.description)}</legend><p>${words('invoiceAmount')}: ${html(line.amount)} ${html(draft.document.currency || '')}</p><label class="stock-field">${words('costLine')}<select name="category-${index}">${options}</select></label><label><input name="include-${index}" type="checkbox" ${track ? 'checked':''}> ${words('include')}</label><div class="stock-line-fields" ${track ? '':'hidden'}>${field('original-'+index,'original',line.original || line.description,'text','maxlength="160"')}${field('description-'+index,'description',line.description,'text','maxlength="160"')}<p>${words('quantity')}: ${line.quantity === null ? '—':html(line.quantity)} ${html(line.unit || '')}</p><div class="stock-grid">${field('unit-'+index,'unit',line.unit || '','text','maxlength="40"')}${field('location-'+index,'location','','text','maxlength="120"')}</div>${field('count-'+index,'onHand','','number','min="0" max="1000000000" step="any"')}</div></fieldset>`;
+    return `<p>${words('invoiceAmount')}: ${html(line.amount)} ${html(draft.document.currency || '')}</p><label class="stock-field">${words('costLine')}<select name="category-${index}">${options}</select></label>`;
+  }
+  const lines = reviewLinesHtml(draft.document, store.inventory, {
+    isTracked: function (line) { return ['cogs','packaging'].includes(line.category); }, categoryHtml: categoryHtml
   });
   open(words('reviewTitle'), `<p>${html(draft.name)} · ${html(draft.document.supplier || '')}</p><img class="stock-preview" src="${draft.preview}" alt="${html(draft.name)}"><p>${words('countHint')}</p><form id="invoice-stock">${field('month','financialMonth',invoiceMonth(draft.document),'month')}<label><input type="checkbox" name="financial" checked> ${words('addFinancial')}</label><p class="stock-hint">${words('financialHint')}</p>${lines}${buttons('saveReview')}</form>`);
   const form = document.getElementById('invoice-stock');
-  function updateRequired() {
-    for (const fieldset of form.querySelectorAll('fieldset')) {
-      const included = fieldset.querySelector('input[type="checkbox"]').checked;
-      fieldset.querySelector('.stock-line-fields').hidden = !included;
-      for (const input of fieldset.querySelectorAll('.stock-line-fields input')) { input.disabled = !included; }
-    }
-  }
-  updateRequired();
-  form.addEventListener('change',updateRequired);
+  wireReviewLines(form, draft.document, store.inventory);
   form.addEventListener('submit',function (event) {
     event.preventDefault();
     submit(form,function () {
-      let next = store.inventory;
-      let count = 0;
-      const corrections = [];
-      draft.document.lines.forEach(function (line,index) {
-        corrections[index] = { category: value(form, 'category-'+index) };
-        if (!form.elements['include-'+index].checked) { return; }
-        const item = { id:id(), original:value(form,'original-'+index), description:value(form,'description-'+index), unit:value(form,'unit-'+index), location:value(form,'location-'+index) };
-        Object.assign(corrections[index], { original: item.original, description: item.description });
-        const existing = next.items.find(function (entry) { return entry.original === item.original && entry.unit === item.unit && entry.location === item.location; });
-        let itemId = item.id;
-        if (existing) { itemId = existing.id; } else { next = addItem(next,item); }
-        next = recordMovement(next, { id:id(), itemId:itemId, type:'count', quantity:number(form,'count-'+index), note:'source:'+draft.hash });
-        count += 1;
+      const categories = draft.document.lines.map(function (line, index) { return value(form, 'category-'+index); });
+      const result = applyReviewedLines(form, draft.document, store.inventory, draft.hash, invoiceId(draft.hash), categories);
+      const corrections = draft.document.lines.map(function (line, index) {
+        return Object.assign({ category: categories[index] }, result.corrections[index] || {});
       });
       const invoice = form.elements.financial.checked ? financialInvoice(draft, value(form, 'month'), corrections) : null;
-      if (!count && !invoice) { throw new Error('no items'); }
-      return { inventory: next, invoice: invoice, draftId: draft.id };
+      if (!result.tracked && !invoice) { throw new Error('no items'); }
+      return { inventory: result.inventory, invoice: invoice, draftId: draft.id };
+    });
+  });
+}
+
+/* A number the owner may leave empty: undefined when empty. */
+function optionalNumber(form, name) {
+  const text = value(form, name);
+  if (!text) { return undefined; }
+  const quantity = Number(text);
+  if (!Number.isFinite(quantity) || quantity < 0) { throw new Error('quantity'); }
+  return quantity;
+}
+
+/* What the owner confirmed about buying an item: the minimum and target to
+   keep, who to buy from, what a supplier's pack holds, and the supplier
+   codes that are this item (untick one to take a wrong match off). */
+export function showItemSettings(itemId) {
+  if (!canChange()) { report(store.note); return; }
+  const item = store.inventory.items.find(function (entry) { return entry.id === itemId; });
+  if (!item) { return; }
+  const reorder = item.reorder || {};
+  const packs = [...(item.packs || []), { unit: '', contains: '' }];
+  let packRows = '';
+  packs.forEach(function (pack, index) {
+    packRows += `<div class="stock-pack-row"><span>1</span><label class="stock-field"><span>${words('packUnit')}</span><input name="pack-unit-${index}" value="${html(pack.unit)}" maxlength="40"></label><span>=</span><label class="stock-field"><span>${html(item.unit)}</span><input name="pack-contains-${index}" type="number" min="0" step="any" value="${html(pack.contains)}"></label></div>`;
+  });
+  let buyOptions = `<option value="">${html(item.unit)}</option>`;
+  for (const pack of item.packs || []) {
+    buyOptions += `<option value="${html(pack.unit)}" ${pack.unit === reorder.buyUnit ? 'selected' : ''}>${html(pack.unit)}</option>`;
+  }
+  let codes = `<p class="stock-hint">${words('noCodes')}</p>`;
+  if ((item.supplierCodes || []).length) {
+    codes = item.supplierCodes.map(function (entry, index) {
+      return `<label><input type="checkbox" name="code-${index}" checked> ${html(entry.supplier)} · ${html(entry.code)}</label>`;
+    }).join('<br>');
+  }
+  const number = function (name, key, current) {
+    return `<label class="stock-field"><span>${words(key)} (${html(item.unit)})</span><input name="${name}" type="number" min="0" max="1000000000" step="any" value="${current === undefined ? '' : html(current)}"></label>`;
+  };
+  open(words('itemSettings'), `<p><strong>${html(item.description)}</strong><br>${html(item.original)} · ${html(item.location)} · ${html(item.unit)}</p><form id="item-settings"><p class="stock-hint">${words('reorderHint')}</p><div class="stock-grid">${number('minimum','minimum',reorder.minimum)}${number('target','target',reorder.target)}</div><label class="stock-field"><span>${words('preferredSupplier')}</span><input name="supplier" maxlength="120" value="${html(reorder.supplier || '')}"></label><fieldset class="stock-mode"><legend>${words('packSizes')}</legend><p class="stock-hint">${words('packSizesHint')}</p>${packRows}</fieldset><label class="stock-field"><span>${words('buyIn')}</span><select name="buy-unit">${buyOptions}</select></label><fieldset class="stock-mode"><legend>${words('supplierCodes')}</legend>${codes}</fieldset>${buttons('save')}</form>`);
+  const form = document.getElementById('item-settings');
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    submit(form, function () {
+      const nextPacks = [];
+      packs.forEach(function (pack, index) {
+        const unit = value(form, 'pack-unit-'+index);
+        const contains = optionalNumber(form, 'pack-contains-'+index);
+        if (unit && contains > 0) { nextPacks.push({ unit: unit, contains: contains }); }
+        else if (unit || contains !== undefined) { throw new Error('pack'); }
+      });
+      const nextReorder = {};
+      const minimum = optionalNumber(form, 'minimum');
+      const target = optionalNumber(form, 'target');
+      if (minimum !== undefined) { nextReorder.minimum = minimum; }
+      if (target !== undefined) { nextReorder.target = target; }
+      if (value(form, 'supplier')) { nextReorder.supplier = value(form, 'supplier'); }
+      const buyUnit = value(form, 'buy-unit');
+      if (buyUnit && nextPacks.some(function (pack) { return pack.unit === buyUnit; })) { nextReorder.buyUnit = buyUnit; }
+      const keptCodes = (item.supplierCodes || []).filter(function (entry, index) { return form.elements['code-'+index].checked; });
+      return updateItem(store.inventory, itemId, {
+        packs: nextPacks.length ? nextPacks : null,
+        reorder: Object.keys(nextReorder).length ? nextReorder : null,
+        supplierCodes: keptCodes.length ? keptCodes : null
+      });
+    });
+  });
+}
+
+/* Resolves a delivery check: nothing more is owed, or the supplier
+   confirmed a credit. A credit is only taken off the P&L when the owner
+   ticks it, once, in the month they choose. */
+export function showResolveCheck(checkId) {
+  if (!canChange()) { report(store.note); return; }
+  const check = (store.inventory.checks || []).find(function (entry) { return entry.id === checkId && entry.state === 'open'; });
+  if (!check) { return; }
+  const money = check.possibleValue === undefined ? words('valueUnknown') : `${html(check.possibleValue.toFixed(2))} ${html(check.currency || '')}`;
+  const toFinance = store.user ? `<label><input type="checkbox" name="to-finance"> ${words('creditToFinance')}</label>${field('credit-month','financialMonth',new Date().toISOString().slice(0, 7),'month')}` : '';
+  open(words('resolveTitle'), `<p><strong>${html(check.original)}</strong><br>${html(check.supplier)} ${html(check.number)}</p><p>${words('billed')}: ${html(check.billed.quantity)} ${html(check.billed.unit)} · ${words('received')}: ${check.status === 'unchecked' ? words('arrival-unchecked') : html(check.received.quantity) + ' ' + html(check.received.unit)}</p><p>${words('possibleValue')}: ${money}</p><form id="resolve-check"><label><input type="radio" name="state" value="resolved" checked> ${words('resolvedNoCredit')}</label><label><input type="radio" name="state" value="credited"> ${words('creditReceived')}</label><div data-credit hidden><div class="stock-grid"><label class="stock-field"><span>${words('creditAmount')}</span><input name="credit-amount" type="number" min="0" step="any"></label><label class="stock-field"><span>${words('creditReference')}</span><input name="credit-reference" maxlength="60"></label></div>${toFinance}</div><label class="stock-field"><span>${words('note')}</span><input name="note" maxlength="300"></label>${buttons('save')}</form>`);
+  const form = document.getElementById('resolve-check');
+  const creditFields = form.querySelector('[data-credit]');
+  function showCredit() {
+    const crediting = form.elements.state.value === 'credited';
+    creditFields.hidden = !crediting;
+    for (const input of creditFields.querySelectorAll('input')) { input.disabled = !crediting; }
+  }
+  showCredit();
+  form.addEventListener('change', showCredit);
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    submit(form, function () {
+      const state = form.elements.state.value;
+      const resolution = { state: state, at: new Date().toISOString(), note: value(form, 'note') };
+      let invoice = null;
+      if (state === 'credited') {
+        const amount = optionalNumber(form, 'credit-amount');
+        if (!(amount > 0)) { throw new Error('creditNeeded'); }
+        resolution.credit = { amount: amount, reference: value(form, 'credit-reference') };
+        if (form.elements['to-finance']?.checked) {
+          invoice = creditInvoice(check, resolution.credit, value(form, 'credit-month'), new Date().toISOString().slice(0, 10));
+          resolution.credit.invoiceId = invoice.id;
+        }
+      }
+      return { inventory: replaceCheck(store.inventory, resolvedCheck(check, resolution)), invoice: invoice };
     });
   });
 }

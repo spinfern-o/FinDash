@@ -93,3 +93,30 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.4); }
 #dashboard-stock .stock-language { max-width: 180px; margin: 0; }
 #dashboard-stock .stock-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
 @media print { #dashboard-stock { display: none; } }
+
+/* Stock's tabs: the stock itself, the buying list, delivery problems. */
+.stock-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 20px; }
+.stock-tabs a { padding: 9px 16px; border-radius: var(--radius-pill); text-decoration: none; font-weight: 700; background: var(--card-2); color: var(--ink); }
+.stock-tabs a:hover { background: var(--accent-soft); color: var(--accent-soft-ink); }
+.stock-tabs a[aria-current="page"] { background: var(--accent); color: var(--accent-ink); }
+.stock-badge { display: inline-block; min-width: 1.6em; padding: 0 6px; margin-left: 4px; border-radius: var(--radius-pill); background: var(--critical); color: #ffffff; font-size: 12px; text-align: center; }
+.stock-low { display: block; margin-top: 4px; font-size: 12px; font-weight: 400; color: var(--critical); }
+.stock-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.stock-buy { width: 96px; padding: 8px 10px; background: var(--card-2); color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius-control); font: inherit; min-height: 44px; }
+
+/* Invoice review: did each line arrive, and how the shelf changes. */
+.stock-arrival { margin-top: 20px; padding: 16px 18px; border-radius: var(--radius-control); background: var(--card-2); }
+.stock-arrival h3 { margin: 0 0 6px; font-size: 16px; }
+.stock-arrival .stock-hint { margin: 0 0 12px; }
+.stock-mode { border: 0; padding: 0; margin: 4px 0 16px; min-width: 0; }
+.stock-mode legend { padding: 0; margin-bottom: 6px; font-weight: 700; }
+.stock-mode label { display: block; margin: 6px 0; }
+.stock-mode input[type="radio"], .stock-mode input[type="checkbox"] { accent-color: var(--accent); }
+.stock-pack-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
+.stock-pack-row > span { padding-bottom: 28px; }
+.stock-pack-row .stock-field { flex: 1 1 140px; }
+
+/* Delivery problems: one card each, with what happened since. */
+.stock-check-list { list-style: none; padding: 0; margin: 0; }
+.stock-check p { margin: 6px 0; }
+.stock-check-history { margin: 8px 0 12px; padding-left: 18px; font-size: 13px; color: var(--ink-2); }

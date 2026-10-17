@@ -3,7 +3,7 @@
 import { store, loadStock, saveStock } from '../stock/storage.js';
 import { words, loadLanguage, setLanguage } from '../stock/language.js';
 import { itemRowsHtml } from '../stock/views.js';
-import { wireForms, showAddItem, showMovement, canChange } from '../stock/forms.js';
+import { wireForms, showAddItem, showMovement, showItemSettings, canChange } from '../stock/forms.js';
 import { watchStockChanges } from '../stock/changes.js';
 import { refreshAccountFigures } from './account-figures.js';
 import { state } from './state.js';
@@ -52,6 +52,7 @@ export async function startDashboardStock() {
     const button = event.target.closest('button');
     if (!button) { return; }
     if (button.dataset.movement) { showMovement(button.dataset.item, button.dataset.movement); }
+    if (button.dataset.settings) { showItemSettings(button.dataset.settings); }
     if (button.id === 'retry-stock') {
       await saveStock(store.inventory);
       renderDashboardStock();

@@ -221,7 +221,7 @@ these under **Settings → Environment Variables** and redeploy:
 | `ANTHROPIC_API_KEY` | Photos, advice and column matching (also needs accounts) |
 | `SITE_URL` | Optional: the address used in login emails, e.g. `https://yourdomain.com` |
 | `FORECAST_URL` and `FORECAST_TOKEN` | Optional: the forecast model (see `forecast/README.md`) |
-| `FINDASH_APP_OPEN` | `1` opens the dashboard and the stock workspace. Without it they send visitors to the waitlist, as before launch (`lib/app-gate.js`). Set it for Preview to try the app, and for Production on launch day. |
+| `FINDASH_APP_OPEN` | `1` opens the dashboard and the stock workspace, and every public page's way in (the nav button, the home page, the sticky phone button, the waitlist page) leads into the app instead of the waitlist. Without it the app's pages send visitors to the waitlist, as before launch (`lib/app-gate.js`). Set it for Preview to try the app, and for Production on launch day; redeploy after changing it. |
 
 The site never uses Supabase's service-role key (the integration adds one; nothing reads
 it). `/api/capabilities` says which features are on, as true or false, never the keys.

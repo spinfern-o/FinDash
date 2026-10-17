@@ -4,7 +4,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isClosedAppPage, appIsOpen } from "../../lib/app-gate.js";
+import { isClosedAppPage, appIsOpen, appStateScript } from "../../lib/app-gate.js";
 
 const CLOSED = {};
 const OPEN = { FINDASH_APP_OPEN: "1" };
@@ -28,4 +28,10 @@ test("FINDASH_APP_OPEN=1 opens the app, and nothing else does", function () {
   for (const value of [undefined, "", "0", "true", "yes"]) {
     assert.equal(appIsOpen({ FINDASH_APP_OPEN: value }), false, String(value));
   }
+});
+
+test("the pages' script marks them open only when the app is open", function () {
+  assert.match(appStateScript(OPEN), /document\.documentElement\.classList\.add\("app-open"\)/);
+  assert.doesNotMatch(appStateScript(CLOSED), /app-open"\)/);
+  assert.doesNotMatch(appStateScript({ FINDASH_APP_OPEN: "true" }), /app-open"\)/);
 });

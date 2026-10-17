@@ -27,18 +27,14 @@ after(async function () {
   await site.stop();
 });
 
-test("the home page leads to the waitlist, not into the app, until it opens", async function () {
+test("with the app open, the home page leads into it, with Log in beside the main button", async function () {
   await page.goto(site.url + "/", { waitUntil: "networkidle" });
-  assert.equal(await page.getAttribute("header .enter-link", "href"), "/waitlist");
-  const intro = await page.locator(".intro .cta-row a").evaluateAll(function (links) {
-    return links.map(function (link) {
-      return link.textContent.trim();
-    });
-  });
-  assert.equal(intro[0], "Join the waitlist");
-  const appLinks = await page.locator('a[href^="/dashboard"], a[href^="/stock"], a[href^="/login"]').count();
-  assert.equal(appLinks, 0);
-  await page.goto(site.url + "/login", { waitUntil: "networkidle" });
+  assert.equal(await page.getAttribute("header .enter-link >> visible=true", "href"), "/dashboard");
+  assert.ok(await page.locator("header .login-link").isVisible());
+  assert.equal(await page.locator(".intro .cta-row a >> visible=true").first().innerText(), "Open the dashboard");
+  assert.equal(await page.locator('a[href="/waitlist"] >> visible=true').count(), 0, "no waitlist buttons");
+  await page.click("header .login-link");
+  assert.ok(page.url().endsWith("/login"));
   await page.waitForSelector("#form:not([hidden])");
   assert.equal(await text(page, "#title"), "Log in to FinDash");
 });

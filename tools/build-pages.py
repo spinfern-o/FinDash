@@ -111,11 +111,15 @@ FOOTER_END = "<!-- site-footer: end -->"
 
 # The links in the nav bar along the top of every page, and in its phone menu.
 # Before launch the app is closed (lib/app-gate.js), so the nav leads to the
-# home page's sections and the waitlist rather than into the app.
+# home page's sections and the waitlist; once it opens, to the app instead
+# (the waitlist-only and app-only versions, chosen by /app-state.js).
 NAV_LINKS = [("About", "/#what-is-findash"), ("How it works", "/#how-it-works"), ("Questions", "/#questions"),
              ("Help", "/help")]
 # The links in every page's footer.
-FOOTER_LINKS = [("Waitlist", "/waitlist"), ("Help", "/help"), ("About", "/about"),
+# A third value shows the link only before launch (waitlist-only) or only
+# once the app is open (app-only).
+FOOTER_LINKS = [("Waitlist", "/waitlist", "waitlist-only"), ("Dashboard", "/dashboard", "app-only"),
+                ("Help", "/help"), ("About", "/about"),
                 ("Developers", "/developers"), ("Privacy", "/privacy"), ("Terms", "/terms"),
                 ("Contact", f"mailto:{SUPPORT}?subject=FinDash")]
 
@@ -291,6 +295,10 @@ def head_block(file_name, page_text):
         '<link rel="ai-catalog" type="application/ai-catalog+json" href="/.well-known/ai-catalog.json">',
         '<link rel="api-catalog" href="/.well-known/api-catalog">',
         '<meta name="theme-color" content="#ffffff">',
+        # Whether the app is open yet, answered by middleware.js before the
+        # page is drawn, so it shows the waitlist's way in or the app's
+        # (lib/app-gate.js). Waits for nothing else; sets no cookie.
+        '<script src="/app-state.js"></script>',
         # Vercel Web Analytics: counts page visits without cookies. Only
         # active once Analytics is switched on for the project in Vercel.
         "<script>",
@@ -340,22 +348,29 @@ def nav_link(label, href, address):
 
 def nav_html(file_name):
     """The nav bar along the top of a page: the wordmark, the links, the light
-    and dark switch and the main button, Join the waitlist; on a phone, a menu.
+    and dark switch and the main button; on a phone, a menu.
 
-    The dashboard, open only on previews before launch, also shows who is
-    logged in (#account, filled in by account.js)."""
+    Before launch the main button is Join the waitlist. Once the app is open
+    it is Open the dashboard (on the dashboard itself, Stock), with Log in
+    beside it; both versions are on every page and /app-state.js picks one.
+    The dashboard also shows who is logged in (#account, filled in by
+    account.js)."""
     address = PAGES[file_name][0]
     on_dashboard = file_name == "dashboard.html"
+    app_label, app_href = ("Stock", "/stock") if on_dashboard else ("Open the dashboard", "/dashboard")
     links = "\n      ".join(nav_link(label, href, address) for label, href in NAV_LINKS)
     menu_links = "\n          ".join(f"<li>{nav_link(label, href, address)}</li>" for label, href in NAV_LINKS)
-    menu_links += '\n          <li><a href="/waitlist">Join the waitlist</a></li>'
-    main_button = f'\n      <a class="button solid enter-link" href="/waitlist">Join the waitlist{ARROW_ICON}</a>'
+    menu_links += '\n          <li class="waitlist-only"><a href="/waitlist">Join the waitlist</a></li>'
+    menu_links += f'\n          <li class="app-only"><a href="{app_href}">{app_label}</a></li>'
+    main_button = (f'\n      <a class="button solid enter-link waitlist-only" href="/waitlist">Join the waitlist{ARROW_ICON}</a>'
+                   f'\n      <a class="button solid enter-link app-only" href="{app_href}">{app_label}{ARROW_ICON}</a>')
     if on_dashboard:
         account = ('<div class="account" id="account">\n'
                    '        <a class="account-link login-link" href="/login">Log in</a>\n'
                    '      </div>')
     else:
-        account = ""
+        account = '<a class="login-link app-only" href="/login">Log in</a>'
+        menu_links += '\n          <li class="app-only"><a href="/login">Log in</a></li>'
     lines = [
         NAV_START,
         '<header class="site-nav">',
@@ -387,11 +402,17 @@ def nav_html(file_name):
     return "\n".join(lines)
 
 
+def footer_link(label, href, shown=None):
+    """One footer link, shown always or only in one state of the launch."""
+    marked = f' class="{shown}"' if shown else ""
+    return f'<a href="{href}"{marked}>{label}</a>'
+
+
 def footer_html(file_name):
     """The footer of a page: the links, FinDash's mark and name. The
     dashboard's has a line under the links saying where its figures came
     from (#footer, filled in by the dashboard's scripts)."""
-    links = "\n      ".join(f'<a href="{href}">{label}</a>' for label, href in FOOTER_LINKS)
+    links = "\n      ".join(footer_link(*link) for link in FOOTER_LINKS)
     note = '\n    <p class="footer-note" id="footer"></p>' if file_name == "dashboard.html" else ""
     lines = [
         FOOTER_START,
@@ -449,7 +470,9 @@ BLOCK_TAGS = {"p", "div", "section", "article", "aside", "main", "ul", "ol", "li
               "hr", "svg", "noscript"}
 LINE_BREAK = "\x00"
 # Page furniture and controls that only fill in when the page's scripts run.
-SKIPPED_CLASSES = {"toolbar", "tool"}
+# The Markdown copies leave out both versions of each way in (waitlist-only,
+# app-only): they can't know which one the site is showing.
+SKIPPED_CLASSES = {"toolbar", "tool", "waitlist-only", "app-only"}
 
 
 class Element:

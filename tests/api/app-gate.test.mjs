@@ -35,3 +35,20 @@ test("the rest of the site and the public API stay open", async function () {
     assert.equal(response.status, 200, address);
   }
 });
+
+test("/app-state.js tells the pages whether the app is open, and sets no cookie", async function () {
+  const closed = await get("/app-state.js");
+  assert.equal(closed.status, 200);
+  assert.match(closed.headers.get("content-type"), /^text\/javascript/);
+  assert.equal(closed.headers.get("set-cookie"), null);
+  assert.doesNotMatch(await closed.text(), /app-open/);
+
+  process.env.FINDASH_APP_OPEN = "1";
+  try {
+    const open = await get("/app-state.js");
+    assert.match(await open.text(), /classList\.add\("app-open"\)/);
+    assert.equal((await get("/dashboard")).status, 200, "and the dashboard is open");
+  } finally {
+    delete process.env.FINDASH_APP_OPEN;
+  }
+});

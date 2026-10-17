@@ -10,7 +10,7 @@
 
 import { next } from "@vercel/functions/middleware";
 import { negotiate } from "./lib/markdown-negotiation.js";
-import { isClosedAppPage, WAITLIST } from "./lib/app-gate.js";
+import { isClosedAppPage, WAITLIST, APP_STATE_SCRIPT, appStateScript } from "./lib/app-gate.js";
 
 // Not for the server functions, Vercel's own scripts, or the stylesheets,
 // scripts and fonts the pages load: none of them have a Markdown version.
@@ -22,6 +22,16 @@ export default function middleware(request) {
   let decision;
   try {
     const url = new URL(request.url);
+    // Whether the app is open, for the pages to show the way in: the
+    // waitlist, or the app (lib/app-gate.js). Kept a minute in the browser.
+    if (url.pathname === APP_STATE_SCRIPT) {
+      const script = request.method === "HEAD" ? null : appStateScript(process.env);
+      return new Response(script, { status: 200, headers: {
+        "Content-Type": "text/javascript; charset=utf-8",
+        "Cache-Control": "public, max-age=60",
+        "X-Content-Type-Options": "nosniff"
+      } });
+    }
     // Before launch, the app's pages send visitors to the waitlist
     // (lib/app-gate.js). A temporary redirect, so nothing remembers it, to
     // the waitlist on whichever address the visitor came in on.

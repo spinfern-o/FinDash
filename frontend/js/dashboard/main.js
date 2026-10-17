@@ -32,6 +32,7 @@ import { startSavingToAccount, stopSavingToAccount } from "./account-figures.js"
 import { showStatus } from "./status-line.js";
 import { offerAgentTools } from "./agent-tools.js";
 import { wireItemLog } from "./cards/item-log.js";
+import { startDashboardStock } from "./stock.js";
 
 /* Mentions photos only where this copy of FinDash can read them. Where
    accounts are set up, shows who is logged in and saves their figures to
@@ -107,6 +108,7 @@ function start() {
   wireImportBox();
   wireHelpTips();
   showWhatThisSiteCanDo();
+  startDashboardStock();
 
   showSavedFigures();
   loadDemoFigures();

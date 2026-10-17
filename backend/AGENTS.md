@@ -10,7 +10,7 @@ Frontend agents own `frontend/`; coordinate changes to the pure shared stock led
 Reuse existing sessions, same-site checks, RLS, AI limits and provider settings.
 Never log customer records or photos. No account data may be exposed without the user's token.
 
-Inventory is separate from P&L. Purchases never imply physical stock. A count establishes
+Physical quantities and P&L amounts have separate meanings. A reviewed invoice may atomically save both its confirmed shelf counts and its purchase costs. Purchases never imply physical stock. A count establishes
 a balance; delivery adds; usage/waste subtract. Never guess units or package conversions.
 Stock account writes use revisions and reject stale updates. An unapplied migration returns
 503 rather than falling back to an unrelated table or overwriting financial data.

@@ -14,6 +14,14 @@ import { showOwnerFigures } from "../figures-on-screen.js";
 import { selectMonth } from "../draw-dashboard.js";
 import { showStatus } from "../status-line.js";
 import { adoptCurrency } from "../import/currency-from-file.js";
+import { stockReviewHtml, reviewedStock } from './stock-review.js';
+import { store, saveStock } from '../../stock/storage.js';
+import { fingerprint } from '../../stock/files.js';
+import { invoiceId } from '../../stock/invoice.js';
+import { words } from '../../stock/language.js';
+import { saveOwnerFigures } from '../saved-figures.js';
+import { renderDashboardStock } from '../stock.js';
+import { refreshAccountFigures, acceptConfirmedFigures } from '../account-figures.js';
 
 function reviewPanel() {
   return document.getElementById("review");
@@ -247,10 +255,10 @@ function photosWaitingHtml() {
 
 /* Shows the reading of `file`. `result` is { document, checks } from
    /api/read-document. */
-export function showReview(file, preview, result) {
+export function showReview(file, preview, result, owner = state.account?.email) {
   const doc = result.document;
   const checks = result.checks;
-  state.photoReview = { doc: doc, checks: checks, file: file };
+  state.photoReview = { doc: doc, checks: checks, file: file, owner: owner };
 
   if (!doc.legible || doc.kind === "other" || !doc.lines.length) {
     showNotADocument(file, preview, doc);
@@ -292,6 +300,7 @@ export function showReview(file, preview, result) {
     </table></div>
     <p class="review-sum" id="review-sum"></p>
     ${notesHtml(doc.notes)}
+    ${stockReviewHtml(doc)}
     <div class="review-actions">
       <label class="check">Add to <select class="select" id="review-month">${monthPickerOptionsHtml(doc)}</select></label>
       <span class="review-dup" id="review-dup"></span>
@@ -414,7 +423,7 @@ function newInvoiceId() {
 
 /* "Add": the reading becomes an invoice in the owner's figures, and the page
    moves to the month it went into. */
-export function addReviewedInvoice() {
+export async function addReviewedInvoice() {
   const doc = state.photoReview.doc;
   const checks = state.photoReview.checks;
   const file = state.photoReview.file;
@@ -446,7 +455,7 @@ export function addReviewedInvoice() {
     kind = "sale";
   }
 
-  const invoice = {
+  let invoice = {
     id: newInvoiceId(),
     kind: kind,
     supplier: doc.supplier || file.name,
@@ -459,15 +468,52 @@ export function addReviewedInvoice() {
     addedAt: new Date().toISOString()
   };
 
+  let savedTogether = false;
+  let adoptedFigures = false;
+  const button = panel.querySelector('#review-add');
+  button.disabled = true;
+  try {
+    if (panel.querySelector('[data-stock-line]:checked')) {
+      if (!state.account || state.account.hasUnsavedChanges || state.account.isWaitingForChoice ||
+          state.account.email !== store.user?.email || state.photoReview.owner !== state.account.email) {
+        throw new Error('Finish saving or choosing your financial figures before confirming stock.');
+      }
+      const source = await fingerprint(file);
+      invoice.id = invoiceId(source);
+      state.photoReview.stockInvoiceId = invoice.id;
+      let inventory;
+      if (store.pendingInvoice?.id === invoice.id) {
+        invoice = store.pendingInvoice;
+        inventory = store.inventory;
+      } else { inventory = reviewedStock(panel, doc, source); }
+      savedTogether = await saveStock(inventory, invoice);
+      renderDashboardStock();
+      if (!savedTogether) { throw new Error(words(store.note)); }
+      adoptedFigures = acceptConfirmedFigures(store.confirmedFigures, store.figuresUpdatedAt, store.user.email);
+    }
+  } catch (error) {
+    showStatus('Invoice and stock not saved', error.message, true);
+    button.disabled = false;
+    if (store.pendingInvoice?.id === invoice.id) {
+      for (const input of panel.querySelectorAll('input, select, #review-cancel')) { input.disabled = true; }
+      button.textContent = words('sync');
+    }
+    return false;
+  }
+
   // On the demo there are no owner months yet: an invoice starts the owner's
   // own figures rather than landing on top of the sample months. The first
   // invoice also sets the currency, if it names one.
-  state.ownerInvoices.push(invoice);
+  if (!adoptedFigures) { state.ownerInvoices.push(invoice); }
   let currencyNote = "";
   if (!state.ownerMonths && state.ownerInvoices.length === 1) {
     currencyNote = adoptCurrency(doc.currency);
   }
-  const savedSentence = keepOwnerFigures();
+  let savedSentence;
+  if (savedTogether) {
+    saveOwnerFigures(adoptedFigures);
+    savedSentence = 'Invoice costs and shelf counts saved to your account.';
+  } else { savedSentence = keepOwnerFigures(); }
   closeReviewQuietly();
 
   const monthName = calendarMonthLabel(month.year, month.monthNum);
@@ -482,6 +528,8 @@ export function addReviewedInvoice() {
   showOwnerFigures(`Added ${invoice.supplier}, ${formatMoneyWithCents(invoice.total)}, to ${monthName}. ` +
     `${savedSentence}${noRevenueNote}${currencyNote}`);
 
+  if (savedTogether) { await refreshAccountFigures(); }
+
   // Land on the month the invoice went into.
   const index = state.data.months.findIndex(function (candidate) {
     return candidate.year === month.year && candidate.monthNum === month.monthNum;
@@ -489,4 +537,5 @@ export function addReviewedInvoice() {
   if (index >= 0) {
     selectMonth(index);
   }
+  return true;
 }

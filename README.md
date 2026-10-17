@@ -28,7 +28,13 @@ independently of backend changes. Rebase older `docs/` work onto `frontend/` bef
 
 `/stock` provides English/Chinese files, review, shelf counts and stock movements. Manual items
 work in this browser without signup; signed-in stock uses a separate account table. Apply
-`supabase/migrations/20261018000000_account_inventory.sql` before using account stock. PDF/count-sheet
+`supabase/migrations/20261018000000_account_inventory.sql` before using account stock, then
+`supabase/migrations/20261019000000_stock_invoice_sync.sql` **before deploying the sync handlers**.
+The P&L dashboard now uses the same stock-entry forms and ledger as `/stock`. Confirmed invoice
+costs can update the graphs in the same transaction as shelf counts; exclude costs already in a
+monthly spreadsheet. Counts and movements update quantities without creating another purchase cost.
+Open pages refresh on focus and after record changes while protecting pending forms and unsaved edits.
+PDF/count-sheet
 reading and translation of the legacy financial report are not part of this slice.
 
 ## What it does

@@ -2,9 +2,11 @@
    waste are movements in the item's confirmed unit and location. */
 import { addItem, recordMovement, stockOnHand } from './ledger.js';
 import { store, saveStock } from './storage.js';
-import { drafts } from './files.js';
+import { drafts, discardDraft } from './files.js';
 import { words } from './language.js';
 import { field, html } from './views.js';
+import { financialInvoice, invoiceMonth } from './invoice.js';
+import { ALL_COST_LINES, LINE_LABELS } from '../dashboard/cost-groups.js';
 let refreshed = function () {};
 let report = function () {};
 const dialog = document.getElementById('stock-dialog');
@@ -33,7 +35,8 @@ async function submit(form, operation) {
   try {
     const next = operation();
     for (const button of form.querySelectorAll('button')) { button.disabled = true; }
-    const saved = await saveStock(next);
+    const saved = await saveStock(next.inventory || next, next.invoice);
+    if (saved && next.draftId) { discardDraft(next.draftId); }
     dialog.close();
     refreshed();
     if (!saved) { report(store.note); }
@@ -75,12 +78,16 @@ export function showInvoiceReview(draftId) {
   if (!canChange()) { return; }
   const draft = drafts.find(function (entry) { return entry.id === draftId && entry.status === 'ready'; });
   if (!draft) { return; }
+  if (draft.owner !== store.user?.email) { report('sessionExpired'); return; }
   let lines = '';
   draft.document.lines.forEach(function (line,index) {
     const track = ['cogs','packaging'].includes(line.category);
-    lines += `<fieldset class="stock-review-line"><legend>${html(line.description)}</legend><label><input name="include-${index}" type="checkbox" ${track ? 'checked':''}> ${words('include')}</label><div class="stock-line-fields" ${track ? '':'hidden'}>${field('original-'+index,'original',line.original || line.description,'text','maxlength="160"')}${field('description-'+index,'description',line.description,'text','maxlength="160"')}<p>${words('quantity')}: ${line.quantity === null ? '—':html(line.quantity)} ${html(line.unit || '')}</p><div class="stock-grid">${field('unit-'+index,'unit',line.unit || '','text','maxlength="40"')}${field('location-'+index,'location','','text','maxlength="120"')}</div>${field('count-'+index,'onHand','','number','min="0" max="1000000000" step="any"')}</div></fieldset>`;
+    const options = ALL_COST_LINES.map(function (category) {
+      return `<option value="${category}" ${category === line.category ? 'selected' : ''}>${html(words('cost-'+category) === 'cost-'+category ? LINE_LABELS[category] : words('cost-'+category))}</option>`;
+    }).join('');
+    lines += `<fieldset class="stock-review-line"><legend>${html(line.description)}</legend><p>${words('invoiceAmount')}: ${html(line.amount)} ${html(draft.document.currency || '')}</p><label class="stock-field">${words('costLine')}<select name="category-${index}">${options}</select></label><label><input name="include-${index}" type="checkbox" ${track ? 'checked':''}> ${words('include')}</label><div class="stock-line-fields" ${track ? '':'hidden'}>${field('original-'+index,'original',line.original || line.description,'text','maxlength="160"')}${field('description-'+index,'description',line.description,'text','maxlength="160"')}<p>${words('quantity')}: ${line.quantity === null ? '—':html(line.quantity)} ${html(line.unit || '')}</p><div class="stock-grid">${field('unit-'+index,'unit',line.unit || '','text','maxlength="40"')}${field('location-'+index,'location','','text','maxlength="120"')}</div>${field('count-'+index,'onHand','','number','min="0" max="1000000000" step="any"')}</div></fieldset>`;
   });
-  open(words('reviewTitle'), `<p>${html(draft.name)} · ${html(draft.document.supplier || '')}</p><img class="stock-preview" src="${draft.preview}" alt="${html(draft.name)}"><p>${words('countHint')}</p><form id="invoice-stock">${lines}${buttons('saveReview')}</form>`);
+  open(words('reviewTitle'), `<p>${html(draft.name)} · ${html(draft.document.supplier || '')}</p><img class="stock-preview" src="${draft.preview}" alt="${html(draft.name)}"><p>${words('countHint')}</p><form id="invoice-stock">${field('month','financialMonth',invoiceMonth(draft.document),'month')}<label><input type="checkbox" name="financial" checked> ${words('addFinancial')}</label><p class="stock-hint">${words('financialHint')}</p>${lines}${buttons('saveReview')}</form>`);
   const form = document.getElementById('invoice-stock');
   function updateRequired() {
     for (const fieldset of form.querySelectorAll('fieldset')) {
@@ -96,17 +103,21 @@ export function showInvoiceReview(draftId) {
     submit(form,function () {
       let next = store.inventory;
       let count = 0;
+      const corrections = [];
       draft.document.lines.forEach(function (line,index) {
+        corrections[index] = { category: value(form, 'category-'+index) };
         if (!form.elements['include-'+index].checked) { return; }
         const item = { id:id(), original:value(form,'original-'+index), description:value(form,'description-'+index), unit:value(form,'unit-'+index), location:value(form,'location-'+index) };
+        Object.assign(corrections[index], { original: item.original, description: item.description });
         const existing = next.items.find(function (entry) { return entry.original === item.original && entry.unit === item.unit && entry.location === item.location; });
         let itemId = item.id;
         if (existing) { itemId = existing.id; } else { next = addItem(next,item); }
         next = recordMovement(next, { id:id(), itemId:itemId, type:'count', quantity:number(form,'count-'+index), note:'source:'+draft.hash });
         count += 1;
       });
-      if (!count) { throw new Error('no items'); }
-      return next;
+      const invoice = form.elements.financial.checked ? financialInvoice(draft, value(form, 'month'), corrections) : null;
+      if (!count && !invoice) { throw new Error('no items'); }
+      return { inventory: next, invoice: invoice, draftId: draft.id };
     });
   });
 }

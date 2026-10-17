@@ -158,10 +158,8 @@ The kit has no text boxes, dropdowns, tick boxes, cards or charts. They are draw
   frame (`frontend/images/dashboard-preview.jpg`) and `frontend/screenshot-dashboard.jpg`;
   `node tools/og-image/render.mjs` redraws the share image. Run them after changing how the dashboard looks.
 - **Tests:** `npm test` (Node's test runner, with Playwright for the browser tests).
-- **Planned (not built yet):** the dashboard, login and waitlist move to React with Vite. The content pages stay
-  HTML, and this CSS is kept, so the React components use the same classes. The logic modules (`import/`,
-  `periods.js`, `cost-groups.js`, `analysis.js`, `items.js`, `export/`, `photos/photo-reader.js`) are reused
-  unchanged.
+- **No framework, by choice:** the site stays buildless (`frontend/AGENTS.md`). A Figma design is rebuilt as HTML,
+  these CSS classes and small ES modules, not as React components.
 
 ## 4. Assets
 

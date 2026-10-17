@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Server functions for FinDash (accounts, saved figures, Claude features). The pages in docs/ have no runtime dependencies.",
+  "description": "Server functions for FinDash (accounts, saved figures, Claude features). The pages in frontend/ have no runtime dependencies.",
   "scripts": {
     "test": "node --test \"tests/**/*.test.mjs\"",
     "test:unit": "node --test \"tests/unit/*.test.mjs\"",

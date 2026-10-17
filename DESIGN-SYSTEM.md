@@ -5,12 +5,12 @@ working through Figma's MCP server; AGENTS.md's rules still apply on top of thes
 
 ## In short
 
-- No framework, no build step, no CSS library. Pages are hand-written HTML in `docs/`, styled by plain CSS files in
-  `docs/css/`, made interactive by ES modules in `docs/js/`. Vercel serves `docs/` as it is.
+- No framework, no build step, no CSS library. Pages are hand-written HTML in `frontend/`, styled by plain CSS files in
+  `frontend/css/`, made interactive by ES modules in `frontend/js/`. Vercel serves `frontend/` as it is.
 - Design tokens are CSS custom properties on `:root`, redefined under `html[data-theme="light"]`. Dark is the
   default.
 - Components are CSS classes plus small JavaScript functions that return HTML strings.
-- Icons are inline SVGs in the Lucide style. Fonts are Inter and JetBrains Mono, served from `docs/fonts/`.
+- Icons are inline SVGs in the Lucide style. Fonts are Inter and JetBrains Mono, served from `frontend/fonts/`.
 - Figma's output (React + Tailwind, absolute positions, temporary asset URLs) is a picture of the goal, never code to
   paste. Rebuild it from the tokens and classes below.
 
@@ -22,13 +22,13 @@ There is no shared token file. Each page family's stylesheet starts with its own
 
 | Stylesheet | Used by | Tokens beyond the common set |
 | --- | --- | --- |
-| `docs/css/dashboard.css` | `/dashboard` | `--positive`, `--critical`, `--radius`, chart slots `--s1`…`--s4`, `--rest` |
-| `docs/css/landing.css` | `/` (home) | `--accent-2`, `--critical` |
-| `docs/css/login.css` | `/login`, `/waitlist` | `--accent-2`, `--positive`, `--critical` |
-| `docs/css/help.css` | `/help`, `/about`, `/privacy`, `/terms`, `/developers`, `/contact`, `/thanks`, `/404`, `/restaurant-profit-and-loss` | none |
-| `docs/css/site.css` | every page | none: it uses the page's tokens, and holds the `@font-face` rules |
+| `frontend/css/dashboard.css` | `/dashboard` | `--positive`, `--critical`, `--radius`, chart slots `--s1`…`--s4`, `--rest` |
+| `frontend/css/landing.css` | `/` (home) | `--accent-2`, `--critical` |
+| `frontend/css/login.css` | `/login`, `/waitlist` | `--accent-2`, `--positive`, `--critical` |
+| `frontend/css/help.css` | `/help`, `/about`, `/privacy`, `/terms`, `/developers`, `/contact`, `/thanks`, `/404`, `/restaurant-profit-and-loss` | none |
+| `frontend/css/site.css` | every page | none: it uses the page's tokens, and holds the `@font-face` rules |
 
-The common set, from `docs/css/dashboard.css`:
+The common set, from `frontend/css/dashboard.css`:
 
 ```css
 :root {
@@ -91,7 +91,7 @@ Meaning colours (dark / light):
 ### Typography
 
 - **Typefaces:** Inter for everything; JetBrains Mono (`var(--mono)`) for small uppercase labels, tags and nav links.
-  Both are variable fonts in `docs/fonts/`, declared once in `docs/css/site.css`:
+  Both are variable fonts in `frontend/fonts/`, declared once in `frontend/css/site.css`:
 
   ```css
   @font-face {
@@ -136,9 +136,9 @@ Meaning colours (dark / light):
 
 ### Light and dark mode
 
-`docs/js/theme-init.js` is an ordinary script in each page's `<head>`. Before anything is drawn, it sets
+`frontend/js/theme-init.js` is an ordinary script in each page's `<head>`. Before anything is drawn, it sets
 `data-theme="light"` on `<html>` when the visitor chose light (saved as `findash-theme`) or their computer prefers it.
-`docs/js/theme-toggle.js` wires the sun and moon button `#theme-toggle`. Design both themes. If the Figma file has
+`frontend/js/theme-toggle.js` wires the sun and moon button `#theme-toggle`. Design both themes. If the Figma file has
 only one, build the other from the token table above.
 
 ## 2. Components
@@ -147,10 +147,10 @@ only one, build the other from the token table above.
 
 No component library and no Storybook. Every component is a CSS class with a small function around it:
 
-- **HTML-string functions** build markup, one file per card in `docs/js/dashboard/cards/`. The shared card frame:
+- **HTML-string functions** build markup, one file per card in `frontend/js/dashboard/cards/`. The shared card frame:
 
   ```js
-  /* docs/js/dashboard/cards/card.js */
+  /* frontend/js/dashboard/cards/card.js */
   export function cardHtml(className, title, subtitle, scope, body) {
     let subtitleHtml = "";
     if (subtitle) {
@@ -172,11 +172,11 @@ No component library and no Storybook. Every component is a CSS class with a sma
 
 - **`wire…` functions** attach event listeners after the HTML is on the page (`wireToolbar`, `wireImportBox`,
   `wireAllocationTooltip`, `wireItemLog`).
-- **State** lives in `docs/js/dashboard/state.js`. `draw-dashboard.js` redraws the cards from it.
+- **State** lives in `frontend/js/dashboard/state.js`. `draw-dashboard.js` redraws the cards from it.
 - **Arithmetic is never in a component.** Figures come from `periods.js`, `cost-groups.js`, `import/` and `analysis.js`,
   which the public API also uses (AGENTS.md).
 - **Escaping:** any text from a file, a photo, the API or the visitor goes through `escapeHtml` (from
-  `docs/js/dashboard/format.js`) before it's put in HTML. A test checks that text read from a photo is never run as
+  `frontend/js/dashboard/format.js`) before it's put in HTML. A test checks that text read from a photo is never run as
   markup.
 
 ### What exists, by class
@@ -246,10 +246,10 @@ A button looks like this:
 
 ## 3. Frameworks, libraries, build
 
-- **Pages:** HTML5 + vanilla JavaScript ES modules (`<script type="module">`), loaded straight from `docs/js/`. Nothing
+- **Pages:** HTML5 + vanilla JavaScript ES modules (`<script type="module">`), loaded straight from `frontend/js/`. Nothing
   is bundled, transpiled or minified. `package.json` has no front-end dependencies.
 - **CSS:** plain CSS with custom properties, without nesting. No Tailwind, Sass, PostCSS, CSS Modules or CSS-in-JS.
-- **Server:** Node functions in `api/` on Vercel. `middleware.js` serves the Markdown versions of pages to agents.
+- **Server:** Node implementations in `backend/api/`, with thin Vercel wrappers in `api/`. `middleware.js` serves the Markdown versions of pages to agents.
 - **Generated parts:** `python3 tools/build-pages.py` writes each page's `<head>` block (between the `page-head`
   markers), structured data, the glossary, the dashboard's `<link rel="modulepreload">` list and the Markdown versions.
   After changing a page, its title or its text, run it, and never edit those blocks by hand.
@@ -262,8 +262,8 @@ A button looks like this:
 
 ## 4. Assets
 
-- **Where:** everything served lives in `docs/`, at the root (`og-image.png`, `icon-192.png`, `icon-512.png`,
-  `icon-maskable-512.png`, `apple-touch-icon.png`, `favicon.ico`, `screenshot-dashboard.jpg`) or in `docs/fonts/`.
+- **Where:** everything served lives in `frontend/`, at the root (`og-image.png`, `icon-192.png`, `icon-512.png`,
+  `icon-maskable-512.png`, `apple-touch-icon.png`, `favicon.ico`, `screenshot-dashboard.jpg`) or in `frontend/fonts/`.
   Pages show no `<img>` today. Images are only for icons, the share preview and structured data.
 - **The security policy decides what loads** (`vercel.json`):
 
@@ -273,21 +273,21 @@ A button looks like this:
   ```
 
   So images, fonts and scripts must come from this site. A Figma asset URL (from `get_design_context` or
-  `download_assets`), a CDN or Google Fonts is blocked in production. Download every asset into `docs/` (e.g. a new
-  `docs/images/`), reference it by a root path (`/images/…`), and leave no Figma URL in the code.
+  `download_assets`), a CDN or Google Fonts is blocked in production. Download every asset into `frontend/` (e.g. a new
+  `frontend/images/`), reference it by a root path (`/images/…`), and leave no Figma URL in the code.
 - **Optimising:** there is no pipeline, so do it by hand. Prefer SVG (inline, for icons); compress PNG and JPEG
   before committing; give every `<img>` `width`, `height` and `alt` (or `alt=""` when decorative). A test keeps the
   dashboard's layout shift under 0.1.
-- **Caching and CDN:** Vercel's edge network serves `docs/`, with no other CDN. `vercel.json` gives fonts
+- **Caching and CDN:** Vercel's edge network serves `frontend/`, with no other CDN. `vercel.json` gives fonts
   `max-age=31536000, immutable` and the icons and share image `max-age=604800`. A new folder of long-lived assets
   gets its own `Cache-Control` rule there. Filenames carry no hashes, so an `immutable` file must be renamed when it
   changes.
-- **Share image:** `docs/og-image.png` (1200×630) is rendered from `tools/og-image/og-image.html` by
+- **Share image:** `frontend/og-image.png` (1200×630) is rendered from `tools/og-image/og-image.html` by
   `tools/og-image/render.mjs`. Change the HTML and re-render; don't edit the PNG.
 
 ## 5. Icons
 
-- **Where:** inline in the HTML (`docs/*.html`) or in the JavaScript that builds the markup. There is no icon
+- **Where:** inline in the HTML (`frontend/*.html`) or in the JavaScript that builds the markup. There is no icon
   package, sprite or icon folder.
 - **Style:** Lucide's (24×24 grid, outline). Copy this shape:
 
@@ -328,7 +328,7 @@ A button looks like this:
 ## 7. Project structure
 
 ```
-docs/                    The website, served as it is
+frontend/                    The website, served as it is
   *.html                 One file per page (dashboard, login, waitlist, help, …)
   css/                   One stylesheet per page family, plus site.css
   js/                    Page scripts (login.js, waitlist.js, theme-*.js, cookie-notice.js, …)
@@ -362,7 +362,7 @@ named `function`s with a comment saying what each is for, whole-word names, one 
    - Write down anything with no match before adding it.
 3. **Build it** in the page's HTML, its stylesheet and its script, with flex and grid in place of Figma's absolute
    positions. Keep the existing ids, text alternatives and heading order.
-4. **Assets:** download them into `docs/`, check each file is non-empty and in the right place, and leave no Figma
+4. **Assets:** download them into `frontend/`, check each file is non-empty and in the right place, and leave no Figma
    URL behind.
 5. **Check it.**
    - Look at both themes, and at 360px and a wide screen.

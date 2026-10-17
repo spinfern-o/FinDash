@@ -15,7 +15,7 @@ const SITE = "https://findash.tech";
 const LISTED_PAGES = ["/", "/dashboard", "/restaurant-profit-and-loss", "/help", "/waitlist", "/developers", "/about",
   "/contact", "/privacy", "/terms"];
 // Kept out of search results: nothing on them is worth finding by search.
-const UNLISTED_PAGES = ["/login", "/thanks", "/no-such-page"];
+const UNLISTED_PAGES = ["/stock", "/login", "/thanks", "/no-such-page"];
 const ALL_PAGES = LISTED_PAGES.concat(UNLISTED_PAGES);
 const SUPPORT = "support.findash@findash.tech";
 
@@ -432,7 +432,7 @@ test("every page has one h1, and its headings never skip a level", async functio
 test("the help page's glossary is in the HTML itself, from glossary.js", async function () {
   const page = await openPage(browser);
   const help = await (await page.request.get(site.url + "/help")).text();
-  const { GLOSSARY } = await import("../../docs/js/glossary.js");
+  const { GLOSSARY } = await import("../../frontend/js/glossary.js");
   for (const key of ["direct", "grossProfit", "netMargin", "budgetUsed"]) {
     assert.ok(help.includes('<dt id="term-' + key + '">' + GLOSSARY[key].term + "</dt>"), key);
   }

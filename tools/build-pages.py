@@ -1,4 +1,4 @@
-"""Writes the parts of the pages in docs/ that are generated rather than typed:
+"""Writes the parts of the pages in frontend/ that are generated rather than typed:
 
   - every page's <head> tags: title, description, the address search engines
     should use (canonical), the preview shown when the link is shared (Open
@@ -7,7 +7,7 @@
     on the home page what FinDash is ("What is FinDash?"), and on any page
     its questions and answers (<details class="faq-item">), so the markup
     always says exactly what the page shows
-  - the help page's glossary, from docs/js/glossary.js (the same file behind
+  - the help page's glossary, from frontend/js/glossary.js (the same file behind
     the dashboard's "?" buttons), as plain HTML that needs no script
   - the dashboard's <link rel="modulepreload"> list: every module main.js
     imports, however deep, so the browser asks for them all at once instead
@@ -16,10 +16,10 @@
     own HTML, which middleware.js sends to AI agents that ask for Markdown
     ("Accept: text/markdown") or ask for /page.md, plus the Markdown 404, the
     view for agents (?mode=agent), each section's llms.txt and the list of
-    files in docs/
+    files in frontend/
   - the agent skill at /.well-known/agent-skills/ (from skills/), with its
     index and digest, and the structured data of every page as a Schema
-    Feed (docs/schema-feed.jsonl, listed in docs/schemamap.xml)
+    Feed (frontend/schema-feed.jsonl, listed in frontend/schemamap.xml)
 
 Run it after changing a page's text, a title or description below, a page's
 definition or questions, the glossary, the dashboard's imports, or after
@@ -43,7 +43,7 @@ from html.parser import HTMLParser
 
 SITE = "https://findash.tech"
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-DOCS = ROOT / "docs"
+DOCS = ROOT / "frontend"
 MARKDOWN_MODULE = ROOT / "lib" / "markdown-pages.js"
 SUPPORT = "support.findash@findash.tech"
 SOURCE_CODE = "https://github.com/spinfern-o/FinDash"
@@ -58,6 +58,8 @@ POSTAL_ADDRESS = {}
 # Titles put what the page is first and the name last, except on the home
 # page, where the name is what people look for.
 PAGES = {
+    "stock.html": ("/stock", "Daily Stock and Invoice Review · FinDash",
+                   "Review supplier invoice photos in English or Chinese, count stock by location, and record deliveries, usage and waste. Your P&L stays separate.", False),
     "index.html": ("/", "FinDash: Free Small Business Profit & Loss Dashboard",
                    "Turn an Excel or CSV spreadsheet into a monthly profit and loss (P&L) dashboard: revenue, "
                    "costs, profit and budget vs actual. Free, no signup.", True),
@@ -100,7 +102,7 @@ PAGES = {
 
 HEAD_START = "<!-- page-head: start (tools/build-pages.py writes this) -->"
 HEAD_END = "<!-- page-head: end -->"
-GLOSSARY_START = "<!-- glossary: start (tools/build-pages.py writes this, from docs/js/glossary.js) -->"
+GLOSSARY_START = "<!-- glossary: start (tools/build-pages.py writes this, from frontend/js/glossary.js) -->"
 GLOSSARY_END = "<!-- glossary: end -->"
 IMAGE_ALT = "FinDash: revenue, costs and budget on one monthly dashboard"
 
@@ -272,8 +274,8 @@ def head_block(file_name, page_text):
 
 
 def glossary_html():
-    """The glossary as headed definition lists, from docs/js/glossary.js."""
-    script = "import { GLOSSARY } from './docs/js/glossary.js'; console.log(JSON.stringify(GLOSSARY));"
+    """The glossary as headed definition lists, from frontend/js/glossary.js."""
+    script = "import { GLOSSARY } from './frontend/js/glossary.js'; console.log(JSON.stringify(GLOSSARY));"
     words = json.loads(subprocess.run(["node", "--input-type=module", "-e", script], cwd=ROOT,
                                       capture_output=True, text=True, check=True).stdout)
     parts = [GLOSSARY_START, '<div id="terms">']
@@ -712,7 +714,7 @@ def schema_feed(pages):
 
 def site_files(also):
     """Every file the site serves outside css/, js/ and fonts/, as "/path":
-    the ones in docs/ now, and `also`, the ones this run is about to write."""
+    the ones in frontend/ now, and `also`, the ones this run is about to write."""
     found = set()
     for path in list(DOCS.rglob("*")) + list(also):
         if path.is_relative_to(DOCS) and (path.is_file() or path in also):
@@ -733,7 +735,7 @@ def markdown_module(pages, files):
     sections = {f"{PAGES[name][0]}/llms.txt": section_index(name, pages[name]) for name in SECTION_PAGES}
     agent_view = (DOCS / "llms.txt").read_text()
     return "\n".join([
-        "// Written by tools/build-pages.py from the pages in docs/. Don't edit it by hand:",
+        "// Written by tools/build-pages.py from the pages in frontend/. Don't edit it by hand:",
         "// change the page, then run python3 tools/build-pages.py.",
         "",
         "// Each page as Markdown, by address.",
@@ -745,7 +747,7 @@ def markdown_module(pages, files):
         "// The answer for an address with no page, to an agent asking for Markdown.",
         "export const NOT_FOUND = " + json.dumps(not_found_markdown(pages["404.html"]), ensure_ascii=False) + ";",
         "",
-        "// The view for agents (?mode=agent): docs/llms.txt.",
+        "// The view for agents (?mode=agent): frontend/llms.txt.",
         "export const AGENT_VIEW = " + json.dumps(agent_view, ensure_ascii=False) + ";",
         "",
         "// Each section's own llms.txt, by address.",

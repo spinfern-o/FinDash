@@ -4,8 +4,8 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { itemsBought, invoicesWithoutItems, countSheetGroups, unitName } from "../../docs/js/dashboard/items.js";
-import { cleanSavedFigures } from "../../docs/js/dashboard/saved-figures.js";
+import { itemsBought, invoicesWithoutItems, countSheetGroups, unitName } from "../../frontend/js/dashboard/items.js";
+import { cleanSavedFigures } from "../../frontend/js/dashboard/saved-figures.js";
 
 /* A purchase invoice as the dashboard keeps one. */
 function invoice(date, lines, changes) {

@@ -2186,3 +2186,7 @@ footer a {
     font-size: 10px;
   }
 }
+
+/* Source-specific import help should not stretch neighboring setup cards. */
+.steps { align-items: start; }
+.howto details { margin-block: 10px; }

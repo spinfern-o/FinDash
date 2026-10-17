@@ -16,6 +16,7 @@ export const CURRENCIES = [
   ["SEK", "Swedish krona"],
   ["INR", "Indian rupee"],
   ["JPY", "Japanese yen"],
+  ["CNY", "Chinese yuan"],
   ["SGD", "Singapore dollar"],
   ["ZAR", "South African rand"],
   ["MXN", "Mexican peso"]

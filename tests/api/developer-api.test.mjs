@@ -33,7 +33,7 @@ let ajv;
 
 before(async function () {
   site = await startSite();
-  openapi = JSON.parse(readFileSync(ROOT + "docs/openapi.json", "utf8"));
+  openapi = JSON.parse(readFileSync(ROOT + "frontend/openapi.json", "utf8"));
   ajv = new Ajv2020({ strict: false, allErrors: true });
   addFormats(ajv);
   ajv.addSchema({ $id: "openapi", components: openapi.components });
@@ -74,7 +74,7 @@ async function assertError(response, status, code, label) {
 }
 
 test("the OpenAPI description is valid and covers exactly what the API serves", async function () {
-  const result = await validateOpenApi(ROOT + "docs/openapi.json");
+  const result = await validateOpenApi(ROOT + "frontend/openapi.json");
   assert.equal(result.valid, true, JSON.stringify(result.errors));
   assert.equal(openapi.openapi, "3.1.0");
   assert.deepEqual(openapi.servers, [{ url: SITE }]);
@@ -149,7 +149,7 @@ test("every error is JSON with a code, a hint and where it is documented", async
 });
 
 test("the developers page's example request works, and its example answer is what comes back", async function () {
-  const page = readFileSync(ROOT + "docs/developers.html", "utf8");
+  const page = readFileSync(ROOT + "frontend/developers.html", "utf8");
   const command = /<pre class="code-block" id="example-request"><code>([\s\S]*?)<\/code><\/pre>/.exec(page)[1];
   assert.match(command, /^curl -sS https:\/\/findash\.tech\/api\/v1\/analyze/);
   const body = JSON.parse(/-d '([\s\S]*?)'$/.exec(command)[1]);

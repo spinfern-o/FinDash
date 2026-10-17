@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Writes docs/data.json, the demo figures the web dashboard opens on.
+ * Writes frontend/data.json, the demo figures the web dashboard opens on.
  *
  * Written by hand rather than with a JSON library so the file stays laid out
  * the way a person would write it, one field per line.

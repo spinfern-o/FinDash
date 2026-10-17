@@ -5,14 +5,17 @@ Instructions for AI coding agents working on FinDash. Humans: README.md has the 
 ## What this is
 
 FinDash (https://findash.tech) is a free web app that turns a small business's monthly figures into a profit and
-loss dashboard. It is a static site in `docs/` (served by Vercel), a handful of Node server functions in `api/`,
+loss dashboard. It is a static site in `frontend/` (served by Vercel), Node server implementations in `backend/api/` (with Vercel wrappers in `api/`),
 Vercel Routing Middleware in `middleware.js`, and the original Java command-line app in `src/main/java/`.
 
 ## Layout
 
-- `docs/`: the website. `docs/js/dashboard/` is the dashboard; its arithmetic (`import/months-from-sheet.js`,
-  `periods.js`, `cost-groups.js`) is also used by the public API through `docs/js/dashboard/analysis.js`.
-- `api/`: server functions. `api/agent.js` serves the public API (`/api/v1/*`) and the two MCP servers
+- `frontend/`: the website. `frontend/js/dashboard/` is the dashboard; its arithmetic (`import/months-from-sheet.js`,
+  `periods.js`, `cost-groups.js`) is also used by the public API through `frontend/js/dashboard/analysis.js`.
+- `frontend/AGENTS.md` and `backend/AGENTS.md`: ownership rules for parallel agents.
+- `contracts/inventory.md`: shared daily-stock API and schema.
+- `backend/api/`: server implementations. `backend/inventory.js`: the stock API.
+- `api/`: thin Vercel deployment wrappers. `api/agent.js` serves the public API (`/api/v1/*`) and the two MCP servers
   (`/api/mcp`, `/api/mcp/docs`) through rewrites in `vercel.json`. Vercel's Hobby plan allows twelve functions,
   so add new agent endpoints as routes there rather than as new files.
 - `lib/`: code shared by the functions and the middleware.
@@ -34,12 +37,12 @@ python3 tools/build-pages.py --check    # fails if generated files are out of da
 
 ## Rules
 
-- Never edit generated content by hand: the blocks between `page-head` and `glossary` markers in `docs/*.html`,
-  `lib/markdown-pages.js`, `docs/.well-known/agent-skills/`, `docs/schema-feed.jsonl`. Change the source and run
+- Never edit generated content by hand: the blocks between `page-head` and `glossary` markers in `frontend/*.html`,
+  `lib/markdown-pages.js`, `frontend/.well-known/agent-skills/`, `frontend/schema-feed.jsonl`. Change the source and run
   `tools/build-pages.py`.
 - Every figure the dashboard, the API and the MCP tools show comes from the same arithmetic. Don't duplicate it:
-  change it in `docs/js/dashboard/` and the API follows.
-- Never log, store or send anyone's figures beyond what `docs/privacy.html` says. Errors are logged with the tag
+  change it in `frontend/js/dashboard/` and the API follows.
+- Never log, store or send anyone's figures beyond what `frontend/privacy.html` says. Errors are logged with the tag
   `findash-error` and only the error and where it happened.
 - Describe FinDash only as what it does. It is not accounting, bookkeeping, invoicing, payments, payroll, tax or
   cash-flow software, and it has no QuickBooks or Xero integration (owners copy their totals across).

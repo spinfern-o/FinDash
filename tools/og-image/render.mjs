@@ -1,4 +1,4 @@
-/* Draws docs/og-image.png, the 1200 x 630 picture shown when a link to
+/* Draws frontend/og-image.png, the 1200 x 630 picture shown when a link to
    FinDash is shared, from og-image.html next to this file. Needs the
    internet for the Inter font, and the test browser (npm install, then
    npx playwright install chromium).
@@ -9,7 +9,7 @@ import { chromium } from "playwright";
 import { fileURLToPath } from "node:url";
 
 const page = new URL("./og-image.html", import.meta.url);
-const output = fileURLToPath(new URL("../../docs/og-image.png", import.meta.url));
+const output = fileURLToPath(new URL("../../frontend/og-image.png", import.meta.url));
 
 const browser = await chromium.launch();
 const tab = await browser.newPage({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1 });

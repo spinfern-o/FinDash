@@ -1,7 +1,7 @@
 /* The waitlist page: the login page's look (login.css), plus what its form
    has that the login form doesn't: dropdowns, a longer text box, and the
    table of languages with a tick box for you, your staff and your
-   suppliers' invoices. */
+   suppliers' invoices, drawn like the kit's comparison table. */
 
 select,
 textarea {
@@ -11,68 +11,69 @@ textarea {
   color: var(--ink);
   background: var(--card-2);
   border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 12px 14px;
+  border-radius: var(--radius-control);
+  padding: 14px 16px;
   transition:
     border-color 0.12s,
     box-shadow 0.12s;
 }
 textarea {
   resize: vertical;
-  min-height: 84px;
+  min-height: 96px;
   line-height: 1.5;
 }
 select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 select[aria-invalid="true"],
 textarea[aria-invalid="true"] {
   border-color: var(--critical);
 }
 .optional {
+  font-family: var(--mono);
   font-size: 12px;
+  letter-spacing: -0.01em;
   color: var(--ink-3);
 }
 
 /* ---- the languages: one row each, a tick box per column ---- */
 .languages {
-  margin: 10px 0 0;
+  margin: 14px 0 0;
   padding: 0;
   border: 0;
   min-width: 0;
 }
 .languages legend {
   padding: 0;
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-3);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--ink);
 }
 .field-hint {
-  margin: 4px 0 8px;
-  font-size: 12px;
+  margin: 4px 0 10px;
+  font-size: 13px;
   color: var(--ink-3);
 }
 .language-table-wrap {
   overflow-x: auto;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--card-2);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
 }
 .language-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 14px;
 }
 .language-table th,
 .language-table td {
-  padding: 7px 10px;
-  border-bottom: 1px solid var(--line-soft);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
   text-align: center;
 }
 .language-table tbody tr:last-child th,
@@ -80,20 +81,29 @@ textarea[aria-invalid="true"] {
   border-bottom: 0;
 }
 .language-table thead th {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--ink-3);
+  padding-top: 16px;
+  padding-bottom: 14px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--caption);
   line-height: 1.3;
+  border-bottom-color: var(--line-strong);
 }
 .language-table th[scope="row"],
 .language-table thead th:first-child {
   text-align: left;
+  padding-left: 18px;
+}
+.language-table th[scope="row"] {
   font-weight: 500;
   color: var(--ink);
 }
 .own-name {
   display: block;
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 400;
   color: var(--ink-3);
 }
 .language-table input[type="checkbox"] {
@@ -114,23 +124,29 @@ textarea[aria-invalid="true"] {
 
 .hint a {
   color: var(--accent);
+  font-weight: 700;
 }
 
 /* ---- after joining ---- */
 .joined {
-  margin-top: 22px;
-  font-size: 14px;
-  line-height: 1.6;
+  margin-top: 32px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+  font-size: 15px;
+  line-height: 1.55;
   color: var(--ink-2);
 }
 .joined p {
-  margin: 0 0 12px;
+  margin: 0 0 16px;
 }
 .joined b {
   color: var(--ink);
 }
 .joined-title {
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--positive);
+  font-family: var(--font-serif);
+  font-size: 36px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--ink);
 }

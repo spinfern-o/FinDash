@@ -1,4 +1,4 @@
-/* The masthead's account corner. It shows "Log in" unless someone is logged
+/* The account corner of the nav bar. It shows "Log in" unless someone is logged
    in, in which case it shows who, and offers "Log out".
 
    The login lives in a cookie that page scripts cannot read (see

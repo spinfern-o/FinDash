@@ -1,4 +1,4 @@
-/* The sun and moon button in the corner of every page: switches between
+/* The sun and moon button in the nav bar of every page: switches between
    light and dark mode and remembers the choice for next time. */
 
 const THEME_KEY = "findash-theme";
@@ -13,13 +13,13 @@ function rememberTheme(theme) {
 
 function toggleTheme() {
   const page = document.documentElement;
-  const isLight = page.getAttribute("data-theme") === "light";
-  if (isLight) {
+  const isDark = page.getAttribute("data-theme") === "dark";
+  if (isDark) {
     page.removeAttribute("data-theme");
-    rememberTheme("dark");
-  } else {
-    page.setAttribute("data-theme", "light");
     rememberTheme("light");
+  } else {
+    page.setAttribute("data-theme", "dark");
+    rememberTheme("dark");
   }
 }
 

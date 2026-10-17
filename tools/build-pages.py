@@ -3,6 +3,8 @@
   - every page's <head> tags: title, description, the address search engines
     should use (canonical), the preview shown when the link is shared (Open
     Graph), the icons, the font preload and Vercel Web Analytics
+  - every page's nav bar along the top and footer, the same on every page
+    (the look of the FinDash Figma file, styled in docs/css/site.css)
   - structured data (schema.org JSON-LD), read from the page's own text:
     on the home page what FinDash is ("What is FinDash?"), and on any page
     its questions and answers (<details class="faq-item">), so the markup
@@ -100,6 +102,41 @@ PAGES = {
 
 HEAD_START = "<!-- page-head: start (tools/build-pages.py writes this) -->"
 HEAD_END = "<!-- page-head: end -->"
+NAV_START = "<!-- site-nav: start (tools/build-pages.py writes this) -->"
+NAV_END = "<!-- site-nav: end -->"
+FOOTER_START = "<!-- site-footer: start (tools/build-pages.py writes this) -->"
+FOOTER_END = "<!-- site-footer: end -->"
+
+# The links in the nav bar along the top of every page, and in its phone menu.
+NAV_LINKS = [("Dashboard", "/dashboard"), ("Help", "/help"), ("Waitlist", "/waitlist")]
+# The links in every page's footer.
+FOOTER_LINKS = [("Dashboard", "/dashboard"), ("Help", "/help"), ("Waitlist", "/waitlist"), ("About", "/about"),
+                ("Developers", "/developers"), ("Privacy", "/privacy"), ("Terms", "/terms"),
+                ("Contact", f"mailto:{SUPPORT}?subject=FinDash")]
+
+# The icons the nav and footer use. The arrow, menu and close icons are the
+# Figma kit's own; the sun and moon are the site's.
+ARROW_ICON = ('<svg class="button-arrow" width="7" height="7" viewBox="0 0 6 7" aria-hidden="true">'
+              '<path d="M5.01037 4.9934V1.05184L5.64939 1.09142L0.735155 6.01131L0 5.27615L4.91423 0.361923L4.96513 1.00094H1.0066V0L6 0.0113101V4.9934H5.01037Z" '
+              'fill="currentColor"/></svg>')
+MENU_ICON = ('<svg class="icon-menu" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">'
+             '<path d="M3 5.6665H21V7.6665H3V5.6665ZM3 10.6665H21V12.6665H3V10.6665ZM3 15.6665H21V17.6665H3V15.6665Z" '
+             'fill="currentColor"/></svg>')
+CLOSE_ICON = ('<svg class="icon-close" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">'
+              '<path d="M13.46 12L19 17.54V19H17.54L12 13.46L6.46 19H5V17.54L10.54 12L5 6.46V5H6.46L12 10.54L17.54 '
+              '5H19V6.46L13.46 12Z" fill="currentColor"/></svg>')
+SUN_ICON = ('<svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+            'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+            '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/>'
+            '<path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/>'
+            '<path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>')
+MOON_ICON = ('<svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+             'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+             '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>')
+# FinDash's own mark: three bars, rising.
+BRAND_MARK = ('<svg class="footer-mark" width="22" height="22" viewBox="0 0 24 24" fill="none" '
+              'stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">'
+              '<path d="M4 19V11"/><path d="M12 19V5"/><path d="M20 19V15"/></svg>')
 GLOSSARY_START = "<!-- glossary: start (tools/build-pages.py writes this, from docs/js/glossary.js) -->"
 GLOSSARY_END = "<!-- glossary: end -->"
 IMAGE_ALT = "FinDash: revenue, costs and budget on one monthly dashboard"
@@ -248,14 +285,15 @@ def head_block(file_name, page_text):
         # Where an agent finds the site's AI and API catalogs.
         '<link rel="ai-catalog" type="application/ai-catalog+json" href="/.well-known/ai-catalog.json">',
         '<link rel="api-catalog" href="/.well-known/api-catalog">',
-        '<meta name="theme-color" content="#050505">',
+        '<meta name="theme-color" content="#ffffff">',
         # Vercel Web Analytics: counts page visits without cookies. Only
         # active once Analytics is switched on for the project in Vercel.
         "<script>",
         "  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };",
         "</script>",
         '<script defer src="/_vercel/insights/script.js"></script>',
-        '<link rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" crossorigin>',
+        '<link rel="preload" href="/fonts/dm-sans.woff2" as="font" type="font/woff2" crossorigin>',
+        '<link rel="preload" href="/fonts/crimson-text.woff2" as="font" type="font/woff2" crossorigin>',
         '<link rel="stylesheet" href="/css/site.css">',
         '<script type="module" src="/js/cookie-notice.js"></script>',
     ]
@@ -289,6 +327,88 @@ def glossary_html():
     return "\n    ".join(parts)
 
 
+def nav_link(label, href, address):
+    """One link in the nav, marked as the current page when it is."""
+    current = ' aria-current="page"' if href == address else ""
+    return f'<a href="{href}"{current}>{label}</a>'
+
+
+def nav_html(file_name):
+    """The nav bar along the top of a page: the wordmark, the links, Log in,
+    the light and dark switch and the main button; on a phone, a menu.
+
+    The dashboard shows who is logged in where other pages say Log in
+    (#account, filled in by account.js), and needs no button to itself."""
+    address = PAGES[file_name][0]
+    on_dashboard = file_name == "dashboard.html"
+    links = "\n      ".join(nav_link(label, href, address) for label, href in NAV_LINKS)
+    menu_links = "\n          ".join(f"<li>{nav_link(label, href, address)}</li>" for label, href in NAV_LINKS)
+    if on_dashboard:
+        account = ('<div class="account" id="account">\n'
+                   '        <a class="account-link login-link" href="/login">Log in</a>\n'
+                   '      </div>')
+        main_button = ""
+    else:
+        account = '<a class="login-link" href="/login">Log in</a>'
+        menu_links += '\n          <li><a href="/login">Log in</a></li>'
+        main_button = (f'\n      <a class="button solid enter-link" href="/dashboard">Open dashboard'
+                       f'{ARROW_ICON}</a>')
+    lines = [
+        NAV_START,
+        '<header class="site-nav">',
+        '  <a class="wordmark" href="/" aria-label="FinDash home">FinDash</a>',
+        '  <nav class="nav-main" aria-label="Site">',
+        '    <div class="nav-links">',
+        f"      {links}",
+        "    </div>",
+        '    <div class="nav-end">',
+        f"      {account}",
+        '      <button type="button" class="theme-toggle" id="theme-toggle" '
+        'aria-label="Switch between light and dark">',
+        f"        {SUN_ICON}",
+        f"        {MOON_ICON}",
+        f"      </button>{main_button}",
+        '      <details class="nav-menu">',
+        f'        <summary aria-label="Menu">{MENU_ICON}{CLOSE_ICON}</summary>',
+        '        <div class="nav-menu-panel">',
+        "          <ul>",
+        f"          {menu_links}",
+        "          </ul>",
+        "        </div>",
+        "      </details>",
+        "    </div>",
+        "  </nav>",
+        "</header>",
+        NAV_END,
+    ]
+    return "\n".join(lines)
+
+
+def footer_html(file_name):
+    """The footer of a page: the links, FinDash's mark and name. The
+    dashboard's has a line under the links saying where its figures came
+    from (#footer, filled in by the dashboard's scripts)."""
+    links = "\n      ".join(f'<a href="{href}">{label}</a>' for label, href in FOOTER_LINKS)
+    note = '\n    <p class="footer-note" id="footer"></p>' if file_name == "dashboard.html" else ""
+    lines = [
+        FOOTER_START,
+        '<footer class="site-footer">',
+        '  <div class="site-footer-inner">',
+        '    <nav class="footer-links" aria-label="Footer">',
+        f"      {links}",
+        f"    </nav>{note}",
+        '    <div class="footer-credits">',
+        f"      {BRAND_MARK}",
+        '      <span class="footer-name">© FinDash</span>',
+        "      <span>Free. No signup needed.</span>",
+        "    </div>",
+        "  </div>",
+        "</footer>",
+        FOOTER_END,
+    ]
+    return "\n".join(lines)
+
+
 def replace_between(text, start, end, block):
     """`text` with everything from the start marker to the end marker
     replaced by `block`. The start marker is matched by its first words,
@@ -303,6 +423,8 @@ def updated_page(file_name):
     """The page's HTML with its generated blocks rewritten."""
     text = (DOCS / file_name).read_text()
     text = replace_between(text, HEAD_START, HEAD_END, head_block(file_name, text))
+    text = replace_between(text, NAV_START, NAV_END, nav_html(file_name))
+    text = replace_between(text, FOOTER_START, FOOTER_END, footer_html(file_name))
     if GLOSSARY_START.split(" (")[0] in text:
         text = replace_between(text, GLOSSARY_START, GLOSSARY_END, glossary_html())
     return text
@@ -321,7 +443,7 @@ BLOCK_TAGS = {"p", "div", "section", "article", "aside", "main", "ul", "ol", "li
               "hr", "svg", "noscript"}
 LINE_BREAK = "\x00"
 # Page furniture and controls that only fill in when the page's scripts run.
-SKIPPED_CLASSES = {"masthead", "toolbar", "tool"}
+SKIPPED_CLASSES = {"toolbar", "tool"}
 
 
 class Element:

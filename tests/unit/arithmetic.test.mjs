@@ -3,13 +3,13 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readCsvGrid } from "../../docs/js/dashboard/import/csv-reader.js";
-import { fieldNamesOfColumns, rowsAsRecords } from "../../docs/js/dashboard/import/column-names.js";
-import { monthsFromCombinedSheet, monthsFromTwoFiles } from "../../docs/js/dashboard/import/months-from-sheet.js";
-import { combineMonthsAndInvoices } from "../../docs/js/dashboard/owner-figures.js";
-import { totalsForMonths, monthsInPeriod } from "../../docs/js/dashboard/periods.js";
-import { cleanSavedFigures } from "../../docs/js/dashboard/saved-figures.js";
-import { state } from "../../docs/js/dashboard/state.js";
+import { readCsvGrid } from "../../frontend/js/dashboard/import/csv-reader.js";
+import { fieldNamesOfColumns, rowsAsRecords } from "../../frontend/js/dashboard/import/column-names.js";
+import { monthsFromCombinedSheet, monthsFromTwoFiles } from "../../frontend/js/dashboard/import/months-from-sheet.js";
+import { combineMonthsAndInvoices } from "../../frontend/js/dashboard/owner-figures.js";
+import { totalsForMonths, monthsInPeriod } from "../../frontend/js/dashboard/periods.js";
+import { cleanSavedFigures } from "../../frontend/js/dashboard/saved-figures.js";
+import { state } from "../../frontend/js/dashboard/state.js";
 
 const TEMPLATE_CSV = [
   "Month,Year,Revenue,Budget,Cost of goods sold,Labor,Employee meals,Payroll tax,Packaging,Credit card fees," +

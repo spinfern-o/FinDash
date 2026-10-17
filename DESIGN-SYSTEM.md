@@ -11,9 +11,9 @@ working through Figma's MCP server; AGENTS.md's rules still apply on top of thes
   - DM Sans for body text and Roboto Mono for small captions
   - olive pill buttons, and sections divided by thin rules
 - Pages open in light. A dark version, drawn from the same colours, is one click away.
-- No framework, no build step, no CSS library. Pages are hand-written HTML in `docs/`, styled by plain CSS files in
-  `docs/css/` and made interactive by ES modules in `docs/js/`. Vercel serves `docs/` as it is.
-- Every colour, font and shared component is in `docs/css/site.css`, which every page loads. Each page's own
+- No framework, no build step, no CSS library. Pages are hand-written HTML in `frontend/`, styled by plain CSS files in
+  `frontend/css/` and made interactive by ES modules in `frontend/js/`. Vercel serves `frontend/` as it is.
+- Every colour, font and shared component is in `frontend/css/site.css`, which every page loads. Each page's own
   stylesheet only adds what that page has.
 - `tools/build-pages.py` writes the nav bar and the footer into every page, the same everywhere.
 - Figma's output (React + Tailwind, absolute positions, temporary asset URLs) is a picture of the goal, never code to
@@ -21,7 +21,7 @@ working through Figma's MCP server; AGENTS.md's rules still apply on top of thes
 
 ## 1. Design tokens
 
-All in `docs/css/site.css`, as CSS custom properties on `:root` (light), redefined under `html[data-theme="dark"]`.
+All in `frontend/css/site.css`, as CSS custom properties on `:root` (light), redefined under `html[data-theme="dark"]`.
 
 | Token | Light | Dark | Figma variable | For |
 | --- | --- | --- | --- | --- |
@@ -60,8 +60,9 @@ cards, `--radius-control` 12px for text boxes, `--radius-image` 30px for photos,
 
 ### Typography
 
-Three typefaces, from the Figma file, served from `docs/fonts/` (Latin only; other scripts such as Chinese or Thai
-fall back to the system's fonts, which is intended):
+Three typefaces, from the Figma file, served from `frontend/fonts/`. They cover Latin only: other scripts such as
+Thai fall back to the system's fonts, and the stock page adds Noto Sans SC ("FinDash Chinese" in `stock.css`) so
+Chinese reads the same everywhere:
 
 | Role | Font | Size, line height, tracking | Class or where |
 | --- | --- | --- | --- |
@@ -79,9 +80,9 @@ its licence beside it, declared in `site.css`. A test fails if any page loads Go
 
 ### Light and dark
 
-`docs/js/theme-init.js` is an ordinary script in each page's `<head>`. Before anything is drawn, it sets
+`frontend/js/theme-init.js` is an ordinary script in each page's `<head>`. Before anything is drawn, it sets
 `data-theme="dark"` on `<html>` when the visitor chose dark (saved as `findash-theme`). Otherwise the page is light.
-`docs/js/theme-toggle.js` wires the sun and moon button `#theme-toggle` in the nav. Check every change in both.
+`frontend/js/theme-toggle.js` wires the sun and moon button `#theme-toggle` in the nav. Check every change in both.
 
 ## 2. Components
 
@@ -92,11 +93,11 @@ in that page's stylesheet), sometimes with a small JavaScript function around it
 
 - **The nav bar and footer** are written into every page by `tools/build-pages.py` (`nav_html`, `footer_html`),
   between `site-nav` and `site-footer` markers. Change them there and run the script; never edit the blocks.
-- **HTML-string functions** build the dashboard's markup, one file per card in `docs/js/dashboard/cards/`
+- **HTML-string functions** build the dashboard's markup, one file per card in `frontend/js/dashboard/cards/`
   (`cards/card.js` is the shared frame). **`wire…` functions** attach event listeners afterwards.
-- **State** lives in `docs/js/dashboard/state.js`; **arithmetic** is never in a component (AGENTS.md).
+- **State** lives in `frontend/js/dashboard/state.js`; **arithmetic** is never in a component (AGENTS.md).
 - **Escaping:** any text from a file, a photo, the API or the visitor goes through `escapeHtml`
-  (`docs/js/dashboard/format.js`) before it's put in HTML.
+  (`frontend/js/dashboard/format.js`) before it's put in HTML.
 
 ### The kit's components, and where they are
 
@@ -148,13 +149,13 @@ The kit has no text boxes, dropdowns, tick boxes, cards or charts. They are draw
 
 ## 3. Frameworks, libraries, build
 
-- **Pages:** HTML5 + vanilla JavaScript ES modules (`<script type="module">`), loaded straight from `docs/js/`.
+- **Pages:** HTML5 + vanilla JavaScript ES modules (`<script type="module">`), loaded straight from `frontend/js/`.
   Nothing is bundled, transpiled or minified.
 - **CSS:** plain CSS with custom properties, without nesting. No Tailwind, Sass, PostCSS, CSS Modules or CSS-in-JS.
 - **Generated parts:** `python3 tools/build-pages.py` writes each page's `<head>` block, the nav bar and footer,
   structured data, the glossary, the dashboard's `modulepreload` list and the Markdown versions.
 - **Pictures of the product:** `node tools/home-preview/render.mjs` retakes the dashboard in the home page's device
-  frame (`docs/images/dashboard-preview.jpg`) and `docs/screenshot-dashboard.jpg`;
+  frame (`frontend/images/dashboard-preview.jpg`) and `frontend/screenshot-dashboard.jpg`;
   `node tools/og-image/render.mjs` redraws the share image. Run them after changing how the dashboard looks.
 - **Tests:** `npm test` (Node's test runner, with Playwright for the browser tests).
 - **Planned (not built yet):** the dashboard, login and waitlist move to React with Vite. The content pages stay
@@ -164,17 +165,17 @@ The kit has no text boxes, dropdowns, tick boxes, cards or charts. They are draw
 
 ## 4. Assets
 
-- **Where:** `docs/fonts/` (the three typefaces and their licences), `docs/images/` (the home page's pictures),
-  and the icons, share image and screenshot at the root of `docs/`.
-- **The kit's photos** (`docs/images/mountains.webp`, `columns.webp`) are decoration: `alt=""`. They were
+- **Where:** `frontend/fonts/` (the three typefaces and their licences), `frontend/images/` (the home page's pictures),
+  and the icons, share image and screenshot at the root of `frontend/`.
+- **The kit's photos** (`frontend/images/mountains.webp`, `columns.webp`) are decoration: `alt=""`. They were
   exported from the Figma file, cropped just inside their rounded corners (the CSS rounds them again) and saved
   as WebP.
 - **The security policy decides what loads** (`vercel.json`: `img-src 'self' data:`, `font-src 'self'`). A Figma
-  asset URL, a CDN or Google Fonts is blocked in production. Save every asset into `docs/` and reference it by a
+  asset URL, a CDN or Google Fonts is blocked in production. Save every asset into `frontend/` and reference it by a
   root path (`/images/…`). Leave no Figma URL in the code.
 - **Every `<img>` has `width`, `height` and `alt`** (`alt=""` when decorative). A test keeps the dashboard's
   layout shift under 0.1.
-- **Caching:** Vercel's edge serves `docs/`. Fonts are `immutable` for a year; `/images/`, the icons and the share
+- **Caching:** Vercel's edge serves `frontend/`. Fonts are `immutable` for a year; `/images/`, the icons and the share
   image for a week. Filenames carry no hashes, so rename an `immutable` file when it changes.
 
 ## 5. Icons
@@ -188,7 +189,7 @@ The kit has no text boxes, dropdowns, tick boxes, cards or charts. They are draw
   ```
 
   The nav's menu, close and arrow icons are in `tools/build-pages.py`; the home page's are inline in
-  `docs/index.html`.
+  `frontend/index.html`.
 - **The site's own icons** (the sun and moon, the dashboard's upload cloud) are outline SVGs in the Lucide style,
   `stroke="currentColor"`.
 - **FinDash's mark** is three rising bars, in the footer. The wordmark "FinDash" is text (`.wordmark`).
@@ -200,9 +201,10 @@ The kit has no text boxes, dropdowns, tick boxes, cards or charts. They are draw
 - **Method:** global stylesheets with short class names and modifiers (`.button.solid`, `.chg.down`,
   `.message.bad`). `site.css` is on every page; each kind of page adds one more: `landing.css` (home),
   `dashboard.css`, `login.css` (+ `waitlist.css`), `help.css` (help, about, contact, developers, privacy, terms,
-  restaurant, thanks, 404). No BEM, no utility classes.
+  restaurant, thanks, 404). The stock workspace (`/stock`) loads `dashboard.css` and adds `stock.css`, and keeps its
+  own sidebar in place of the nav bar. No BEM, no utility classes.
 - **Inline styles:** only for values computed at run time, such as a chart bar's height.
-- **Responsive:** desktop first, with `max-width` media queries. The nav folds into its menu at 960px; other
+- **Responsive:** desktop first, with `max-width` media queries. The nav folds into its menu at 1040px; other
   breakpoints are 960, 760, 640, 560 and 420px. Fluid sizes use `clamp()`. Tests load every page at 360, 768 and
   1024px and fail on any sideways scroll, so wide content (tables) goes inside a wrapper that scrolls on its own.
 - **Motion:** short transitions (0.12–0.15s); respect `@media (prefers-reduced-motion: reduce)`.
@@ -212,7 +214,7 @@ The kit has no text boxes, dropdowns, tick boxes, cards or charts. They are draw
 ## 7. Project structure
 
 ```
-docs/                    The website, served as it is
+frontend/                The website, served as it is (formerly docs/)
   *.html                 One file per page
   css/site.css           Colours, fonts, type, buttons, nav and footer: every page
   css/*.css              One more per kind of page
@@ -242,7 +244,7 @@ names, one step per line, small files.
    section 2, each icon an inline SVG with its exact path. Write down anything with no match before adding it.
 3. **Build it** in the page's HTML, its stylesheet and its script, with flex and grid in place of Figma's absolute
    positions. Keep the existing ids, text alternatives and heading order.
-4. **Assets:** save them into `docs/`, check each is non-empty and in place, and leave no Figma URL behind.
+4. **Assets:** save them into `frontend/`, check each is non-empty and in place, and leave no Figma URL behind.
 5. **Check it.**
    - Look at both themes, at 360px and at a wide screen, beside the Figma screenshot.
    - Run `python3 tools/build-pages.py` if a title, the nav or footer, or the page's text changed.

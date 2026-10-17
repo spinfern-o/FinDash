@@ -1,8 +1,8 @@
 /* Takes the two pictures of the demo dashboard the site shows, in light mode:
 
-     docs/images/dashboard-preview.jpg  in the device frame on the home page,
+     frontend/images/dashboard-preview.jpg  in the device frame on the home page,
                                         from the period buttons down
-     docs/screenshot-dashboard.jpg      the screenshot in the home page's
+     frontend/screenshot-dashboard.jpg      the screenshot in the home page's
                                         structured data, 1280 x 800 from the top
 
    Run it after changing how the dashboard looks, so the site never shows an
@@ -15,8 +15,8 @@ import { fileURLToPath } from "node:url";
 import { startSite } from "../../tests/support/site.mjs";
 import { launchBrowser } from "../../tests/support/browser.mjs";
 
-const OUTPUT = fileURLToPath(new URL("../../docs/images/dashboard-preview.jpg", import.meta.url));
-const SCREENSHOT = fileURLToPath(new URL("../../docs/screenshot-dashboard.jpg", import.meta.url));
+const OUTPUT = fileURLToPath(new URL("../../frontend/images/dashboard-preview.jpg", import.meta.url));
+const SCREENSHOT = fileURLToPath(new URL("../../frontend/screenshot-dashboard.jpg", import.meta.url));
 // The screen in the kit's device frame is 870 x 607; this is that shape at
 // the dashboard's usual width, saved at 1740 pixels wide for sharp screens.
 const WIDTH = 1280;

@@ -63,6 +63,7 @@ export async function startMockSupabase() {
     sessions: new Map(),       // access token -> email, and "r:" + refresh token -> email
     refreshOf: new Map(),      // access token -> its refresh token
     figures: new Map(),        // user id -> { figures, updated_at }
+    inventory: new Map(),      // user id -> { inventory, revision, updated_at }
     usage: new Map(),          // "userId|feature|day" -> uses
     waitlist: [],              // rows people added; nobody can read them back
     options: {
@@ -73,6 +74,7 @@ export async function startMockSupabase() {
     },
     reset: function () {
       mock.figures.clear();
+      mock.inventory.clear();
       mock.usage.clear();
       mock.waitlist.length = 0;
       mock.options.missingTables = false;
@@ -277,6 +279,33 @@ export async function startMockSupabase() {
     return databaseError(response, 405, "PGRST000", "method not allowed");
   }
 
+  /* The stock table enforces account isolation and atomic revision matching. */
+  function handleInventory(request, response, url, body, userId) {
+    const row = mock.inventory.get(userId);
+    if (request.method === "GET") {
+      return sendJson(response, 200, row ? [{ inventory: inJsonbKeyOrder(row.inventory), revision: row.revision }] : []);
+    }
+    if (body.user_id !== userId) {
+      return databaseError(response, 403, "42501", "new row violates row-level security policy");
+    }
+    if (request.method === "POST") {
+      if (row) {
+        return databaseError(response, 409, "23505", "duplicate account inventory");
+      }
+      mock.inventory.set(userId, { ...body });
+      return sendJson(response, 201, [{ revision: body.revision }]);
+    }
+    if (request.method === "PATCH") {
+      if (!row || url.searchParams.get("user_id") !== "eq." + userId ||
+          url.searchParams.get("revision") !== "eq." + row.revision) {
+        return sendJson(response, 200, []);
+      }
+      mock.inventory.set(userId, { ...body });
+      return sendJson(response, 200, [{ revision: body.revision }]);
+    }
+    return databaseError(response, 405, "PGRST000", "method not allowed");
+  }
+
   /* claim_ai_use(feature_name, daily_limit), as the SQL function does it. */
   function handleClaimAiUse(response, body, userId) {
     if (!["photo", "advice", "columns"].includes(body.feature_name)) {
@@ -325,6 +354,9 @@ export async function startMockSupabase() {
 
     if (url.pathname === "/rest/v1/account_figures") {
       return handleFigures(request, response, url, body, userId);
+    }
+    if (url.pathname === "/rest/v1/account_inventory") {
+      return handleInventory(request, response, url, body, userId);
     }
     if (url.pathname === "/rest/v1/rpc/claim_ai_use" && request.method === "POST") {
       return handleClaimAiUse(response, body, userId);

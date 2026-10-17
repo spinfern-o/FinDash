@@ -2,12 +2,12 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseAmount, roundToCents } from "../../docs/js/dashboard/numbers.js";
-import { readCsvGrid } from "../../docs/js/dashboard/import/csv-reader.js";
-import { fieldNameFor, kindOfFile, isCombinedFile } from "../../docs/js/dashboard/import/column-names.js";
-import { monthFromText, monthFromExcelDate, yearInText } from "../../docs/js/dashboard/import/period-cells.js";
-import { withHeadersOnTop } from "../../docs/js/dashboard/import/sheet-orientation.js";
-import { needsColumnMatching, unrecognisedColumns } from "../../docs/js/dashboard/import/column-mapping.js";
+import { parseAmount, roundToCents } from "../../frontend/js/dashboard/numbers.js";
+import { readCsvGrid } from "../../frontend/js/dashboard/import/csv-reader.js";
+import { fieldNameFor, kindOfFile, isCombinedFile } from "../../frontend/js/dashboard/import/column-names.js";
+import { monthFromText, monthFromExcelDate, yearInText } from "../../frontend/js/dashboard/import/period-cells.js";
+import { withHeadersOnTop } from "../../frontend/js/dashboard/import/sheet-orientation.js";
+import { needsColumnMatching, unrecognisedColumns } from "../../frontend/js/dashboard/import/column-mapping.js";
 
 test("amounts are read however a spreadsheet wrote them", function () {
   assert.equal(parseAmount("$1,250.00"), 1250);

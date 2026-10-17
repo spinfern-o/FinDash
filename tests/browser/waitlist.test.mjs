@@ -6,7 +6,7 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { startSite } from "../support/site.mjs";
 import { launchBrowser, openPage, text } from "../support/browser.mjs";
-import { BUSINESS_TYPES, LANGUAGES, INVOICE_COUNTS } from "../../docs/js/waitlist-options.js";
+import { BUSINESS_TYPES, LANGUAGES, INVOICE_COUNTS } from "../../frontend/js/waitlist-options.js";
 
 let site;
 let browser;

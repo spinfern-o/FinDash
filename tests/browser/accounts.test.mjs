@@ -1,4 +1,5 @@
-/* Logging in, in a real browser: the Log in buttons, creating an account,
+/* Logging in, in a real browser, with the app open as on a preview: the
+   home page leading to the waitlist rather than the app, creating an account,
    wrong and right passwords, resetting a password from the emailed link,
    confirmation links, accounts switched off, the ?next= guard, and the
    delete-my-account request. */
@@ -26,22 +27,18 @@ after(async function () {
   await site.stop();
 });
 
-test("the landing page has Log in beside Open dashboard, in the header and the hero", async function () {
+test("the home page leads to the waitlist, not into the app, until it opens", async function () {
   await page.goto(site.url + "/", { waitUntil: "networkidle" });
-  const header = await page.locator("header nav a").evaluateAll(function (links) {
-    return links.map(function (link) {
-      return link.textContent.trim().replace(/\s+/g, " ");
-    });
-  });
-  assert.match(header.join("|"), /Log in\|Open dashboard/);
-  const hero = await page.locator(".cta-row a").evaluateAll(function (links) {
+  assert.equal(await page.getAttribute("header .enter-link", "href"), "/waitlist");
+  const intro = await page.locator(".intro .cta-row a").evaluateAll(function (links) {
     return links.map(function (link) {
       return link.textContent.trim();
     });
   });
-  assert.deepEqual(hero.slice(0, 2), ["Open dashboard", "Log in"]);
-  await page.click("header .login-link");
-  assert.ok(page.url().endsWith("/login"));
+  assert.equal(intro[0], "Join the waitlist");
+  const appLinks = await page.locator('a[href^="/dashboard"], a[href^="/stock"], a[href^="/login"]').count();
+  assert.equal(appLinks, 0);
+  await page.goto(site.url + "/login", { waitUntil: "networkidle" });
   await page.waitForSelector("#form:not([hidden])");
   assert.equal(await text(page, "#title"), "Log in to FinDash");
 });

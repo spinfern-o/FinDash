@@ -81,9 +81,9 @@ PAGES = {
     "developers.html": ("/developers", "FinDash API and MCP Server for Developers and AI Agents",
                         "A free API and MCP server: send a small business's monthly revenue and costs, get profit, "
                         "margin and budget vs actual back. No key needed.", True),
-    "waitlist.html": ("/waitlist", "Join the Waitlist: Inventory From Photos, in Your Language · FinDash",
-                      "Tell us about your food business and we'll email you when inventory counts from photos "
-                      "and FinDash in more languages are ready. No payment, no spam.", True),
+    "waitlist.html": ("/waitlist", "Join the FinDash Waitlist: Your P&L Dashboard, Opening Soon",
+                      "FinDash opens soon, to the people on the waitlist first. Tell us about your business and "
+                      "we'll email you when it's your turn. No payment, no spam.", True),
     "about.html": ("/about", "About FinDash: A Free P&L Dashboard for Small Businesses",
                    "Why FinDash exists, how it reads your figures without uploading your spreadsheet, what it "
                    "doesn't do, and how it's built.", True),
@@ -110,9 +110,12 @@ FOOTER_START = "<!-- site-footer: start (tools/build-pages.py writes this) -->"
 FOOTER_END = "<!-- site-footer: end -->"
 
 # The links in the nav bar along the top of every page, and in its phone menu.
-NAV_LINKS = [("Dashboard", "/dashboard"), ("Stock / 中文库存", "/stock"), ("Help", "/help"), ("Waitlist", "/waitlist")]
+# Before launch the app is closed (lib/app-gate.js), so the nav leads to the
+# home page's sections and the waitlist rather than into the app.
+NAV_LINKS = [("About", "/#what-is-findash"), ("How it works", "/#how-it-works"), ("Questions", "/#questions"),
+             ("Help", "/help")]
 # The links in every page's footer.
-FOOTER_LINKS = [("Dashboard", "/dashboard"), ("Help", "/help"), ("Waitlist", "/waitlist"), ("About", "/about"),
+FOOTER_LINKS = [("Waitlist", "/waitlist"), ("Help", "/help"), ("About", "/about"),
                 ("Developers", "/developers"), ("Privacy", "/privacy"), ("Terms", "/terms"),
                 ("Contact", f"mailto:{SUPPORT}?subject=FinDash")]
 
@@ -336,25 +339,23 @@ def nav_link(label, href, address):
 
 
 def nav_html(file_name):
-    """The nav bar along the top of a page: the wordmark, the links, Log in,
-    the light and dark switch and the main button; on a phone, a menu.
+    """The nav bar along the top of a page: the wordmark, the links, the light
+    and dark switch and the main button, Join the waitlist; on a phone, a menu.
 
-    The dashboard shows who is logged in where other pages say Log in
-    (#account, filled in by account.js), and needs no button to itself."""
+    The dashboard, open only on previews before launch, also shows who is
+    logged in (#account, filled in by account.js)."""
     address = PAGES[file_name][0]
     on_dashboard = file_name == "dashboard.html"
     links = "\n      ".join(nav_link(label, href, address) for label, href in NAV_LINKS)
     menu_links = "\n          ".join(f"<li>{nav_link(label, href, address)}</li>" for label, href in NAV_LINKS)
+    menu_links += '\n          <li><a href="/waitlist">Join the waitlist</a></li>'
+    main_button = f'\n      <a class="button solid enter-link" href="/waitlist">Join the waitlist{ARROW_ICON}</a>'
     if on_dashboard:
         account = ('<div class="account" id="account">\n'
                    '        <a class="account-link login-link" href="/login">Log in</a>\n'
                    '      </div>')
-        main_button = ""
     else:
-        account = '<a class="login-link" href="/login">Log in</a>'
-        menu_links += '\n          <li><a href="/login">Log in</a></li>'
-        main_button = (f'\n      <a class="button solid enter-link" href="/dashboard">Open dashboard'
-                       f'{ARROW_ICON}</a>')
+        account = ""
     lines = [
         NAV_START,
         '<header class="site-nav">',
@@ -364,7 +365,7 @@ def nav_html(file_name):
         f"      {links}",
         "    </div>",
         '    <div class="nav-end">',
-        f"      {account}",
+        *([f"      {account}"] if account else []),
         '      <button type="button" class="theme-toggle" id="theme-toggle" '
         'aria-label="Switch between light and dark">',
         f"        {SUN_ICON}",

@@ -205,6 +205,7 @@ these under **Settings → Environment Variables** and redeploy:
 | `ANTHROPIC_API_KEY` | Photos, advice and column matching (also needs accounts) |
 | `SITE_URL` | Optional: the address used in login emails, e.g. `https://yourdomain.com` |
 | `FORECAST_URL` and `FORECAST_TOKEN` | Optional: the forecast model (see `forecast/README.md`) |
+| `FINDASH_APP_OPEN` | `1` opens the dashboard and the stock workspace. Without it they send visitors to the waitlist, as before launch (`lib/app-gate.js`). Set it for Preview to try the app, and for Production on launch day. |
 
 The site never uses Supabase's service-role key (the integration adds one; nothing reads
 it). `/api/capabilities` says which features are on, as true or false, never the keys.
@@ -585,9 +586,10 @@ frontend/                    The website (Vercel serves this folder)
     glossary.js          Plain-language definitions for the ? buttons and the help page
     error-reporter.js    Sends errors on the page to the site's log
     cookie-notice.js     The one-time note that only login cookies are used
-    sticky-cta.js        The landing page's Open dashboard button that follows on phones
+    sticky-cta.js        The landing page's Join the waitlist button that follows on phones
+    scroll-motion.js     The home page's scroll animation (DESIGN-SYSTEM.md, section 8)
     theme-init.js, theme-toggle.js   Light mode, or dark when the visitor switches
-    landing.js, login.js, thanks.js   Each page's own script
+    login.js, thanks.js  Each page's own script
     dashboard/
       main.js            Starts the dashboard
       state.js           Everything the dashboard keeps track of
@@ -607,7 +609,8 @@ lib/                     Shared by the functions: Supabase, login cookies, daily
                          the API (agent-api.js) and MCP servers (mcp-servers.js); and the
                          Markdown versions of the pages (markdown-pages.js, written by
                          tools/build-pages.py) with the rules for serving them
-middleware.js            Sends AI agents the Markdown version of a page, and Link headers
+middleware.js            Sends AI agents the Markdown version of a page, and Link headers;
+                         before launch, sends the app's pages to the waitlist (lib/app-gate.js)
 skills/                  The agent skill (SKILL.md), published under .well-known/
 AGENTS.md                Instructions for AI coding agents working on this code
 DESIGN-SYSTEM.md         How the pages look (tokens, components, icons), and building from Figma

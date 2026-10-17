@@ -1,10 +1,10 @@
-/* On phones, an "Open dashboard" button stays at the bottom of the screen
-   once both of the page's own (in the header and under the headline) have
+/* On phones, a "Join the waitlist" button stays at the bottom of the screen
+   once both of the page's own (in the header and under the product) have
    scrolled out of sight, so the way in is never more than a tap away.
    Wider screens never show it (landing.css). */
 
 const stickyButton = document.getElementById("sticky-cta");
-const watched = [document.querySelector("header .enter-link"), document.querySelector(".hero .cta-row")];
+const watched = [document.querySelector("header .enter-link"), document.querySelector(".intro .cta-row")];
 const inView = new Set();
 
 function update() {

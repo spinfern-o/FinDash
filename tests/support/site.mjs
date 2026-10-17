@@ -176,7 +176,10 @@ async function answeredByMiddleware(request, response, url) {
 }
 
 /* options.accounts: false runs the site without Supabase settings.
-   options.claude: false runs it without an Anthropic key. */
+   options.claude: false runs it without an Anthropic key.
+   options.appClosed: true runs it as the live site is before launch, with
+   the app's pages sending visitors to the waitlist (lib/app-gate.js); the
+   other tests open them, as FINDASH_APP_OPEN=1 does on a preview. */
 export async function startSite(options = {}) {
   const supabase = await startMockSupabase();
   const anthropic = await startMockAnthropic();
@@ -190,6 +193,11 @@ export async function startSite(options = {}) {
   if (options.claude !== false) {
     process.env.ANTHROPIC_BASE_URL = anthropic.url;
     process.env.ANTHROPIC_API_KEY = "test-key";
+  }
+  if (options.appClosed) {
+    delete process.env.FINDASH_APP_OPEN;
+  } else {
+    process.env.FINDASH_APP_OPEN = "1";
   }
 
   // What the functions write to the log, kept for the tests to read instead

@@ -10,6 +10,7 @@
 
 import { next } from "@vercel/functions/middleware";
 import { negotiate } from "./lib/markdown-negotiation.js";
+import { isClosedAppPage, WAITLIST } from "./lib/app-gate.js";
 
 // Not for the server functions, Vercel's own scripts, or the stylesheets,
 // scripts and fonts the pages load: none of them have a Markdown version.
@@ -21,6 +22,12 @@ export default function middleware(request) {
   let decision;
   try {
     const url = new URL(request.url);
+    // Before launch, the app's pages send visitors to the waitlist
+    // (lib/app-gate.js). A temporary redirect, so nothing remembers it, to
+    // the waitlist on whichever address the visitor came in on.
+    if (isClosedAppPage(url.pathname, process.env)) {
+      return new Response(null, { status: 307, headers: { "Location": WAITLIST, "Cache-Control": "no-store" } });
+    }
     decision = negotiate(request.method, url.pathname, request.headers.get("accept"), url.search);
   } catch (error) {
     // Never let a problem here take the site down: serve the page as usual.

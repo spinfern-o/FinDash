@@ -28,8 +28,24 @@ independently of backend changes. Rebase older `docs/` work onto `frontend/` bef
 
 `/stock` provides English/Chinese files, review, shelf counts and stock movements. Manual items
 work in this browser without signup; signed-in stock uses a separate account table. Apply
-`supabase/migrations/20261018000000_account_inventory.sql` before using account stock. PDF/count-sheet
-reading and translation of the legacy financial report are not part of this slice.
+`supabase/migrations/20261018000000_account_inventory.sql` before using account stock, then
+`supabase/migrations/20261019000000_stock_invoice_sync.sql` **before deploying the sync handlers**.
+The P&L dashboard now uses the same stock-entry forms and ledger as `/stock`. Confirmed invoice
+costs can update the graphs in the same transaction as shelf counts; exclude costs already in a
+monthly spreadsheet. Counts and movements update quantities without creating another purchase cost.
+Open pages refresh on focus and after record changes while protecting pending forms and unsaved edits.
+
+Invoice review on both pages asks **"Did everything arrive?"** for each line (in full, short, damaged,
+not at all, or not checked yet; nothing counts as arrived until the owner says so), then whether to add
+what arrived to the last count or count the shelf now, never both. Lines that didn't arrive in full stay
+under **Stock → Delivery problems** until resolved; a credit the supplier confirms is recorded once and
+only taken off the P&L when the owner ticks it. A supplier's item code, once confirmed, finds the same
+item on later invoices, and pack sizes ("1 case = 6 bag") are remembered. Each item's **Settings** hold a
+minimum, a target, a supplier and pack sizes; **Stock → Buying list** shows what is below its minimum
+and how much brings it to the target (whole packs only when confirmed), to print or download.
+Code: `frontend/js/stock/review-lines.js`, `receiving.js`, `buying.js`, `matching.js`.
+
+PDF/count-sheet reading and translation of the legacy financial report are not part of this slice.
 
 ## What it does
 
@@ -294,36 +310,24 @@ usage counts go with it.
 
 ### The waitlist
 
-`/waitlist` asks food businesses for an email and a few answers: what kind of business,
-which country, the languages the owner, the staff and the suppliers' invoices use, about
-how many supplier invoices come in a month, and (optionally) what's hardest about
-managing their money. It is for sizing the market before building inventory from photos
-or more languages. The choices are in `frontend/js/waitlist-options.js`; the page draws its
-form from them and `api/waitlist.js` accepts only them.
+`/waitlist` asks for an email address, and nothing else. `frontend/js/waitlist.js` checks
+it and sends it to `/api/waitlist` (`backend/api/waitlist.js`), which checks it again,
+refuses requests from other sites, quietly drops form robots (a hidden field only they
+fill in), and adds a row to the `waitlist` table in Supabase. Nobody is emailed
+automatically: no confirmation is sent, and you aren't notified of new names.
 
-Answers go to the `waitlist` table in Supabase. Anyone can add a row; nobody can read one
-through the site. To see them, open **Supabase → Table Editor → waitlist** (and
-**Export to CSV**), or run these in the **SQL Editor**:
+The table needs two SQL files from `supabase/migrations/`, run in order in **Supabase →
+SQL Editor**: `20261017000000_waitlist.sql` (the table), then
+`20261020000000_waitlist_email_only.sql` (lets a row be just an email). Until both have
+run, the page says the waitlist isn't open yet. Earlier sign-ups also answered a few
+questions about their business; those columns stay, empty for new rows.
+
+Anyone can add a row; nobody can read one through the site. To see the emails, open
+**Supabase → Table Editor → waitlist** (and **Export to CSV** for your email tool), or
+run this in the **SQL Editor**:
 
 ```sql
--- How many, by kind of business and country
-select business_type, country, count(*) from public.waitlist
-group by business_type, country order by count(*) desc;
-
--- Which languages, for owners, staff and supplier invoices
-select 'owner' as who, unnest(owner_languages) as language, count(*) from public.waitlist group by 1, 2
-union all
-select 'staff', unnest(staff_languages), count(*) from public.waitlist group by 1, 2
-union all
-select 'invoices', unnest(invoice_languages), count(*) from public.waitlist group by 1, 2
-order by who, count desc;
-
--- How much paperwork: supplier invoices a month
-select invoices_per_month, count(*) from public.waitlist group by 1 order by 2 desc;
-
--- In their own words
-select created_at, business_type, country, hardest_part from public.waitlist
-where hardest_part is not null order by created_at desc;
+select email, created_at from public.waitlist order by created_at;
 ```
 
 Each email is kept once. To take someone off the list (they email to ask, as the page
@@ -549,6 +553,7 @@ Where to start:
 | How a photo becomes an invoice | `photos/photo-import.js`, `photos/photo-review.js`, `api/read-document.js` |
 | How figures are remembered | `saved-figures.js` (this browser), `account-figures.js` (the account) |
 | What you buy and the count sheet | `items.js`, `cards/item-log.js`, `count-sheet.js` |
+| Comparing prices fairly | `units.js`, `price-comparison.js`, `line-details.js` |
 | How logging in works | `api/auth.js`, `lib/session.js`, `frontend/js/login.js` |
 | Who may use the paid features | `lib/ai-access.js` |
 | The cost groups | `frontend/js/dashboard/cost-groups.js` |
@@ -561,7 +566,7 @@ frontend/                    The website (Vercel serves this folder)
   index.html             Landing page
   dashboard.html         The dashboard
   help.html              Getting data in, glossary, how data is handled
-  waitlist.html          The waitlist (js/waitlist.js, js/waitlist-options.js)
+  waitlist.html          The waitlist: an email, nothing else (js/waitlist.js)
   about.html, contact.html   Who runs FinDash and how to reach it
   developers.html        The API, MCP servers, WebMCP tools and agent skill
   openapi.json           The API's OpenAPI description

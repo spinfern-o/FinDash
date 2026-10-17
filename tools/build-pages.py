@@ -82,8 +82,8 @@ PAGES = {
                         "A free API and MCP server: send a small business's monthly revenue and costs, get profit, "
                         "margin and budget vs actual back. No key needed.", True),
     "waitlist.html": ("/waitlist", "Join the FinDash Waitlist: Your P&L Dashboard, Opening Soon",
-                      "FinDash opens soon, to the people on the waitlist first. Tell us about your business and "
-                      "we'll email you when it's your turn. No payment, no spam.", True),
+                      "FinDash opens soon, to the people on the waitlist first. Leave your email and we'll tell "
+                      "you when it's your turn. No payment, no spam.", True),
     "about.html": ("/about", "About FinDash: A Free P&L Dashboard for Small Businesses",
                    "Why FinDash exists, how it reads your figures without uploading your spreadsheet, what it "
                    "doesn't do, and how it's built.", True),

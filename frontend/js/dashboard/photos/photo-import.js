@@ -79,7 +79,8 @@ async function readNextPhoto() {
     }
     // Each reading costs money, so it is only for someone logged in, within a
     // daily allowance (lib/ai-access.js on the server checks both).
-    if (!(await loggedInUser())) {
+    const user = await loggedInUser();
+    if (!user) {
       dropWaitingPhotos();
       showStatus("Log in to read photos",
         "Reading a photo of an invoice needs a free account. Log in (top right), then add the photo again.", true);
@@ -97,7 +98,7 @@ async function readNextPhoto() {
 
     showStatus("Check your photo", "Read from " + file.name + ". Look over the lines below, then add them or not.",
       false);
-    showReview(file, photo.preview, result);
+    showReview(file, photo.preview, result, user.email);
   } catch (error) {
     showStatus("Photo not read", file.name + ": " + error.message, true);
     state.isHandlingPhoto = false;
@@ -113,18 +114,19 @@ export function wirePhotoReview() {
   const panel = document.getElementById("review");
 
   panel.addEventListener("change", function (event) {
-    if (event.target.matches("select")) {
+    // The stock lines keep their own fields in step (stock/review-lines.js).
+    if (event.target.matches("select") && !event.target.closest("[data-stock-review]")) {
       updateReview();
     }
   });
 
-  panel.addEventListener("click", function (event) {
+  panel.addEventListener("click", async function (event) {
     if (event.target.closest("#review-cancel")) {
       closeReview();
       continueWithNextPhoto();
     } else if (event.target.closest("#review-add")) {
-      addReviewedInvoice();
-      continueWithNextPhoto();
+      const saved = await addReviewedInvoice();
+      if (saved) { continueWithNextPhoto(); }
     }
   });
 }

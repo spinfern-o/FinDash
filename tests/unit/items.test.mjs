@@ -4,7 +4,9 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { itemsBought, invoicesWithoutItems, countSheetGroups, unitName } from "../../frontend/js/dashboard/items.js";
+import {
+  itemsBought, invoicesWithoutItems, countSheetGroups, unitName, confirmPackage, itemKey
+} from "../../frontend/js/dashboard/items.js";
 import { cleanSavedFigures } from "../../frontend/js/dashboard/saved-figures.js";
 
 /* A purchase invoice as the dashboard keeps one. */
@@ -37,6 +39,11 @@ const SECOND = invoice("2026-09-21", [
   line("Paper bags #6", 2, "case", 12.5, 25, { code: "GH-731", category: "packaging" })
 ]);
 
+/* The key the broccoli is kept under: Golden Harbor's code GH-300. */
+function broccoliKey() {
+  return itemKey("Golden Harbor Foods", { code: "GH-300" });
+}
+
 function find(items, description) {
   return items.find(function (item) {
     return item.description === description;
@@ -53,27 +60,43 @@ test("the same item on two invoices is one item, matched by the supplier's code"
   assert.deepEqual(chicken.quantities, [{ unit: "case", quantity: 6 }]);
   assert.equal(chicken.spent, 328.8);
   assert.equal(chicken.lastPrice, 1.37);
-  assert.equal(chicken.priceChange, null, "the same price both times is no change");
+  assert.equal(chicken.priceChange, null);
+  assert.equal(chicken.priceComparison.state, "basis",
+    "3 cases at $1.37 isn't $164.40: the price is per something else, so it isn't compared");
   assert.equal(chicken.firstDate, "2026-09-19");
   assert.equal(chicken.lastDate, "2026-09-21");
 });
 
-test("a price that moved shows how much and by what share, against the delivery before", function () {
+test("a case's price isn't compared until the owner confirms what a case holds", function () {
   const broccoli = find(itemsBought([FIRST, SECOND]), "Broccoli (Chui Ho)");
   assert.deepEqual(broccoli.quantities, [{ unit: "case", quantity: 10 }], "cases and Case are one unit");
-  assert.equal(broccoli.priceChange, 1);
+  assert.equal(broccoli.priceChange, null);
+  assert.equal(broccoli.priceChangePercent, null);
+  assert.deepEqual(broccoli.priceComparison, { state: "package" });
+  assert.deepEqual(broccoli.comparedUnits, ["case"]);
+});
+
+test("once a case's contents are confirmed, a price that moved shows how much and by what share", function () {
+  const confirmed = confirmPackage([FIRST, SECOND], broccoliKey(), "case", "2026-09-19",
+    { pack: { quantity: 20, unit: "lb" }, billedPer: null });
+  assert.equal(confirmed.changed, 1, "the one broccoli line on the 19th");
+  const broccoli = find(itemsBought(confirmed.invoices), "Broccoli (Chui Ho)");
+  assert.equal(broccoli.priceChange, 1, "per case: both cases hold the same 20 lb");
   assert.equal(broccoli.priceChangePercent, 3.3);
+  assert.equal(broccoli.priceComparison.per, "case");
 
   const cheaper = invoice("2026-09-24", [line("Broccoli", 4, "case", 28.5, 114, { code: "GH-300" })]);
-  const later = find(itemsBought([FIRST, SECOND, cheaper]), "Broccoli");
-  assert.equal(later.priceChange, -2.5);
+  const later = find(itemsBought(confirmed.invoices.concat([cheaper])), "Broccoli");
+  assert.equal(later.priceChange, -2.5, "the later delivery uses the size confirmed before it");
   assert.equal(later.priceChangePercent, -8.1);
 });
 
 test("the latest price is the latest by date, whatever order the invoices were added in", function () {
   const addedLate = invoice("2026-09-10", [line("Broccoli", 1, "case", 26, 26, { code: "GH-300" })],
     { addedAt: "2026-10-01T09:00:00.000Z" });
-  const broccoli = find(itemsBought([FIRST, SECOND, addedLate]), "Broccoli (Chui Ho)");
+  const confirmed = confirmPackage([FIRST, SECOND, addedLate], broccoliKey(), "case", "2026-09-10",
+    { pack: { quantity: 20, unit: "lb" }, billedPer: null });
+  const broccoli = find(itemsBought(confirmed.invoices), "Broccoli (Chui Ho)");
   assert.equal(broccoli.lastPrice, 31);
   assert.equal(broccoli.priceChange, 1);
   assert.equal(broccoli.firstDate, "2026-09-10");
@@ -108,7 +131,7 @@ test("without a code, items match by the name as printed, then by description; s
   assert.equal(items.length, 3);
   const cabbage = find(items, "Chinese cabbage");
   assert.equal(cabbage.timesBought, 2);
-  assert.equal(cabbage.priceChange, 1);
+  assert.equal(cabbage.priceComparison.state, "package", "per case, until a case's contents are confirmed");
   const lemons = items.filter(function (item) {
     return item.description.trim().toLowerCase() === "lemons";
   });
@@ -168,4 +191,22 @@ test("saved invoices keep their item details, and drop any that aren't the right
     code: "GH-300", quantity: 5, unit: "case", unitPrice: 30 });
   assert.deepEqual(lines[1], { description: "Lemons", category: "cogs", amount: 28 });
   assert.deepEqual(lines[2], { description: "Salmon", category: "cogs", amount: 190 });
+});
+
+test("saved invoices keep a confirmed package size, billing unit and currency, and drop bad ones", function () {
+  const saved = {
+    months: [],
+    invoices: [invoice("2026-09-19", [
+      line("Rice", 1, "bag", 40, 40, { pack: { quantity: 50, unit: "LBS" }, billedPer: "kg" }),
+      line("Oil", 1, "case", 42, 42, { pack: { quantity: -6, unit: "l" }, billedPer: "case" }),
+      line("Salt", 1, "box", 3, 3, { pack: { quantity: 2, unit: "bucket" } })
+    ], { currency: "usd" }), invoice("2026-09-20", [line("Tea", 1, "box", 9, 9)], { currency: "dollars" })]
+  };
+  const invoices = cleanSavedFigures(saved).invoices;
+  assert.equal(invoices[0].currency, "USD");
+  assert.equal(invoices[1].currency, undefined, "not a currency code");
+  const lines = invoices[0].lines;
+  assert.deepEqual([lines[0].pack, lines[0].billedPer], [{ quantity: 50, unit: "lb" }, "kg"]);
+  assert.deepEqual([lines[1].pack, lines[1].billedPer], [undefined, undefined], "a negative size, a package unit");
+  assert.equal(lines[2].pack, undefined, "a bucket isn't a measure");
 });

@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- page-head: start (tools/build-pages.py writes this) -->
 <title>Join the FinDash Waitlist: Your P&amp;L Dashboard, Opening Soon</title>
-<meta name="description" content="FinDash opens soon, to the people on the waitlist first. Tell us about your business and we&#x27;ll email you when it&#x27;s your turn. No payment, no spam.">
+<meta name="description" content="FinDash opens soon, to the people on the waitlist first. Leave your email and we&#x27;ll tell you when it&#x27;s your turn. No payment, no spam.">
 <link rel="canonical" href="https://findash.tech/waitlist">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="FinDash">
 <meta property="og:title" content="Join the FinDash Waitlist: Your P&amp;L Dashboard, Opening Soon">
-<meta property="og:description" content="FinDash opens soon, to the people on the waitlist first. Tell us about your business and we&#x27;ll email you when it&#x27;s your turn. No payment, no spam.">
+<meta property="og:description" content="FinDash opens soon, to the people on the waitlist first. Leave your email and we&#x27;ll tell you when it&#x27;s your turn. No payment, no spam.">
 <meta property="og:url" content="https://findash.tech/waitlist">
 <meta property="og:image" content="https://findash.tech/og-image.png">
 <meta property="og:image:width" content="1200">
@@ -77,44 +77,16 @@
     <section class="auth-card" aria-labelledby="title">
       <span class="tag">Waitlist</span>
       <h1 id="title">Join the waitlist</h1>
-      <p class="lede">FinDash opens soon, to the people on this list first. We're also building inventory counts
-        from photos of your shelves, and FinDash in more languages. Tell us about your business and we'll email
-        you when it's your turn. Your answers decide what comes first.</p>
+      <p class="lede">FinDash opens soon, to the people on this list first. Leave your email and we'll tell you
+        when it's your turn.</p>
 
       <p class="message" id="message" role="status" aria-live="polite" hidden></p>
 
       <!-- Sent by script: the site's security policy (form-action 'none') blocks
-           ordinary form posts. The choices are drawn from js/waitlist-options.js. -->
+           ordinary form posts. -->
       <form id="waitlist-form" novalidate>
         <div class="label-row"><label for="email">Email</label></div>
-        <input type="email" id="email" name="email" autocomplete="email" inputmode="email" required>
-
-        <div class="label-row"><label for="business-type">Your business</label></div>
-        <select id="business-type" name="businessType" required></select>
-
-        <div class="label-row"><label for="country">Country</label></div>
-        <input type="text" id="country" name="country" autocomplete="country-name" list="countries" required>
-        <datalist id="countries"></datalist>
-
-        <fieldset class="languages">
-          <legend>Languages</legend>
-          <p class="field-hint">Tick every language that applies, in each column.</p>
-          <div class="language-table-wrap">
-            <table class="language-table">
-              <thead><tr><th scope="col">Language</th></tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </fieldset>
-
-        <div class="label-row"><label for="other-languages">Other languages</label><span class="optional">Optional</span></div>
-        <input type="text" id="other-languages" name="otherLanguages" placeholder="Such as Punjabi, Haitian Creole, Amharic">
-
-        <div class="label-row"><label for="invoices-per-month">Supplier invoices a month</label></div>
-        <select id="invoices-per-month" name="invoicesPerMonth" required></select>
-
-        <div class="label-row"><label for="hardest-part">What's the hardest part of managing your money?</label><span class="optional">Optional</span></div>
-        <textarea id="hardest-part" name="hardestPart" rows="3"></textarea>
+        <input type="email" id="email" name="email" autocomplete="email" inputmode="email" maxlength="254" required>
 
         <!-- Left empty by people, who never see it; filled in by form robots. -->
         <div class="trap" aria-hidden="true">
@@ -125,13 +97,12 @@
         <button type="submit" class="submit" id="submit">Join the waitlist</button>
         <p class="hint">We'll only email you about FinDash. To be taken off the list, email
           <a href="mailto:support.findash@findash.tech?subject=Waitlist">support.findash@findash.tech</a>.
-          <a href="/privacy#collect">How we handle your answers</a>.</p>
+          <a href="/privacy#collect">How we handle your email</a>.</p>
       </form>
 
       <div class="joined" id="joined" hidden>
         <p class="joined-title">You're on the list.</p>
-        <p>Thank you. We'll email <b id="joined-email"></b> when FinDash opens for you, and when inventory from
-          photos and more languages are ready.</p>
+        <p>Thank you. We'll email <b id="joined-email"></b> when FinDash opens for you.</p>
         <a class="submit" href="/">Back to the home page</a>
       </div>
     </section>
@@ -140,12 +111,12 @@
       <h2>What's coming</h2>
       <ul>
         <li>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-          <span><b>Inventory from photos</b>Photograph your shelves or your filled-in count sheet, and see what's on hand next to what your invoices say you bought.</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg>
+          <span><b>Delivery checks and a buying list</b>Check what arrived against the invoice, keep a count of what's on the shelf, and see what to buy next.</span>
         </li>
         <li>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
-          <span><b>In your language</b>The dashboard, item names and count sheets in your language, and your staff's.</span>
+          <span><b>In your language</b>Stock, item names and count sheets in English or Chinese, with your supplier's wording kept beside them.</span>
         </li>
         <li>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>

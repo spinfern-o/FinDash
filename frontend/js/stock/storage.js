@@ -4,7 +4,7 @@ import { emptyInventory, validateInventory } from './ledger.js';
 import { words } from './language.js';
 import { announceStockChange } from './changes.js';
 const GUEST_KEY = 'findash-stock-guest-v1';
-let loading = false;
+let loading = null;
 let guestSnapshot = null;
 export const store = { inventory: emptyInventory(), user: null, revision: 0, ready: false, dirty: false, busy: false, note: '', pendingInvoice: null, confirmedInvoices: [] };
 
@@ -15,10 +15,23 @@ export function parseInventory(text) {
   return inventory;
 }
 
+/* Waits for a reload already under way (one starts whenever the page gets
+   focus back, such as when a file picker closes), so what comes next sees
+   the stock as loaded. */
+export async function whenStockLoaded() {
+  if (loading) { await loading; }
+}
+
 /* Only guest data is written to local storage; signed-in records stay in memory. */
-export async function loadStock() {
-  if (store.busy || store.dirty || loading) { return; }
-  loading = true;
+export function loadStock() {
+  if (store.busy || store.dirty) { return Promise.resolve(); }
+  if (!loading) {
+    loading = readStock().finally(function () { loading = null; });
+  }
+  return loading;
+}
+
+async function readStock() {
   store.ready = false;
   const previousOwner = store.user?.email || null;
   try {
@@ -55,8 +68,6 @@ export async function loadStock() {
   } catch {
     store.note = 'accountFailed';
     store.ready = false;
-  } finally {
-    loading = false;
   }
 }
 

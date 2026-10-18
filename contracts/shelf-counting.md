@@ -63,11 +63,33 @@ and leaves the previous count exactly as it was. Nothing recognised is unknown, 
 only come from the owner confirming it. Its explanation is text on the page, escaped like any other
 outside wording, never HTML and never an instruction.
 
-## Deliberately left out of P0
+## Several products in one photo
 
-- **One SKU per photo.** The request carries one `item`; several products on one shelf are P1, and
-  widening the request to a list of approved candidates is the only wire change that needs.
+A real fridge is not one product. The photo that prompted this held whole milk, 2%, oat, almond,
+coconut and soy milk, half and half and cream, so a scan that answers for one of them asks the
+owner to photograph the same fridge six times.
+
+So one photo is asked about every product the owner tracks at that location, up to twelve, the
+ones with a shelf target first. The model gets them as a **numbered list** with their wording and
+units and answers by number; it is never given an item id and never asked to pick a product, so
+it cannot name one the owner did not choose. The server maps the numbers back to ids, drops an
+answer that points outside the list, keeps the first answer for each product, and fills in any
+product the model skipped as unobserved — so the page always shows exactly one row per product it
+asked about, whatever the model returns.
+
+Review is one row per product: what was seen, the target, what to put out, and a number the owner
+can change. **A row left blank is not written at all**, which is how "the photo does not show the
+soy milk" stays different from "there is no soy milk". The rows that do carry a number are saved
+in one ledger write, so a shelf is never half counted; if any one of them is bad, none is saved.
+
+The duplicate guard is per product rather than per photo, since the same photo legitimately counts
+several products. Going back to the same photo for a product it had not yet answered for is the
+owner finishing the job; counting the same product from it twice is a resend, and refused.
+
+## Deliberately left out
 - **Shelf regions, crops and stored reference images.** No photo or crop is stored anywhere.
+- **More than twelve products in one photo.** Past that it is not a photo of one shelf, and the
+  owner cannot check that many answers in one sitting; the rest keep their last count.
 - **Supplier ordering from a shelf count.** The buying list is untouched and stays its own tab: a
   shelf being short is not a reason to buy, because the back room is not in the photo.
 - **Several shelves for one item.** An item is already one product in one location in one unit, so a

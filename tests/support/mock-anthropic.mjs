@@ -54,11 +54,16 @@ export async function startMockAnthropic() {
         actions: ["Review September's costs line by line."]
       },
       columns: { mapping: {}, other: { "bank charges": "operating" } },
-      // What a shelf photo counts as.
+      // What a shelf photo counts as: one answer per product asked about,
+      // by its place in the list the page sent.
       shelf: {
-        shows_requested_product: true, usable: true, coverage: "complete", visible_count: 7,
-        count_type: "visible-exact", reliability: "good", obstructed: false, quality_flags: [],
-        explanation: "Seven cartons are clearly visible in the front row."
+        usable: true, quality_flags: [], unmatched: [],
+        explanation: "The front row of the shelf is clearly visible.",
+        observations: [{
+          candidate: 1, present: true, visible_count: 7, count_type: "visible-exact",
+          coverage: "complete", reliability: "good", obstructed: false,
+          explanation: "Seven cartons are clearly visible in the front row."
+        }]
       }
     },
     requestsOfKind: function (kind) {

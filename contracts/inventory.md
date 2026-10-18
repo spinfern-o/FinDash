@@ -82,25 +82,39 @@ them rather than overwriting it.
   offered>"`. ` saw:` is left off when the reading offered no number (unreadable or partial photo) and the
   owner counted the shelf themselves; a correction is the movement's quantity differing from ` saw:`. No
   image, no reading text and no other model output is stored, here or anywhere else.
-- The same note stops the same photo being counted twice (a retry, a double press, a second tab). The id of
-  the newest `count` for that item when the photo was taken is checked before saving, so a reading confirmed
-  after a newer count is refused rather than written over it; an account save then also has the usual
-  revision check behind it.
-- A photo never records usage, waste, a delivery, a purchase or a cost, and never touches another item or
-  another location.
+- The note stops the same photo counting the same product twice (a retry, a double press, a second tab).
+  It is per product, not per photo: one photo counting the milk and the oat milk is one photo doing its job.
+  The id of the newest `count` for that item when the photo was taken is checked before saving, so a reading
+  confirmed after a newer count is refused rather than written over it; an account save then also has the
+  usual revision check behind it.
+- A photo never records usage, waste, a delivery, a purchase or a cost, and never touches a product on
+  another shelf.
+
+One photo answers for every product the owner tracks on that shelf — a fridge holds whole milk, oat milk and
+soy milk at once. `shelfCandidates(inventory, location)` picks them: everything at that location, the ones
+with a shelf target first, at most 12. Each is counted, reviewed and saved on its own, and all of them are
+saved in one ledger write, so a shelf is never left half counted. A product the owner leaves blank is not
+written at all and keeps whatever the ledger already holds for it.
 
 `POST /api/read-document` with `task: "shelf-count"` counts one shelf. A request without `task` is an
 invoice, exactly as before. The same login, same-site check and same daily `photo` allowance apply, so there
-is no new feature name and no migration. The request adds `item: {id, name, original, unit, location}` — the
-one product the owner chose, bounded as the ledger bounds those fields; the model is given the wording and
-the unit, never the id, and is never asked to pick a product.
+is no new feature name and no migration. The request adds `items: [{id, name, original, unit, location}]` —
+1 to 12 products the owner tracks on one shelf, each bounded as the ledger bounds those fields, with no
+repeats. The model is given them as a numbered list with their wording and units, never their ids, and
+answers by number, so it cannot name a product the owner did not pick.
 
 The answer is `{reading, model}`, rebuilt field by field in `backend/vision/shelf-count.js`:
-`{showsItem, usable, coverage, visibleCount, countType, reliability, obstructed, qualityFlags, explanation}`.
-`visibleCount` is a whole number of the item's own unit or `null`, and it is dropped to `null` unless the
-model counted whole visible units (`countType: "visible-exact"`). `reliability` is a qualitative hint for
-the owner's review, not a probability. Nothing in the answer decides anything: the page shows it, the owner
-confirms or corrects the number, and only that number is saved.
+`{usable, qualityFlags, unmatched, explanation, observations}`. There is exactly one observation per product
+asked about, in the order asked: an answer pointing outside the list is dropped, the first answer for a
+product wins, and a product the model said nothing about comes back unobserved. Each observation is
+`{itemId, showsItem, usable, coverage, visibleCount, countType, reliability, obstructed, explanation}`.
+`visibleCount` is a whole number of that product's own unit or `null`, and it is dropped to `null` unless the
+model counted whole visible units of a product it could actually find (`countType: "visible-exact"`,
+`present: true`). `showsItem` false means the photo does not show that product, which is unknown and never
+zero. `unmatched` names what is on the shelf but tracked by nobody; it never becomes an item. `reliability`
+is a qualitative hint for the owner's review, not a probability. Nothing in the answer decides anything: the
+page shows one row per product, the owner confirms or corrects each number, and only those numbers are
+saved.
 
 ## Invoice details for comparing prices
 
@@ -130,9 +144,9 @@ a price change is shown only when both prices are for the same amount (`price-co
 - Apply `supabase/migrations/20261018000000_account_inventory.sql` and then `supabase/migrations/20261019000000_stock_invoice_sync.sql` before deploying the new handlers. The second migration is required for financial PUT as well as invoice/stock confirmation. Missing RPCs fail with 503; there is no partial-save fallback.
 - `POST /api/read-document`: existing image payload plus optional `language:'zh-CN'`.
   `document.lines[].description` is Chinese; `original` preserves printed text. English remains default.
-  With `task:'shelf-count'` and `item`, the same address counts one shelf instead (above); it answers
-  `{reading,model}` and no `document`. An unknown `task`, or a missing or oversized `item`, is 400 before
-  anything is sent to the model.
+  With `task:'shelf-count'` and `items`, the same address counts one shelf instead (above); it answers
+  `{reading,model}` and no `document`. An unknown `task`, or `items` that is missing, empty, over 12,
+  repeated or oversized, is 400 before anything is sent to the model.
 
 ## First slice behavior
 

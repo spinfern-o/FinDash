@@ -11,7 +11,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { emptyInventory, addItem, recordMovement, updateItem, validateInventory, stockOnHand } from '../../frontend/js/stock/ledger.js';
-import { latestCount, recordShelfCount, refillNeeded, shelfDraft, shelfRefill } from '../../frontend/js/stock/shelf.js';
+import { MAXIMUM_CANDIDATES, latestCount, recordShelfCount, recordShelfCounts, refillNeeded, shelfCandidates, shelfDraft, shelfRefill } from '../../frontend/js/stock/shelf.js';
 import { buyingList } from '../../frontend/js/stock/buying.js';
 
 const MILK = { id: 'milk', original: 'WHOLE MILK 1GAL', description: '全脂牛奶', unit: 'carton', location: 'Front fridge' };
@@ -237,4 +237,100 @@ test('the shelf shows one number, the same one the stock list and the dashboard 
     at: '2026-10-18T11:00:00.000Z' });
   assert.equal(stockOnHand(inventory, 'milk'), 6);
   assert.equal(refillOf(inventory), 4, 'two cartons used since the count are two more to put out');
+});
+
+/* A fridge holding several products the owner tracks: whole milk with a
+   target of 10, oat milk with 6, and soy milk nobody set a target for. */
+function fridge() {
+  let inventory = shelf(10);
+  inventory = addItem(inventory, { id: 'oat', original: 'OATLY BARISTA 32OZ', description: '燕麦奶',
+    unit: 'carton', location: 'Front fridge', shelfTarget: 6 });
+  inventory = addItem(inventory, { id: 'soy', original: 'PACIFIC SOY', description: '豆奶',
+    unit: 'carton', location: 'Front fridge' });
+  return inventory;
+}
+
+/* One photo of the fridge, counting whichever products the owner filled in. */
+function scanFridge(inventory, counts, seed) {
+  return recordShelfCounts(inventory, {
+    hash: digest(seed), at: '2026-10-18T09:' + String(seed).padStart(2, '0') + ':00.000Z',
+    counts: Object.entries(counts).map(function ([itemId, quantity]) {
+      const latest = latestCount(inventory, itemId);
+      return { id: itemId + '-' + seed, itemId: itemId, quantity: quantity,
+        since: latest ? latest.id : null };
+    })
+  });
+}
+
+test('one photo counts every product on the shelf, each against its own target', function () {
+  const inventory = scanFridge(fridge(), { milk: 7, oat: 4, soy: 2 }, 1);
+  assert.equal(refillOf(inventory), 3, 'the milk is 3 short of 10');
+  assert.equal(refillOf(inventory, 'oat'), 2, 'the oat milk is 2 short of 6');
+  assert.equal(stockOnHand(inventory, 'soy'), 2, 'the soy milk is counted, though it has no target');
+  assert.equal(refillOf(inventory, 'soy'), undefined, 'and no target means nothing to put out');
+  assert.equal(inventory.movements.length, 3, 'one count per product, from the one photo');
+  for (const movement of inventory.movements) {
+    assert.equal(movement.note, 'photo-count:' + digest(1), 'all three name the same photo');
+  }
+});
+
+test('a product the photo could not answer for keeps exactly what it had', function () {
+  let inventory = scanFridge(fridge(), { milk: 7, oat: 4 }, 1);
+  // A second photo of the same fridge where only the milk could be counted.
+  inventory = scanFridge(inventory, { milk: 9 }, 2);
+  assert.equal(stockOnHand(inventory, 'milk'), 9);
+  assert.equal(stockOnHand(inventory, 'oat'), 4, 'the oat milk was left alone, not zeroed');
+  assert.equal(stockOnHand(inventory, 'soy'), null, 'never counted is still never counted');
+  assert.equal(refillOf(inventory, 'oat'), 2);
+});
+
+test('T08: one photo counts each product once, however often it is sent', function () {
+  const inventory = scanFridge(fridge(), { milk: 7, oat: 4 }, 1);
+  assert.throws(function () { scanFridge(inventory, { milk: 7 }, 1); }, /alreadyCounted/,
+    'a resend cannot count the milk a second time');
+  assert.throws(function () { scanFridge(inventory, { milk: 7, soy: 3 }, 1); }, /alreadyCounted/,
+    'and one product already counted stops the whole resend');
+  // The guard is per product, not per photo: going back to the same photo
+  // for a product it had not yet answered for is the owner finishing the
+  // job, not counting anything twice.
+  const andSoy = scanFridge(inventory, { soy: 3 }, 1);
+  assert.equal(stockOnHand(andSoy, 'soy'), 3);
+  assert.equal(stockOnHand(andSoy, 'milk'), 7, 'and the milk is still the milk');
+  assert.equal(inventory.movements.length, 2, 'the rejected resends changed nothing');
+});
+
+test('a shelf is counted whole or not at all', function () {
+  const before = fridge();
+  assert.throws(function () { scanFridge(before, { milk: 7, oat: 2.5 }, 1); }, /wholeNumber/);
+  assert.throws(function () { scanFridge(before, {}, 1); }, /noCounts/);
+  assert.deepEqual(before.movements, [], 'a rejected scan leaves the ledger as it was');
+});
+
+test('T11: a newer count for one product stops the whole scan', function () {
+  const fresh = fridge();
+  const counts = [{ id: 'milk-late', itemId: 'milk', quantity: 7, since: null },
+    { id: 'oat-late', itemId: 'oat', quantity: 4, since: null }];
+  // Someone counts the oat milk by hand between the photo and the confirm.
+  const meanwhile = recordMovement(fresh, { id: 'by-hand', itemId: 'oat', type: 'count', quantity: 5,
+    at: '2026-10-18T09:05:00.000Z' });
+  assert.throws(function () {
+    recordShelfCounts(meanwhile, { counts: counts, hash: digest(3), at: '2026-10-18T09:06:00.000Z' });
+  }, /newerCount/);
+  assert.equal(stockOnHand(meanwhile, 'oat'), 5, 'the newer count stands');
+  assert.equal(stockOnHand(meanwhile, 'milk'), null, 'and the milk was not half saved');
+});
+
+test('the photo is asked about the products on that shelf, the ones with targets first', function () {
+  const inventory = fridge();
+  assert.deepEqual(shelfCandidates(inventory, 'Front fridge').map(function (item) { return item.id; }),
+    ['milk', 'oat', 'soy'], 'targets first, then the rest by name');
+  assert.deepEqual(shelfCandidates(inventory, 'Back room'), [], 'another shelf is another photo');
+
+  let crowded = emptyInventory();
+  for (let number = 0; number < MAXIMUM_CANDIDATES + 3; number++) {
+    crowded = addItem(crowded, { id: 'item-' + number, original: 'P' + number, description: 'P' + number,
+      unit: 'each', location: 'Front fridge' });
+  }
+  assert.equal(shelfCandidates(crowded, 'Front fridge').length, MAXIMUM_CANDIDATES,
+    'more products than one photo can be asked about are not all sent');
 });

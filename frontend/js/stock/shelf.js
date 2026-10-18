@@ -1,5 +1,10 @@
 /* What each shelf still needs, and counting one from a photo.
 
+   One photo of one shelf answers for every product the owner tracks on it:
+   a fridge holds whole milk, oat milk and soy milk at once. Each product is
+   counted, reviewed and saved on its own, and a product the photo does not
+   show is left exactly as it was.
+
    A photo the owner confirms is an absolute observation of one shelf, so it
    is saved as the ledger's existing `count`: the balance is re-anchored,
    not added to. How much to put out is worked out from that balance every
@@ -21,6 +26,9 @@ import { stockBalances, recordMovement } from './ledger.js';
 
 // More units than any one shelf holds; a photo cannot claim more.
 const MAXIMUM_VISIBLE = 100000;
+// Products one photo is asked about. Beyond this the photo is not of one
+// shelf, and the owner cannot check that many answers either.
+export const MAXIMUM_CANDIDATES = 12;
 
 /* The newest confirmed count for an item, or null when it was never
    counted. Movements are append-only, so the last one recorded is the
@@ -69,6 +77,19 @@ export function shelfRefill(inventory) {
   return list;
 }
 
+/* The products one photo of `location` is asked about: everything the
+   owner tracks there, the ones with a shelf target first, since those are
+   the ones that can answer "how many to put out". At most
+   MAXIMUM_CANDIDATES of them; a fuller shelf needs more than one photo. */
+export function shelfCandidates(inventory, location) {
+  const here = inventory.items.filter(function (item) { return item.location === location; });
+  here.sort(function (a, b) {
+    const byTarget = (a.shelfTarget === undefined) - (b.shelfTarget === undefined);
+    return byTarget || a.description.localeCompare(b.description);
+  });
+  return here.slice(0, MAXIMUM_CANDIDATES);
+}
+
 /* The note kept with a counted photo: which photo it was, and the number
    the reading offered, so the model's accuracy can be read off the ledger
    later. `saw:` is left off when no number was offered, and a correction is
@@ -97,8 +118,11 @@ export function recordShelfCount(inventory, { itemId, quantity, hash, offered = 
   if (typeof hash !== 'string' || !/^[0-9a-f]{64}$/.test(hash)) {
     throw new Error('invalid');
   }
+  // Per product: one photo counting the milk and the oat milk is one photo
+  // doing its job; the same photo counting the milk twice is a resend.
   const already = inventory.movements.some(function (movement) {
-    return typeof movement.note === 'string' && movement.note.split(' ')[0] === 'photo-count:' + hash;
+    return movement.itemId === itemId && typeof movement.note === 'string' &&
+      movement.note.split(' ')[0] === 'photo-count:' + hash;
   });
   if (already) {
     throw new Error('alreadyCounted');
@@ -112,7 +136,22 @@ export function recordShelfCount(inventory, { itemId, quantity, hash, offered = 
   });
 }
 
-/* What to put in front of the owner from one reading: `count` is a number
+/* Several products counted from the one photo, saved together: either the
+   whole set is recorded or none of it is, so a shelf is never left half
+   counted. Products the owner left empty are not in `counts` and keep
+   whatever the ledger already holds for them. */
+export function recordShelfCounts(inventory, { counts, hash, at }) {
+  if (!Array.isArray(counts) || !counts.length) {
+    throw new Error('noCounts');
+  }
+  let next = inventory;
+  for (const count of counts) {
+    next = recordShelfCount(next, { ...count, hash: hash, at: at });
+  }
+  return next;
+}
+
+/* What to put in front of the owner from one product's reading: `count` is a number
    to check only when the whole shelf was clearly visible, `seen` is what
    the model reported whatever its doubts, and `problem` names what stops
    the number being offered. Nothing here saves anything. */
@@ -131,14 +170,17 @@ export function shelfDraft(reading) {
 }
 
 /* Asks the site's existing authenticated, rate-limited reader to count one
-   shelf, naming the one item the owner chose. The photo is sent for this
-   one request and is not stored, here or there. */
-export async function requestShelfCount(photo, item, language) {
+   shelf, naming the products the owner tracks on it. The photo is sent for
+   this one request and is not stored, here or there. The answer carries one
+   observation per product asked about, in the same order. */
+export async function requestShelfCount(photo, items, language) {
   const response = await fetch('/api/read-document', {
     method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       task: 'shelf-count', image: photo.data, mediaType: photo.mediaType, language: language,
-      item: { id: item.id, name: item.description, original: item.original, unit: item.unit, location: item.location }
+      items: items.map(function (item) {
+        return { id: item.id, name: item.description, original: item.original, unit: item.unit, location: item.location };
+      })
     })
   });
   if (response.status === 401 || response.status === 403) {
@@ -148,7 +190,7 @@ export async function requestShelfCount(photo, item, language) {
     throw new Error('scanFailed');
   }
   const body = await response.json();
-  if (!body.reading) {
+  if (!body.reading || !Array.isArray(body.reading.observations)) {
     throw new Error('scanFailed');
   }
   return body.reading;

@@ -20,5 +20,27 @@
       <artifactId>anthropic-java</artifactId>
       <version>2.34.0</version>
     </dependency>
+
+    <!-- Tests only, never shipped. The CSV splitter and the JSON writer are
+         the two places where a quiet mistake reaches the published figures. -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.11.4</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <!-- Pinned: the version Maven picks by itself has changed before, and
+           an older one does not run JUnit 5 tests at all - it just reports
+           none to run, which looks like passing. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.5.4</version>
+      </plugin>
+    </plugins>
+  </build>
 </project>

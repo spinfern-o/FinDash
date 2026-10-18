@@ -15,7 +15,12 @@
  *
  * Answers 503 with a clear reason when FORECAST_URL is not set, so the page
  * can keep its own trend line rather than show an error.
+ *
+ * Needs a logged-in person with a daily allowance left, like the other
+ * model-backed features: see lib/ai-access.js.
  */
+
+import { allowAiUse } from "../../lib/ai-access.js";
 
 const MAXIMUM_POINTS = 240;
 const MAXIMUM_HORIZON = 12;
@@ -77,6 +82,15 @@ async function askForecastService(baseUrl, series, horizon) {
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "POST only" });
+  }
+
+  // A forecast runs a model on the service in forecast/, which this site pays
+  // for, and this function holds FORECAST_TOKEN so the caller never needs it.
+  // Without this check the proxy hands out exactly the access that token
+  // exists to restrict: anyone who found the address could spend the service's
+  // processor time. The page keeps its own trend line when this says no.
+  if (!(await allowAiUse(req, res, "forecast"))) {
+    return;
   }
 
   const serviceUrl = process.env.FORECAST_URL;

@@ -34,6 +34,7 @@ npx playwright install chromium         # once, for the browser tests
 npm test                                # every test (about two minutes)
 python3 tools/build-pages.py            # after changing any page's text, a title or the skill
 python3 tools/build-pages.py --check    # fails if generated files are out of date (a test runs it)
+mvn -q test                             # the Java command-line app, if you changed src/main/java
 ```
 
 ## Rules

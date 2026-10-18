@@ -36,7 +36,7 @@ jobs:
         run: python3 -m py_compile forecast/main.py
 
   java:
-    name: Java app builds
+    name: Java app builds and its tests pass
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -48,5 +48,5 @@ jobs:
           java-version: 21
           cache: maven
 
-      - name: Compile
-        run: mvn -B -q compile
+      - name: Compile and test
+        run: mvn -B -q test

@@ -6,6 +6,11 @@
    the tail of the previous one. "Year to date" is every month on file in that
    same calendar year, up to and including the selected month.
 
+   Both runs END at the selected month, never after it. The heading says
+   "Quarter through July", so pulling August and September into July's figures
+   would make that heading untrue - and would mix a later month's loss into a
+   period the reader asked to see up to July.
+
    The period drives the cards that describe ONE stretch of time: the net
    result, the headline numbers, budget, where revenue goes and the report.
    Cards that compare months (the charts, what needs attention, the
@@ -44,7 +49,9 @@ export function monthsInPeriod(month, periodKey) {
 
   if (periodKey === "quarter") {
     return allMonths.filter(function (other) {
-      return yearOf(other) === yearOf(month) && quarterOf(other.monthNum) === quarterOf(month.monthNum);
+      return yearOf(other) === yearOf(month)
+        && quarterOf(other.monthNum) === quarterOf(month.monthNum)
+        && other.monthNum <= month.monthNum;
     });
   }
 

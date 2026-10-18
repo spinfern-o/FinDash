@@ -122,6 +122,22 @@ test("a quarter adds up its months, and its margin comes from the sums", functio
   assert.equal(totals.budgetPercent, (159640 / 157000) * 100);
 });
 
+test("a quarter ends at the month chosen, never at a later one on file", function () {
+  state.data = { generated: null, months: templateMonths() };
+  // July, August and September are all in Q3. Choosing July asks for the
+  // quarter THROUGH July, which is the heading the dashboard prints; folding
+  // August and September in reported a later month's figures as July's.
+  const july = state.data.months[0];
+  const quarter = monthsInPeriod(july, "quarter");
+  assert.deepEqual(quarter.map(function (month) { return month.monthNum; }), [7]);
+  assert.equal(totalsForMonths(quarter).revenue, july.revenue);
+
+  // The same question asked of "year to date" has always behaved this way;
+  // the two pills must not answer it differently.
+  const toDate = monthsInPeriod(july, "ytd");
+  assert.deepEqual(toDate.map(function (month) { return month.monthNum; }), [7]);
+});
+
 test("saved figures are checked field by field on the way back in", function () {
   const saved = {
     v: 2,

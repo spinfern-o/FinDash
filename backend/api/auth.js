@@ -58,12 +58,33 @@ function isRateLimit(error) {
   return error.status === 429 || /rate_limit/.test(error.code || "");
 }
 
-/* Where links in Supabase's emails send people back to. SITE_URL pins it;
-   otherwise this deployment's own address. Supabase only honours addresses
-   on the project's redirect allow-list, so a forged Host header goes nowhere. */
-function loginPageUrl(req) {
-  const base = process.env.SITE_URL || `https://${req.headers.host}`;
+/* Where links in Supabase's emails send people back to, or null when this
+   site has not been told its own address.
+
+   Only SITE_URL is trusted. The Host header is the caller's to set, and this
+   address is the one that carries someone's tokens back from their email, so
+   a forged Host must never reach it. Supabase's redirect allow-list is a
+   second line of defence, not the first: a project that allows previews with
+   a wildcard such as https://*.vercel.app/** would honour a forged host.
+
+   With no SITE_URL we send no address at all and Supabase uses the Site URL
+   configured in the project, which is always one the owner chose. */
+function loginPageUrl() {
+  const base = process.env.SITE_URL;
+  if (!base) {
+    return null;
+  }
   return base.replace(/\/$/, "") + "/login";
+}
+
+/* Email options carrying the return address under `key`, or none when this
+   site has no trusted address to give. */
+function emailRedirect(key) {
+  const url = loginPageUrl();
+  if (!url) {
+    return {};
+  }
+  return { [key]: url };
 }
 
 /* Supabase's error codes, said the way an owner would want to hear them.
@@ -168,7 +189,7 @@ async function signUp(req, res, body) {
   const { data, error } = await supabaseClient().auth.signUp({
     email: body.email.trim(),
     password: body.password,
-    options: { emailRedirectTo: loginPageUrl(req) }
+    options: emailRedirect("emailRedirectTo")
   });
   if (error) {
     return fail(res, error, "Creating an account isn't working right now. Try again soon.");
@@ -186,9 +207,10 @@ async function sendPasswordReset(req, res, body) {
   if (!isValidEmail(body.email)) {
     return res.status(400).json({ error: "Enter a valid email address." });
   }
-  const { error } = await supabaseClient().auth.resetPasswordForEmail(body.email.trim(), {
-    redirectTo: loginPageUrl(req)
-  });
+  const { error } = await supabaseClient().auth.resetPasswordForEmail(
+    body.email.trim(),
+    emailRedirect("redirectTo")
+  );
   // The same answer whether or not the email has an account, so this cannot
   // be used to find out who uses FinDash. Only a rate limit is reported.
   if (error && isRateLimit(error)) {

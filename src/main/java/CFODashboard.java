@@ -160,7 +160,16 @@ public class CFODashboard {
             System.out.println(month.monthNumber + " - " + month.monthName);
         }
 
-        DataJsonWriter.write(months, "frontend/data.json");
+        // Never replace the published figures with nothing. A missing or renamed
+        // CSV, or running from the wrong folder, used to leave an empty list
+        // here and overwrite frontend/data.json with "months": [] - after which
+        // the web page shows its demo figures and reports that the data could
+        // not be loaded.
+        if (months.isEmpty()) {
+            System.out.println("No months loaded - leaving frontend/data.json as it is");
+        } else {
+            DataJsonWriter.write(months, "frontend/data.json");
+        }
 
         Scanner input = new Scanner(System.in);
         while (true) {

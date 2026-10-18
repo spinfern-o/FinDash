@@ -21,6 +21,9 @@ import { cardHtml } from "./card.js";
 export const MINIMUM_MONTHS_FOR_TREND = 3;     // below this there is no line to fit; no card
 export const MINIMUM_MONTHS_FOR_AMOUNTS = 6;   // below this the line is shown but no amount
 const MONTHS_AHEAD = 3;
+/* Returned instead of a projection when the model was refused for a reason
+   the reader can do something about: log in, or wait until tomorrow. */
+const NEEDS_ACCOUNT = "needs-account";
 const CHART_HEIGHT = 150;
 
 /* A least-squares line through `values`, carried `monthsAhead` steps on,
@@ -390,6 +393,16 @@ export function wireForecastButton(redraw) {
         note.hidden = true;
         return;
       }
+      if (result === NEEDS_ACCOUNT) {
+        // Running the model costs this site money, so it needs an account.
+        // Saying "could not be reached" here would blame the service for
+        // something the reader can fix in a few seconds.
+        note.textContent = "The forecasting model needs a free account. Log in (top right), " +
+          "then press this again. The trend on the chart is worked out on this page either way.";
+        button.disabled = false;
+        button.textContent = "Use the forecasting model";
+        return;
+      }
       state.modelForecast = result;
       redraw();
     } catch (error) {
@@ -404,8 +417,9 @@ export function wireForecastButton(redraw) {
   });
 }
 
-/* Sends only the net profit figures, in order. Returns the projection, or
-   null when the service says it has no model to use. */
+/* Sends only the net profit figures, in order. Returns the projection, null
+   when the service says it has no model to use, or NEEDS_ACCOUNT when this
+   person has to log in or has used up today's allowance. */
 async function requestModelForecast() {
   const series = state.data.months.map(function (month) {
     return month.netProfit;
@@ -428,6 +442,11 @@ async function requestModelForecast() {
   if (response.status === 503) {
     console.warn("forecast model not available:", body.error || body.hint || "503");
     return null;
+  }
+  // Not logged in, or today's allowance is gone. Both are the reader's to
+  // act on, unlike every other failure here, which names a site setting.
+  if (response.status === 401 || response.status === 429) {
+    return NEEDS_ACCOUNT;
   }
   if (!response.ok) {
     throw new Error(body.hint || body.error || "returned " + response.status);

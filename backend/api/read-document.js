@@ -17,8 +17,9 @@
  * Response: { "document": {...}, "checks": {...}, "model": "..." }
  *
  * The same photo path also counts one shelf, for the stock page: a request
- * with "task": "shelf-count" and "item" (the one product being counted)
- * goes to backend/vision/shelf-count.js and answers { "reading": {...} }.
+ * with "task": "shelf-count" and "items" (the products the owner tracks
+ * on that one shelf) goes to backend/vision/shelf-count.js and answers
+ * { "reading": { "observations": [...] } }, one observation per product.
  * It is the same login, the same site check and the same daily photo
  * allowance; only the question and the answer differ. A request without
  * "task" is an invoice, exactly as before.
@@ -33,7 +34,7 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { allowAiUse } from "../../lib/ai-access.js";
-import { readShelfCount, shelfItemProblem } from "../vision/shelf-count.js";
+import { readShelfCount, shelfItemsProblem } from "../vision/shelf-count.js";
 
 const client = new Anthropic();
 
@@ -403,7 +404,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "task, when given, must be shelf-count" });
   }
   if (countingAShelf) {
-    const problem = shelfItemProblem(body.item);
+    const problem = shelfItemsProblem(body.items);
     if (problem) {
       return res.status(400).json({ error: problem });
     }

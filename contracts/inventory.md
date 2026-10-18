@@ -78,8 +78,10 @@ them rather than overwriting it.
   is on the shelf)`, and `null` when the shelf was never counted. Photographing the same shelf again
   replaces that answer; shortages are never added up and a newer count is never taken off an older one.
 - A confirmed photo count is saved as the existing `count` movement — an absolute observation, which is what
-  `count` already means — with `note: "photo-count:<the photo's SHA-256>"`, and ` corrected` after it when
-  the owner changed the number. No image, no reading and no model text is stored, here or anywhere else.
+  `count` already means — with `note: "photo-count:<the photo's SHA-256> saw:<the number the reading
+  offered>"`. ` saw:` is left off when the reading offered no number (unreadable or partial photo) and the
+  owner counted the shelf themselves; a correction is the movement's quantity differing from ` saw:`. No
+  image, no reading text and no other model output is stored, here or anywhere else.
 - The same note stops the same photo being counted twice (a retry, a double press, a second tab). The id of
   the newest `count` for that item when the photo was taken is checked before saving, so a reading confirmed
   after a newer count is refused rather than written over it; an account save then also has the usual

@@ -295,9 +295,9 @@ export function showShelfScan(itemId) {
         const confirmed = number(form, 'count');
         return recordShelfCount(store.inventory, {
           id: id(), itemId: itemId, quantity: confirmed, hash: hash,
-          // Marked when the saved number is not the one the reading offered,
-          // including when it offered none and the owner counted themselves.
-          corrected: confirmed !== draft.count,
+          // The number the reading offered, kept beside the owner's so how
+          // often and how far it is wrong can be measured later.
+          offered: draft.count,
           at: new Date().toISOString(), since: since ? since.id : null
         });
       });

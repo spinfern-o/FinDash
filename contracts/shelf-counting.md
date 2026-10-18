@@ -75,9 +75,30 @@ outside wording, never HTML and never an instruction.
 - **A confirmation banner after saving.** The dialog closes and "Needs refilling" shows the new
   answer immediately, which is the same information in the place the owner is already looking.
 
+## Reading the model's accuracy off a ledger
+
+Nobody has measured how often the counting is right. Each confirmed scan is one labelled data point:
+the note's `saw:<n>` is what the model offered and the movement's `quantity` is what the owner says was
+really there. Over the `count` movements whose note starts `photo-count:`, that supports three numbers,
+and no more:
+
+- **Correction rate** — the share of scans with a `saw:` where `quantity !== saw`. Scans with no `saw:`
+  are counted separately: the model offered nothing, which is a different failure from offering a wrong
+  number.
+- **Signed error** — `saw - quantity` per scan. The sign matters on its own: counting high leaves a shelf
+  short, counting low puts out stock nobody needed. Report the distribution, not an average, which hides
+  both tails.
+- **False zeros** — scans where `saw` is 0 and `quantity` is not, or the reverse. An empty shelf read as
+  stocked is the one error with no later check behind it.
+
+What it does not support: a confirmed number is the owner's word, not ground truth, and an owner who
+accepts a wrong number without looking records agreement, not accuracy. The data is weakest exactly where
+the model is most confidently wrong, so a pilot still needs photos counted by hand beside it. There is
+deliberately no tool and no dashboard for this; it is a query someone runs over a ledger during a pilot.
+
 ## Privacy
 
 A shelf photo goes to Anthropic to be read, for that one request, and is not stored by FinDash: not in
-Supabase, not in the browser, not in logs or error reports. Only the owner's confirmed number and the
-photo's digest are saved. `frontend/privacy.html` says so. The digest is of the photo's bytes; it
+Supabase, not in the browser, not in logs or error reports. Only the owner's confirmed number, the number the reading
+offered and the photo's digest are saved. `frontend/privacy.html` says so. The digest is of the photo's bytes; it
 identifies a repeat of the same file and nothing else.

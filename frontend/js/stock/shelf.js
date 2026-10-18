@@ -69,10 +69,13 @@ export function shelfRefill(inventory) {
   return list;
 }
 
-/* The note kept with a counted photo: which photo it was, and whether the
-   owner changed the number the model offered. No image, and no reading. */
-function countNote(hash, corrected) {
-  return 'photo-count:' + hash + (corrected ? ' corrected' : '');
+/* The note kept with a counted photo: which photo it was, and the number
+   the reading offered, so the model's accuracy can be read off the ledger
+   later. `saw:` is left off when no number was offered, and a correction is
+   then the movement's quantity differing from `saw:`. No image, and no
+   reading text. */
+function countNote(hash, offered) {
+  return 'photo-count:' + hash + (offered === null ? '' : ' saw:' + offered);
 }
 
 /* The owner's confirmed count from a photo, as the ledger's own absolute
@@ -82,10 +85,14 @@ function countNote(hash, corrected) {
    double press, two tabs) cannot count it twice. `since` is the id of the
    newest count for this item when the photo was taken, or null if there was
    none: a count saved in the meantime stops this one rather than quietly
-   writing over a newer reading of the same shelf. */
-export function recordShelfCount(inventory, { itemId, quantity, hash, corrected, id, at, since = null }) {
+   writing over a newer reading of the same shelf. `offered` is the number
+   the reading put in front of the owner, or null when it offered none. */
+export function recordShelfCount(inventory, { itemId, quantity, hash, offered = null, id, at, since = null }) {
   if (!Number.isInteger(quantity) || quantity < 0 || quantity > MAXIMUM_VISIBLE) {
     throw new Error('wholeNumber');
+  }
+  if (offered !== null && (!Number.isInteger(offered) || offered < 0 || offered > MAXIMUM_VISIBLE)) {
+    throw new Error('invalid');
   }
   if (typeof hash !== 'string' || !/^[0-9a-f]{64}$/.test(hash)) {
     throw new Error('invalid');
@@ -101,7 +108,7 @@ export function recordShelfCount(inventory, { itemId, quantity, hash, corrected,
     throw new Error('newerCount');
   }
   return recordMovement(inventory, {
-    id: id, itemId: itemId, type: 'count', quantity: quantity, at: at, note: countNote(hash, corrected)
+    id: id, itemId: itemId, type: 'count', quantity: quantity, at: at, note: countNote(hash, offered)
   });
 }
 

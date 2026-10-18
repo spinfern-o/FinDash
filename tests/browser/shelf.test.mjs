@@ -107,7 +107,8 @@ test('T01-T03, T22: 7, then 8, then 10 cartons against a target of 10 asks for 3
   assert.deepEqual(saved.inventory.movements.map(function (movement) { return movement.quantity; }), [0, 7, 8, 10]);
   assert.equal(await page.locator('[data-refill-row]').count(), 1);
   for (const movement of saved.inventory.movements.slice(1)) {
-    assert.match(movement.note, /^photo-count:[0-9a-f]{64}$/, 'only the photo\'s digest is kept');
+    assert.match(movement.note, new RegExp('^photo-count:[0-9a-f]{64} saw:' + movement.quantity + '$'),
+      'only the photo\'s digest and the number the reading offered are kept');
   }
 
   // T08: the same photo again, under another name, counts nothing twice.
@@ -180,7 +181,8 @@ test('T05, T07, T10: an unreliable reading offers no number, and the owner\'s ow
   const saved = await (await page.request.get(site.url + '/api/inventory')).json();
   assert.equal(saved.inventory.movements.length, 2, 'the two cancelled readings saved nothing');
   assert.equal(saved.inventory.movements[1].quantity, 6);
-  assert.match(saved.inventory.movements[1].note, /corrected$/, 'the owner\'s own number is marked as theirs');
+  assert.match(saved.inventory.movements[1].note, /^photo-count:[0-9a-f]{64} saw:8$/,
+    'the reading\'s 8 is kept beside the owner\'s 6, so the correction is measurable');
   assert.deepEqual(page.errors, []);
   await page.context().close();
 });

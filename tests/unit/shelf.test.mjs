@@ -79,20 +79,28 @@ test('T05: a reading with no reliable count offers no number, and nothing change
   assert.equal(refillOf(inventory), 3, 'the previous need is untouched by a failed reading');
 });
 
-test('T07: the owner\'s own number is what is saved, and the change is recorded', function () {
+test('T07: the owner\'s own number is what is saved, and the reading\'s is kept beside it', function () {
   const draft = shelfDraft({ showsItem: true, usable: true, coverage: 'complete', visibleCount: 8,
     countType: 'visible-exact', reliability: 'good', obstructed: false, qualityFlags: [], explanation: '' });
   assert.equal(draft.count, 8);
-  const inventory = scan(shelf(), 6, 7, { corrected: draft.count !== 6 });
+  const inventory = scan(shelf(), 6, 7, { offered: draft.count });
   assert.equal(stockOnHand(inventory, 'milk'), 6);
   assert.equal(refillOf(inventory), 4);
-  assert.match(inventory.movements[0].note, /^photo-count:[0-9a-f]{64} corrected$/);
+  assert.match(inventory.movements[0].note, /^photo-count:[0-9a-f]{64} saw:8$/,
+    'the reading said 8 and the owner saved 6, so the error is readable later');
+
+  // A reading that offered no number: the owner counted the shelf themselves,
+  // and there is nothing to compare their number with.
+  const own = scan(shelf(), 6, 3, { offered: null });
+  assert.match(own.movements[0].note, /^photo-count:[0-9a-f]{64}$/);
+  assert.throws(function () { scan(shelf(), 6, 4, { offered: -1 }); }, /invalid/,
+    'a note is never written from a number the page did not check');
 });
 
 test('T08: the same photo cannot be counted twice, however often it is sent', function () {
   const inventory = scan(shelf(), 7, 1);
   assert.throws(function () { scan(inventory, 7, 1); }, /alreadyCounted/);
-  assert.throws(function () { scan(inventory, 9, 1, { corrected: true }); }, /alreadyCounted/,
+  assert.throws(function () { scan(inventory, 9, 1, { offered: 7 }); }, /alreadyCounted/,
     'nor by correcting the number on a resend');
   assert.equal(inventory.movements.length, 1);
   assert.equal(shelfRefill(inventory).length, 1, 'one live shortage, not two');

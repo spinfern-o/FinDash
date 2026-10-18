@@ -378,7 +378,7 @@ export async function startMockSupabase() {
 
   /* claim_ai_use(feature_name, daily_limit), as the SQL function does it. */
   function handleClaimAiUse(response, body, userId) {
-    if (!["photo", "advice", "columns"].includes(body.feature_name)) {
+    if (!["photo", "advice", "columns", "forecast"].includes(body.feature_name)) {
       return databaseError(response, 400, "P0001", "unknown feature: " + body.feature_name);
     }
     const day = new Date().toISOString().slice(0, 10);

@@ -112,11 +112,15 @@
           you log in on. Not your files and not your photos.</dd>
       <dt>Daily stock records</dt>
       <dd>Original and translated item names, units, storage locations, shelf counts, and confirmed delivery, usage and waste history; what you set for buying each item (minimum, target, supplier and pack sizes) and the supplier item codes you confirm; and the delivery problems you record: what was billed and what arrived, a possible value to check, your notes, and any credit you record. Without a login these stay in this browser; while logged in they are saved separately to your account with Supabase. When you confirm an invoice and choose to add its costs, the reviewed invoice also updates your saved P&amp;L figures. Shelf counts and stock movements do not create additional invoice costs.</dd>
-      <dt>Pending invoice readings</dt>
-      <dd>Photo previews and unconfirmed readings stay only in memory for the current visit. They disappear when the page closes. Only confirmed item text and counts enter the stock record; confirmed invoice text and amounts also enter your figures when you choose to add them.</dd>
-      <dt>Photos of invoices (while logged in)</dt>
-      <dd>Sent to Claude, Anthropic's AI model, to be read. We don't keep the photo; only the lines you
-          confirm are kept, as above.</dd>
+      <dt>Pending invoice and shelf readings</dt>
+      <dd>Photo previews and unconfirmed readings, including a shelf count you have not confirmed, stay only in memory for the current visit. They disappear when the page closes. Only confirmed item text and counts enter the stock record; confirmed invoice text and amounts also enter your figures when you choose to add them.</dd>
+      <dt>Photos of invoices and shelves (while logged in)</dt>
+      <dd>Sent to Claude, Anthropic's AI model, to be read: an invoice photo to read its lines, a shelf photo
+          to count what is visible on that one shelf. We don't keep the photo. From an invoice, only the lines
+          you confirm are kept, as above. From a shelf photo, only the count you confirm is kept, with the
+          count the reading offered, so we can tell how often the counting needs correcting, and the
+          photo's fingerprint, which is a short code worked out from the file so the same photo can't be
+          counted twice; the fingerprint is not the photo and the photo cannot be rebuilt from it.</dd>
       <dt>Advice (when you press Get advice)</dt>
       <dd>Each month's totals (revenue, the four cost groups, net profit and budget) are sent to Claude, which
           writes the advice. No line items, no names, not your file.</dd>
@@ -171,7 +175,7 @@
           <a href="https://vercel.com/legal/privacy-policy">Vercel's privacy policy</a></li>
       <li><b>Supabase</b>: accounts, saved figures, daily stock records and the waitlist.
           <a href="https://supabase.com/privacy">Supabase's privacy policy</a></li>
-      <li><b>Anthropic</b> (Claude): reads photos, writes advice and matches column names.
+      <li><b>Anthropic</b> (Claude): reads invoice photos, counts shelf photos, writes advice and matches column names.
           <a href="https://www.anthropic.com/legal/privacy">Anthropic's privacy policy</a></li>
       <li><b>Resend</b>: sends the sign-up and password-reset emails.
           <a href="https://resend.com/legal/privacy-policy">Resend's privacy policy</a></li>

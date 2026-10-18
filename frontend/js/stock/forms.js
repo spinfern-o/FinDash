@@ -4,8 +4,10 @@
    delivery check records what the supplier did about it. */
 import { addItem, recordMovement, stockOnHand, updateItem, replaceCheck } from './ledger.js';
 import { store, saveStock } from './storage.js';
-import { drafts, discardDraft } from './files.js';
-import { words } from './language.js';
+import { drafts, discardDraft, fingerprint } from './files.js';
+import { preparePhotoForUpload } from '../dashboard/photos/photo-reader.js';
+import { latestCount, recordShelfCount, refillNeeded, requestShelfCount, shelfDraft } from './shelf.js';
+import { words, currentLanguage } from './language.js';
 import { field, html } from './views.js';
 import { financialInvoice, invoiceMonth, invoiceId } from './invoice.js';
 import { reviewLinesHtml, wireReviewLines, applyReviewedLines } from './review-lines.js';
@@ -25,10 +27,15 @@ function number(form, name) {
   return quantity;
 }
 function value(form, name) { return String(new FormData(form).get(name) || '').trim(); }
-function open(title, body) {
+/* Replaces what the dialog shows. A form with several steps (the shelf
+   scan) draws each step with this; cancel always closes. */
+function fill(title, body) {
   dialog.innerHTML = `<h2 id="dialog-title">${html(title)}</h2>${body}`;
-  dialog.showModal();
   dialog.querySelector('[data-cancel]').addEventListener('click', function () { dialog.close(); });
+}
+function open(title, body) {
+  fill(title, body);
+  dialog.showModal();
 }
 function buttons(key) {
   return `<p class="stock-danger" id="form-error" role="alert" hidden></p><div class="stock-actions"><button class="btn" type="button" data-cancel>${words('cancel')}</button><button class="btn primary" type="submit">${words(key)}</button></div>`;
@@ -51,7 +58,7 @@ async function submit(form, operation) {
   }
 }
 // Problems a form names by their own message rather than the general one.
-const FORM_PROBLEMS = ['chooseItem', 'creditNeeded'];
+const FORM_PROBLEMS = ['chooseItem', 'creditNeeded', 'wholeNumber', 'alreadyCounted', 'newerCount'];
 export function showAddItem() {
   if (!canChange()) { report(store.note); return; }
   open(words('addItem'), `<form id="manual-item"><p>${words('manualTranslation')}</p>${field('original','original','','text','maxlength="160"')}${field('description','description','','text','maxlength="160"')}<div class="stock-grid">${field('unit','unit','','text','maxlength="40"')}${field('location','location','','text','maxlength="120"')}</div><p class="stock-hint">${words('unitHint')}</p>${field('quantity','onHand','','number','min="0" max="1000000000" step="any"')}${buttons('save')}</form>`);
@@ -147,7 +154,7 @@ export function showItemSettings(itemId) {
   const number = function (name, key, current) {
     return `<label class="stock-field"><span>${words(key)} (${html(item.unit)})</span><input name="${name}" type="number" min="0" max="1000000000" step="any" value="${current === undefined ? '' : html(current)}"></label>`;
   };
-  open(words('itemSettings'), `<p><strong>${html(item.description)}</strong><br>${html(item.original)} · ${html(item.location)} · ${html(item.unit)}</p><form id="item-settings"><p class="stock-hint">${words('reorderHint')}</p><div class="stock-grid">${number('minimum','minimum',reorder.minimum)}${number('target','target',reorder.target)}</div><label class="stock-field"><span>${words('preferredSupplier')}</span><input name="supplier" maxlength="120" value="${html(reorder.supplier || '')}"></label><fieldset class="stock-mode"><legend>${words('packSizes')}</legend><p class="stock-hint">${words('packSizesHint')}</p>${packRows}</fieldset><label class="stock-field"><span>${words('buyIn')}</span><select name="buy-unit">${buyOptions}</select></label><fieldset class="stock-mode"><legend>${words('supplierCodes')}</legend>${codes}</fieldset>${buttons('save')}</form>`);
+  open(words('itemSettings'), `<p><strong>${html(item.description)}</strong><br>${html(item.original)} · ${html(item.location)} · ${html(item.unit)}</p><form id="item-settings"><fieldset class="stock-mode"><legend>${words('needsRefilling')}</legend><p class="stock-hint">${words('shelfTargetHint')}</p>${number('shelf-target','shelfTarget',item.shelfTarget)}</fieldset><p class="stock-hint">${words('reorderHint')}</p><div class="stock-grid">${number('minimum','minimum',reorder.minimum)}${number('target','target',reorder.target)}</div><label class="stock-field"><span>${words('preferredSupplier')}</span><input name="supplier" maxlength="120" value="${html(reorder.supplier || '')}"></label><fieldset class="stock-mode"><legend>${words('packSizes')}</legend><p class="stock-hint">${words('packSizesHint')}</p>${packRows}</fieldset><label class="stock-field"><span>${words('buyIn')}</span><select name="buy-unit">${buyOptions}</select></label><fieldset class="stock-mode"><legend>${words('supplierCodes')}</legend>${codes}</fieldset>${buttons('save')}</form>`);
   const form = document.getElementById('item-settings');
   form.addEventListener('submit', function (event) {
     event.preventDefault();
@@ -168,10 +175,12 @@ export function showItemSettings(itemId) {
       const buyUnit = value(form, 'buy-unit');
       if (buyUnit && nextPacks.some(function (pack) { return pack.unit === buyUnit; })) { nextReorder.buyUnit = buyUnit; }
       const keptCodes = (item.supplierCodes || []).filter(function (entry, index) { return form.elements['code-'+index].checked; });
+      const shelfTarget = optionalNumber(form, 'shelf-target');
       return updateItem(store.inventory, itemId, {
         packs: nextPacks.length ? nextPacks : null,
         reorder: Object.keys(nextReorder).length ? nextReorder : null,
-        supplierCodes: keptCodes.length ? keptCodes : null
+        supplierCodes: keptCodes.length ? keptCodes : null,
+        shelfTarget: shelfTarget === undefined ? null : shelfTarget
       });
     });
   });
@@ -214,4 +223,87 @@ export function showResolveCheck(checkId) {
       return { inventory: replaceCheck(store.inventory, resolvedCheck(check, resolution)), invoice: invoice };
     });
   });
+}
+
+/* Counting one shelf from a photo: the owner picks the photo, Claude reads
+   it, the owner checks or corrects the number, and only then is it saved,
+   as the ledger's own absolute count of that one item on that one shelf.
+   Nothing else is touched, the photo is not kept, and how much to refill
+   is worked out from the owner's shelf target, never from the photo. */
+export function showShelfScan(itemId) {
+  if (!canChange()) { report(store.note); return; }
+  const item = store.inventory.items.find(function (entry) { return entry.id === itemId; });
+  if (!item) { return; }
+  // The newest count for this shelf as the photo is taken. A count saved
+  // in the meantime stops this one rather than writing over it.
+  const since = latestCount(store.inventory, itemId);
+  const heading = `<p><strong>${html(item.description)}</strong><br>${html(item.original)} · ${html(item.location)} · ${html(item.unit)}</p>`;
+  const targetLine = item.shelfTarget === undefined
+    ? `<p class="stock-hint">${words('setShelfTarget')}</p>`
+    : `<p>${words('shelfTarget')}: ${html(item.shelfTarget)} ${html(item.unit)}</p>`;
+
+  /* Step one, and where every failure comes back to: choose a photo. */
+  function choosePhoto(problem) {
+    fill(words('scanTitle'), `${heading}${targetLine}${problem ? `<p class="stock-danger" role="alert">${words(problem)}</p>` : ''}<p class="stock-hint">${words('photoAdvice')}</p><p class="stock-hint">${words('shelfPhotoPrivacy')}</p><input id="shelf-photo" type="file" accept="image/*" capture="environment" hidden><div class="stock-actions"><button class="btn" type="button" data-cancel>${words('cancel')}</button><button class="btn primary" type="button" id="choose-shelf-photo">${words('takePhoto')}</button></div>`);
+    const input = document.getElementById('shelf-photo');
+    document.getElementById('choose-shelf-photo').addEventListener('click', function () { input.click(); });
+    input.addEventListener('change', function () { if (input.files.length) { readPhoto(input.files[0]); } });
+  }
+
+  /* Step two: shrink the photo as the invoice reader does, and ask the
+     site's authenticated reader to count this one shelf. */
+  async function readPhoto(file) {
+    if (file.size > 20_000_000 || !/^image\/(jpeg|png|webp)$/.test(file.type)) { choosePhoto('unsupportedPhoto'); return; }
+    let hash;
+    let photo;
+    try {
+      hash = await fingerprint(file);
+      photo = await preparePhotoForUpload(file);
+    } catch { choosePhoto('failed'); return; }
+    if (!dialog.open) { return; }
+    fill(words('scanTitle'), `${heading}<img class="stock-preview" src="${photo.preview}" alt=""><p role="status">${words('readingPhoto')}</p><div class="stock-actions"><button class="btn" type="button" data-cancel>${words('cancel')}</button></div>`);
+    let reading;
+    try {
+      reading = await requestShelfCount(photo, item, currentLanguage());
+    } catch (problem) {
+      // A reading that arrives after the owner has closed the dialog is
+      // simply dropped: nothing it says can reach the ledger on its own.
+      if (dialog.open) { choosePhoto(problem.message === 'authNeeded' ? 'signInToScan' : 'scanFailed'); }
+      return;
+    }
+    if (!dialog.open) { return; }
+    checkCount(hash, photo, reading);
+  }
+
+  /* Step three: the number to check, in a sentence, with whatever stopped
+     it being offered. The owner may change it, or type one themselves. */
+  function checkCount(hash, photo, reading) {
+    const draft = shelfDraft(reading);
+    let sentence = '';
+    if (draft.seen !== null) { sentence += `${words('iCanSee')} ${html(draft.seen)} ${html(item.unit)}. `; }
+    if (item.shelfTarget !== undefined) { sentence += `${words('target')}: ${html(item.shelfTarget)} ${html(item.unit)}. `; }
+    if (draft.count !== null && item.shelfTarget !== undefined) {
+      sentence += `${words('refill')}: ${html(refillNeeded(item.shelfTarget, draft.count))} ${html(item.unit)}.`;
+    }
+    const problem = draft.problem ? `<p class="stock-danger" role="alert">${words(draft.problem)}</p>` : '';
+    const explanation = reading.explanation ? `<p class="stock-secondary">${html(reading.explanation)}</p>` : '';
+    fill(words('scanTitle'), `${heading}<img class="stock-preview" src="${photo.preview}" alt=""><p><strong>${sentence}</strong></p>${problem}${explanation}<form id="shelf-scan">${field('count', 'onThisShelf', draft.count === null ? '' : draft.count, 'number', 'min="0" max="100000" step="1"')}<p class="stock-hint">${words('emptyShelfCheck')}</p>${buttons('confirmCounts')}</form>`);
+    const form = document.getElementById('shelf-scan');
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      submit(form, function () {
+        const confirmed = number(form, 'count');
+        return recordShelfCount(store.inventory, {
+          id: id(), itemId: itemId, quantity: confirmed, hash: hash,
+          // The number the reading offered, kept beside the owner's so how
+          // often and how far it is wrong can be measured later.
+          offered: draft.count,
+          at: new Date().toISOString(), since: since ? since.id : null
+        });
+      });
+    });
+  }
+
+  choosePhoto(null);
+  dialog.showModal();
 }

@@ -16,6 +16,13 @@
  *             "review": { "previous": {...}, "problems": ["..."] } }   (language/review optional)
  * Response: { "document": {...}, "checks": {...}, "model": "..." }
  *
+ * The same photo path also counts one shelf, for the stock page: a request
+ * with "task": "shelf-count" and "item" (the one product being counted)
+ * goes to backend/vision/shelf-count.js and answers { "reading": {...} }.
+ * It is the same login, the same site check and the same daily photo
+ * allowance; only the question and the answer differ. A request without
+ * "task" is an invoice, exactly as before.
+ *
  * "review" is the second look. When a first reading fails its own arithmetic
  * (the lines do not add up to the printed total, or a line's quantity times
  * price is not its amount), the page sends the photo again with that reading
@@ -26,6 +33,7 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { allowAiUse } from "../../lib/ai-access.js";
+import { readShelfCount, shelfItemProblem } from "../vision/shelf-count.js";
 
 const client = new Anthropic();
 
@@ -390,6 +398,16 @@ export default async function handler(req, res) {
   if (body.language !== undefined && body.language !== "en" && body.language !== "zh-CN") {
     return res.status(400).json({ error: "language must be en or zh-CN" });
   }
+  const countingAShelf = body.task === "shelf-count";
+  if (body.task !== undefined && !countingAShelf) {
+    return res.status(400).json({ error: "task, when given, must be shelf-count" });
+  }
+  if (countingAShelf) {
+    const problem = shelfItemProblem(body.item);
+    if (problem) {
+      return res.status(400).json({ error: problem });
+    }
+  }
   if (!isValidImage(body.image)) {
     return res.status(400).json({ error: "image must be base64, under about 4 MB" });
   }
@@ -400,6 +418,10 @@ export default async function handler(req, res) {
   // Only for a logged-in person within today's allowance (lib/ai-access.js).
   if (!(await allowAiUse(req, res, "photo"))) {
     return;
+  }
+
+  if (countingAShelf) {
+    return readShelfCount(client, body, res);
   }
 
   const content = [

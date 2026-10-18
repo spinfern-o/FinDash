@@ -120,3 +120,6 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.4); }
 .stock-check-list { list-style: none; padding: 0; margin: 0; }
 .stock-check p { margin: 6px 0; }
 .stock-check-history { margin: 8px 0 12px; padding-left: 18px; font-size: 13px; color: var(--ink-2); }
+
+/* Needs refilling: how much to put out on a shelf, from the newest count. */
+.stock-refill { color: var(--critical); }

@@ -46,7 +46,12 @@ function isTableNotReady(error) {
 }
 
 /* A browser always says which page a form was sent from. Answers sent from
-   another site, or by a script that doesn't say, are refused. */
+   another site, or by a script that doesn't say, are refused.
+
+   Deliberately NOT lib/session.js's isSameSite, which allows a request that
+   says nothing: that one guards addresses where the session cookie is the
+   real gate, and nothing here needs a session. Joining the waitlist writes a
+   row for anyone, so the stricter rule applies. Don't merge the two. */
 function isFromThisSite(req) {
   const origin = req.headers.origin;
   if (!origin) {

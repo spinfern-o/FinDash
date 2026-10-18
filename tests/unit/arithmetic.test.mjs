@@ -122,6 +122,27 @@ test("a quarter adds up its months, and its margin comes from the sums", functio
   assert.equal(totals.budgetPercent, (159640 / 157000) * 100);
 });
 
+test("a quarter is the whole calendar quarter; year to date stops at the month chosen", function () {
+  state.data = { generated: null, months: templateMonths() };
+  const july = state.data.months[0];
+
+  // These two differ ON PURPOSE, and the difference is easy to mistake for a
+  // bug: choosing July and asking for the quarter gives all of Jul-Sep, which
+  // includes months after July. That is what a calendar quarter is, it is what
+  // the heading and the agent tool both name as "Jul-Sep 2026", and a browser
+  // test asserts it. Don't "fix" it by bounding it at the month chosen - bound
+  // the LABEL instead, which is what used to say "through July".
+  assert.deepEqual(monthsInPeriod(july, "quarter").map(function (month) {
+    return month.monthNum;
+  }), [7, 8, 9]);
+
+  // Year to date is the one that ends at the month chosen.
+  assert.deepEqual(monthsInPeriod(july, "ytd").map(function (month) {
+    return month.monthNum;
+  }), [7]);
+  assert.equal(totalsForMonths(monthsInPeriod(july, "ytd")).revenue, july.revenue);
+});
+
 test("saved figures are checked field by field on the way back in", function () {
   const saved = {
     v: 2,

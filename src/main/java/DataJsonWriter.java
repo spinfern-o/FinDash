@@ -18,11 +18,30 @@ public class DataJsonWriter {
         return String.format(Locale.ROOT, "%.2f", value);
     }
 
+    /** A JSON string literal, with quotes, backslashes and control characters
+        escaped. A month name is whatever the CSV's month column says, so
+        gluing it straight into the file produced broken JSON for a name like
+        Jul "peak" - and the web page can only report that as "data.json could
+        not be loaded" before falling back to the demo figures. */
+    private static String text(String value) {
+        StringBuilder out = new StringBuilder("\"");
+        for (char character : (value == null ? "" : value).toCharArray()) {
+            if (character == '"' || character == '\\') {
+                out.append('\\').append(character);
+            } else if (character < 0x20) {
+                out.append(String.format("\\u%04x", (int) character));
+            } else {
+                out.append(character);
+            }
+        }
+        return out.append('"').toString();
+    }
+
     private static void writeMonth(PrintWriter out, MonthlyFigures month, boolean isLast) {
         Expenses expenses = month.expenses;
 
         out.println("    {");
-        out.println("      \"month\": \"" + month.monthName + "\",");
+        out.println("      \"month\": " + text(month.monthName) + ",");
         out.println("      \"monthNum\": " + month.monthNumber + ",");
         out.println("      \"year\": " + month.year + ",");
         out.println("      \"revenue\": " + number(month.revenue) + ",");

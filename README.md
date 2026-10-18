@@ -219,7 +219,7 @@ these under **Settings → Environment Variables** and redeploy:
 | --- | --- |
 | `SUPABASE_URL` and `SUPABASE_ANON_KEY` | Accounts. The Supabase integration in the Vercel Marketplace adds these for you. `SUPABASE_PUBLISHABLE_KEY` and the `NEXT_PUBLIC_` forms work too. |
 | `ANTHROPIC_API_KEY` | Photos, advice and column matching (also needs accounts) |
-| `SITE_URL` | Optional: the address used in login emails, e.g. `https://yourdomain.com` |
+| `SITE_URL` | The address used in login and password-reset emails, e.g. `https://yourdomain.com`. Set it: without it those emails fall back to the Site URL configured in Supabase, and the links may not come back to this deployment. |
 | `FORECAST_URL` and `FORECAST_TOKEN` | Optional: the forecast model (see `forecast/README.md`) |
 | `FINDASH_APP_OPEN` | `1` opens the dashboard and the stock workspace, and every public page's way in (the nav button, the home page, the sticky phone button, the waitlist page) leads into the app instead of the waitlist. Without it the app's pages send visitors to the waitlist, as before launch (`lib/app-gate.js`). Set it for Preview to try the app, and for Production on launch day; redeploy after changing it. |
 
@@ -238,6 +238,8 @@ nothing.
    - `20261012000000_ai_usage_limits.sql`: the daily limits on paid features
    - `20261017000000_waitlist.sql`: the waitlist (until it is run, the waitlist page
      says it isn't open yet)
+   - `20261021000000_forecast_ai_limit.sql`: adds the forecast to those daily limits
+     (until it is run, the forecast model stays off and the chart keeps its own trend line)
 
    Running a file twice does no harm. Until the first is run, figures stay in the browser;
    until the second is run, photos, advice and column matching say "not set up yet".
@@ -642,6 +644,12 @@ are relative to it:
 
 ```bash
 mvn -q compile exec:java
+```
+
+Its own tests, which cover reading the CSV cells, run with:
+
+```bash
+mvn -q test
 ```
 
 It lists the months it loaded, then asks for a month number to show, and another to

@@ -34,19 +34,6 @@ const MAXIMUM_LABEL_LENGTH = 200;
 /* The four cost groups an unmatched column can be put in. */
 const COST_GROUPS = ["direct", "operating", "variable", "fixed"];
 
-/* Sites allowed to call this. An empty list allows any. */
-const ALLOWED_HOSTS = [];
-
-function isAllowedOrigin(req) {
-  if (!ALLOWED_HOSTS.length) {
-    return true;
-  }
-  const origin = req.headers.origin || req.headers.referer || "";
-  return ALLOWED_HOSTS.some(function (host) {
-    return origin.includes(host);
-  });
-}
-
 function isListOfLabels(value, minimumLength, maximumLength) {
   if (!Array.isArray(value) || value.length < minimumLength || value.length > maximumLength) {
     return false;
@@ -142,10 +129,6 @@ export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "POST only" });
   }
-  if (!isAllowedOrigin(req)) {
-    return res.status(403).json({ error: "origin not allowed" });
-  }
-
   const body = req.body ?? {};
   const headers = body.headers;
   const fields = body.fields;

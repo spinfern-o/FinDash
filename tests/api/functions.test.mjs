@@ -18,6 +18,7 @@ const ADVICE_REQUEST = {
     variableOverhead: 3750, fixedOverhead: 7420, totalExpenses: 64420, netProfit: 7580, budget: 66000 }]
 };
 const COLUMNS_REQUEST = { headers: ["month", "revenue", "cogs", "bank charges"], fields: [], unclaimed: ["bank charges"] };
+const FORECAST_REQUEST = { series: [7580, 5420, -3640], horizon: 3 };
 
 let site;
 
@@ -84,10 +85,14 @@ test("figures: a missing table is reported plainly", async function () {
   assert.match(response.json.error, /isn't set up/);
 });
 
-test("photos, advice and column matching need a login, and send nothing to Claude without one", async function () {
+test("every feature that costs money needs a login, and spends nothing without one", async function () {
   const visitor = httpClient(site);
+  // The forecast is here too: it passes the request to the service in
+  // forecast/, which costs processor time this site pays for, and this
+  // function holds FORECAST_TOKEN. It is refused before FORECAST_URL is even
+  // looked at, so an anonymous caller learns nothing about the setup either.
   for (const [path, body] of [["/api/read-document", PHOTO_REQUEST], ["/api/briefing", ADVICE_REQUEST],
-    ["/api/map-columns", COLUMNS_REQUEST]]) {
+    ["/api/map-columns", COLUMNS_REQUEST], ["/api/forecast", FORECAST_REQUEST]]) {
     const response = await visitor.post(path, body);
     assert.equal(response.status, 401, path);
     assert.equal(response.json.needsLogin, true, path);

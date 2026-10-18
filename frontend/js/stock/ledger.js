@@ -6,7 +6,9 @@
    optional): `packs`, what one of a supplier's units holds in the item's
    own unit ("1 case = 6 bag"); `reorder`, the minimum and target to keep
    and who to buy from; `supplierCodes`, the suppliers' item codes that are
-   this item. The ledger may also hold `checks`: deliveries that didn't
+   this item; `shelfTarget`, how many of them the owner keeps out on this
+   item's own shelf, which is about refilling that shelf and not about
+   buying. The ledger may also hold `checks`: deliveries that didn't
    arrive as billed, or weren't checked yet, until the owner resolves them.
    See contracts/inventory.md. */
 
@@ -120,6 +122,16 @@ function checkReorder(item) {
   }
 }
 
+/* How many of this item the owner keeps out on its own shelf, to refill to
+   after a count. Separate from `reorder.target`: that is a quantity to buy
+   from a supplier, this is what should be on the shelf. */
+function checkShelfTarget(item) {
+  if (item.shelfTarget === undefined) {
+    return;
+  }
+  checkQuantity(item.shelfTarget, "Shelf target", true);
+}
+
 /* The suppliers' item codes the owner confirmed are this item. */
 function checkSupplierCodes(item) {
   if (item.supplierCodes === undefined) {
@@ -137,7 +149,8 @@ function checkSupplierCodes(item) {
 
 /* Validate an item without changing the supplier's original wording. */
 function checkItem(item) {
-  checkKeys(item, ["id", "original", "description", "unit", "location", "packs", "reorder", "supplierCodes"], "item");
+  checkKeys(item, ["id", "original", "description", "unit", "location", "packs", "reorder", "supplierCodes",
+    "shelfTarget"], "item");
   checkText(item.id, 80, "Item id");
   checkText(item.original, 160, "Original description");
   checkText(item.description, 160, "Description");
@@ -146,6 +159,7 @@ function checkItem(item) {
   checkPacks(item);
   checkReorder(item);
   checkSupplierCodes(item);
+  checkShelfTarget(item);
 }
 
 /* A supplier's code identifies one item: the same code from the same
@@ -362,13 +376,14 @@ export function addItem(inventory, input) {
   return next;
 }
 
-/* What the owner confirmed about buying an item: its pack sizes, reorder
-   settings and supplier codes. `changes` replaces those three where given
-   (null removes one). The item's name, unit and location, and every
-   movement already recorded, stay as they were. */
+/* What the owner confirmed about buying an item and keeping its shelf
+   stocked: its pack sizes, reorder settings, supplier codes and shelf
+   target. `changes` replaces those where given (null removes one). The
+   item's name, unit and location, and every movement already recorded,
+   stay as they were. */
 export function updateItem(inventory, itemId, changes) {
   validateInventory(inventory);
-  checkKeys(changes, ["packs", "reorder", "supplierCodes"], "item changes");
+  checkKeys(changes, ["packs", "reorder", "supplierCodes", "shelfTarget"], "item changes");
   const next = nextLedger(inventory);
   const index = next.items.findIndex(function (item) { return item.id === itemId; });
   if (index < 0) {

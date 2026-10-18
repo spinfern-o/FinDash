@@ -5,7 +5,7 @@ import { words, loadLanguage, setLanguage, currentLanguage } from './language.js
 import { store, loadStock, whenStockLoaded, saveStock, downloadBackup, parseInventory, clearGuestStock } from './storage.js';
 import { drafts, addFiles, onFilesChanged, discardDraft, rereadReadyDrafts } from './files.js';
 import { filesHtml, reviewHtml, itemsHtml, buyingHtml, checksHtml, settingsHtml, printHtml, printBuyingHtml } from './views.js';
-import { wireForms, showAddItem, showMovement, showInvoiceReview, showItemSettings, showResolveCheck, canChange } from './forms.js';
+import { wireForms, showAddItem, showMovement, showInvoiceReview, showItemSettings, showResolveCheck, showShelfScan, canChange } from './forms.js';
 import { buyingList, buyingListCsv } from './buying.js';
 import { watchStockChanges } from './changes.js';
 import { invoiceId } from './invoice.js';
@@ -127,6 +127,7 @@ async function handleClick(event) {
   if (button.id === 'choose-photos') { document.getElementById('stock-files').click(); }
   else if (button.dataset.review) { showInvoiceReview(button.dataset.review); }
   else if (button.dataset.discard) { discardDraft(button.dataset.discard); render(); }
+  else if (button.dataset.scan) { showShelfScan(button.dataset.scan); }
   else if (button.dataset.movement) { showMovement(button.dataset.item,button.dataset.movement); }
   else if (button.dataset.settings) { showItemSettings(button.dataset.settings); }
   else if (button.dataset.resolve) { showResolveCheck(button.dataset.resolve); }

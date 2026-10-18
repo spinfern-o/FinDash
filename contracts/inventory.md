@@ -43,9 +43,13 @@ All quantities are finite/nonnegative; remaining stock cannot be negative. Unkno
 - `supplierCodes`: up to 20 `{supplier, code}` the owner confirmed are this item. A supplier's code belongs to
   at most one item across the ledger. Review finds an item by it (`frontend/js/stock/matching.js`); an item
   with exactly the same supplier wording is only suggested. Editing these changes only later matches.
+- `shelfTarget`: how many of the item's own unit the owner keeps out on this item's own shelf (its location).
+  A positive number. It is not `reorder.target`: that is a quantity to buy from a supplier, counting stock
+  the owner holds elsewhere, while this one is what should be on this shelf. Each item is one shelf, because
+  an item is already one product in one location in one unit.
 
-`updateItem(inventory, itemId, {packs?, reorder?, supplierCodes?})` changes only these; name, unit, location
-and movements stay. `null` or an empty list removes a field.
+`updateItem(inventory, itemId, {packs?, reorder?, supplierCodes?, shelfTarget?})` changes only these; name,
+unit, location and movements stay. `null` or an empty list removes a field.
 
 ### Delivery checks (optional ledger field `checks`, up to 2000)
 
@@ -65,6 +69,36 @@ received:{quantity,unit}, status, unitPrice?, possibleValue?, currency?, state, 
 Review never applies a shelf count and a delivery for the same line: the owner picks one (or neither).
 Older ledgers without these fields stay valid; a page from before this change refuses a ledger that has
 them rather than overwriting it.
+
+### Counting a shelf from a photo
+
+`frontend/js/stock/shelf.js` is the whole of it, and it keeps no records of its own:
+
+- What to put out is worked out every time it is shown: `refill = max(0, shelfTarget − what the ledger says
+  is on the shelf)`, and `null` when the shelf was never counted. Photographing the same shelf again
+  replaces that answer; shortages are never added up and a newer count is never taken off an older one.
+- A confirmed photo count is saved as the existing `count` movement — an absolute observation, which is what
+  `count` already means — with `note: "photo-count:<the photo's SHA-256>"`, and ` corrected` after it when
+  the owner changed the number. No image, no reading and no model text is stored, here or anywhere else.
+- The same note stops the same photo being counted twice (a retry, a double press, a second tab). The id of
+  the newest `count` for that item when the photo was taken is checked before saving, so a reading confirmed
+  after a newer count is refused rather than written over it; an account save then also has the usual
+  revision check behind it.
+- A photo never records usage, waste, a delivery, a purchase or a cost, and never touches another item or
+  another location.
+
+`POST /api/read-document` with `task: "shelf-count"` counts one shelf. A request without `task` is an
+invoice, exactly as before. The same login, same-site check and same daily `photo` allowance apply, so there
+is no new feature name and no migration. The request adds `item: {id, name, original, unit, location}` — the
+one product the owner chose, bounded as the ledger bounds those fields; the model is given the wording and
+the unit, never the id, and is never asked to pick a product.
+
+The answer is `{reading, model}`, rebuilt field by field in `backend/vision/shelf-count.js`:
+`{showsItem, usable, coverage, visibleCount, countType, reliability, obstructed, qualityFlags, explanation}`.
+`visibleCount` is a whole number of the item's own unit or `null`, and it is dropped to `null` unless the
+model counted whole visible units (`countType: "visible-exact"`). `reliability` is a qualitative hint for
+the owner's review, not a probability. Nothing in the answer decides anything: the page shows it, the owner
+confirms or corrects the number, and only that number is saved.
 
 ## Invoice details for comparing prices
 
@@ -94,6 +128,9 @@ a price change is shown only when both prices are for the same amount (`price-co
 - Apply `supabase/migrations/20261018000000_account_inventory.sql` and then `supabase/migrations/20261019000000_stock_invoice_sync.sql` before deploying the new handlers. The second migration is required for financial PUT as well as invoice/stock confirmation. Missing RPCs fail with 503; there is no partial-save fallback.
 - `POST /api/read-document`: existing image payload plus optional `language:'zh-CN'`.
   `document.lines[].description` is Chinese; `original` preserves printed text. English remains default.
+  With `task:'shelf-count'` and `item`, the same address counts one shelf instead (above); it answers
+  `{reading,model}` and no `document`. An unknown `task`, or a missing or oversized `item`, is 400 before
+  anything is sent to the model.
 
 ## First slice behavior
 

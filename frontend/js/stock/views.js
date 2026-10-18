@@ -6,6 +6,7 @@ import { store } from './storage.js';
 import { drafts } from './files.js';
 import { words, currentLanguage } from './language.js';
 import { buyingList } from './buying.js';
+import { shelfRefill } from './shelf.js';
 import { openChecks } from './receiving.js';
 export const html = escapeHtml;
 
@@ -46,19 +47,44 @@ export function itemRowsHtml() {
     const balances = stockBalances(store.inventory);
     for (const item of store.inventory.items) {
       const onHand = balances.get(item.id);
-      let actions = '';
+      let actions = `<button class="btn primary" data-scan="${html(item.id)}">${words('scanShelf')}</button>`;
       for (const type of ['count', 'delivery', 'usage', 'waste']) {
         actions += `<button class="btn" data-movement="${type}" data-item="${html(item.id)}">${words(type)}</button>`;
       }
       actions += `<button class="btn" data-settings="${html(item.id)}">${words('itemSettings')}</button>`;
       const minimum = item.reorder?.minimum;
       const low = onHand !== null && minimum !== undefined && onHand < minimum ? `<span class="stock-low">${words('belowMinimum')}</span>` : '';
-      rows += `<tr data-stock-row><td><strong>${html(item.description)}</strong><br><span class="stock-secondary">${html(item.original)}</span></td><td data-label="${words('unit')}">${html(item.unit)}</td><td data-label="${words('location')}">${html(item.location)}</td><td class="stock-count" data-label="${words('onHand')}">${onHand === null ? words('unknown') : quantityText(onHand)}${low}</td><td><div class="stock-actions">${actions}</div></td></tr>`;
+      const shelf = item.shelfTarget === undefined ? '' :
+        `<span class="stock-secondary"> / ${quantityText(item.shelfTarget)}</span>`;
+      rows += `<tr data-stock-row><td><strong>${html(item.description)}</strong><br><span class="stock-secondary">${html(item.original)}</span></td><td data-label="${words('unit')}">${html(item.unit)}</td><td data-label="${words('location')}">${html(item.location)}</td><td class="stock-count" data-label="${words('onHand')}">${onHand === null ? words('unknown') : quantityText(onHand)}${shelf}${low}</td><td><div class="stock-actions">${actions}</div></td></tr>`;
     }
     content = `<label class="stock-field"><span>${words('search')}</span><input id="stock-search" type="search"></label><div class="stock-table-wrap"><table class="stock-table stock-items-table"><thead><tr><th>${words('item')}</th><th>${words('unit')}</th><th>${words('location')}</th><th>${words('onHand')}</th><th>${words('action')}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   }
   return content;
 }
+/* Needs refilling: for every shelf the owner set a target for, what the
+   ledger says is on it now and how much to put out. The number is worked
+   out each time it is drawn from the newest count, so a second photo of
+   the same shelf replaces the answer instead of adding another one. */
+export function shelfRefillHtml() {
+  const list = shelfRefill(store.inventory);
+  if (!list.length) {
+    return `<section class="stock-card"><h2>${words('needsRefilling')}</h2><p class="stock-hint">${words('noShelfTargets')}</p></section>`;
+  }
+  const rows = list.map(function (entry) {
+    const onShelf = entry.onShelf === null ? words('unknown') : quantityText(entry.onShelf);
+    let need = `<span class="stock-secondary">${words('countFirst')}</span>`;
+    if (entry.refill !== null) {
+      need = entry.refill > 0
+        ? `<strong class="stock-refill">${words('refill')} ${quantityText(entry.refill)} ${html(entry.item.unit)}</strong>`
+        : `<span>${words('shelfFull')}</span>`;
+    }
+    const checked = entry.countedAt ? `${words('lastChecked')}: ${dateText(entry.countedAt)}` : words('neverCounted');
+    return `<tr data-refill-row="${html(entry.item.id)}"><td><strong>${html(entry.item.description)}</strong><br><span class="stock-secondary">${html(entry.item.original)}</span></td><td data-label="${words('location')}">${html(entry.item.location)}</td><td data-label="${words('onHand')}">${onShelf} ${words('target')} ${quantityText(entry.target)} ${html(entry.item.unit)}<br><span class="stock-secondary">${checked}</span></td><td data-label="${words('needsRefilling')}">${need}</td></tr>`;
+  }).join('');
+  return `<section class="stock-card"><h2>${words('needsRefilling')}</h2><p class="stock-hint">${words('refillHint')}</p><div class="stock-table-wrap"><table class="stock-table stock-items-table"><thead><tr><th>${words('item')}</th><th>${words('location')}</th><th>${words('onHand')}</th><th>${words('needsRefilling')}</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+}
+
 /* The tabs within Stock: the stock itself, the buying list, and delivery
    problems still open. */
 function stockTabsHtml(current) {
@@ -73,7 +99,7 @@ function stockTabsHtml(current) {
 }
 
 export function itemsHtml() {
-  return `${stockTabsHtml('items')}<section class="stock-card"><div class="stock-actions"><button class="btn" id="print-stock">${words('print')}</button></div>${itemRowsHtml()}</section><section class="stock-card"><h2>${words('movements')}</h2>${historyHtml()}</section><p class="stock-hint">${words('stockOnly')}</p>`;
+  return `${stockTabsHtml('items')}${shelfRefillHtml()}<section class="stock-card"><div class="stock-actions"><button class="btn" id="print-stock">${words('print')}</button></div>${itemRowsHtml()}</section><section class="stock-card"><h2>${words('movements')}</h2>${historyHtml()}</section><p class="stock-hint">${words('stockOnly')}</p>`;
 }
 
 /* One row of the buying list, with the quantity to buy ready to change:

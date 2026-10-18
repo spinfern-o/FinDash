@@ -1,5 +1,5 @@
 /* A stand-in for the Claude API (POST /v1/messages), so the tests never
-   spend money or need a key. It tells the three kinds of request apart by
+   spend money or need a key. It tells the kinds of request apart by
    their prompts and answers each with a canned reply, which a test can
    change. Every request is kept in `requests`, so a test can check what
    would have been sent. */
@@ -17,6 +17,9 @@ function kindOfRequest(body) {
   const system = typeof body.system === "string" ? body.system : "";
   if (system.includes("You read photos of documents")) {
     return "photo";
+  }
+  if (system.includes("conservative stock-counting assistant")) {
+    return "shelf";
   }
   const firstMessage = body.messages && body.messages[0] ? body.messages[0].content : "";
   const text = typeof firstMessage === "string" ? firstMessage : "";
@@ -50,7 +53,13 @@ export async function startMockAnthropic() {
         risks: ["September lost $3,640."],
         actions: ["Review September's costs line by line."]
       },
-      columns: { mapping: {}, other: { "bank charges": "operating" } }
+      columns: { mapping: {}, other: { "bank charges": "operating" } },
+      // What a shelf photo counts as.
+      shelf: {
+        shows_requested_product: true, usable: true, coverage: "complete", visible_count: 7,
+        count_type: "visible-exact", reliability: "good", obstructed: false, quality_flags: [],
+        explanation: "Seven cartons are clearly visible in the front row."
+      }
     },
     requestsOfKind: function (kind) {
       return mock.requests.filter(function (request) {
@@ -76,6 +85,8 @@ export async function startMockAnthropic() {
         reply = mock.replies.advice;
       } else if (kind === "columns") {
         reply = mock.replies.columns;
+      } else if (kind === "shelf") {
+        reply = mock.replies.shelf;
       }
 
       response.writeHead(200, { "content-type": "application/json" });

@@ -122,20 +122,25 @@ test("a quarter adds up its months, and its margin comes from the sums", functio
   assert.equal(totals.budgetPercent, (159640 / 157000) * 100);
 });
 
-test("a quarter ends at the month chosen, never at a later one on file", function () {
+test("a quarter is the whole calendar quarter; year to date stops at the month chosen", function () {
   state.data = { generated: null, months: templateMonths() };
-  // July, August and September are all in Q3. Choosing July asks for the
-  // quarter THROUGH July, which is the heading the dashboard prints; folding
-  // August and September in reported a later month's figures as July's.
   const july = state.data.months[0];
-  const quarter = monthsInPeriod(july, "quarter");
-  assert.deepEqual(quarter.map(function (month) { return month.monthNum; }), [7]);
-  assert.equal(totalsForMonths(quarter).revenue, july.revenue);
 
-  // The same question asked of "year to date" has always behaved this way;
-  // the two pills must not answer it differently.
-  const toDate = monthsInPeriod(july, "ytd");
-  assert.deepEqual(toDate.map(function (month) { return month.monthNum; }), [7]);
+  // These two differ ON PURPOSE, and the difference is easy to mistake for a
+  // bug: choosing July and asking for the quarter gives all of Jul-Sep, which
+  // includes months after July. That is what a calendar quarter is, it is what
+  // the heading and the agent tool both name as "Jul-Sep 2026", and a browser
+  // test asserts it. Don't "fix" it by bounding it at the month chosen - bound
+  // the LABEL instead, which is what used to say "through July".
+  assert.deepEqual(monthsInPeriod(july, "quarter").map(function (month) {
+    return month.monthNum;
+  }), [7, 8, 9]);
+
+  // Year to date is the one that ends at the month chosen.
+  assert.deepEqual(monthsInPeriod(july, "ytd").map(function (month) {
+    return month.monthNum;
+  }), [7]);
+  assert.equal(totalsForMonths(monthsInPeriod(july, "ytd")).revenue, july.revenue);
 });
 
 test("saved figures are checked field by field on the way back in", function () {

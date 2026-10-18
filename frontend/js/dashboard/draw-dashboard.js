@@ -78,7 +78,12 @@ function drawHeading(totals, periodMonths) {
   if (state.period === "month") {
     subheading = `${allMonths.length} ${plural(allMonths.length, "month")} on file`;
   } else {
-    subheading = `${periodLabel(state.period)} through ${monthLabel(state.activeMonth)} · ` +
+    // Through the period's LAST month, not the one chosen. A quarter is the
+    // whole calendar quarter, so choosing July showed "Quarter through July"
+    // over figures that ran to September. Year to date already ends at the
+    // month chosen, so this reads the same there as it always did.
+    const lastInPeriod = periodMonths[periodMonths.length - 1] || state.activeMonth;
+    subheading = `${periodLabel(state.period)} through ${monthLabel(lastInPeriod)} · ` +
       `${periodMonths.length} ${plural(periodMonths.length, "month")}`;
   }
   document.getElementById("showing-sub").innerHTML = subheading;

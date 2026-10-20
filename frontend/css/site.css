@@ -457,6 +457,11 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
     font-size: 13px;
     padding: 10px 13px;
   }
+  /* Keep the stock development notice inside the phone's navigation. */
+  .nav-end .enter-link:disabled {
+    max-width: 130px;
+    white-space: normal;
+  }
   .theme-toggle,
   .nav-menu > summary {
     width: 36px;

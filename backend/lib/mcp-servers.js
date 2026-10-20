@@ -13,7 +13,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { SUPPORTED_PROTOCOL_VERSIONS } from "@modelcontextprotocol/sdk/types.js";
 import * as z from "zod";
-import { COST_FIELDS, MAXIMUM_MONTHS, glossaryEntries } from "../frontend/js/dashboard/analysis.js";
+import { COST_FIELDS, MAXIMUM_MONTHS, glossaryEntries } from "../../frontend/js/dashboard/analysis.js";
 import { analyzeFigures, templateResponse, allowAnyOrigin, SITE, API_VERSION } from "./agent-api.js";
 import { PAGES, PAGE_INFO } from "./markdown-pages.js";
 

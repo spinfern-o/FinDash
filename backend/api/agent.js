@@ -12,10 +12,10 @@
 
    vercel.json's rewrites send those addresses here, with the part after
    /api/ as ?route=. None of it needs an account, calls an AI model or
-   stores anything; lib/agent-api.js and lib/mcp-servers.js do the work. */
+   stores anything; backend/lib/agent-api.js and backend/lib/mcp-servers.js do the work. */
 
-import { handleApi, sendError, allowAnyOrigin, jsonBody } from "../../lib/agent-api.js";
-import { handleMcp, handleServerCard } from "../../lib/mcp-servers.js";
+import { handleApi, sendError, allowAnyOrigin, jsonBody } from "../lib/agent-api.js";
+import { handleMcp, handleServerCard } from "../lib/mcp-servers.js";
 
 export default async function handler(request, response) {
   const route = String((request.query && request.query.route) || "").replace(/^\/+|\/+$/g, "");

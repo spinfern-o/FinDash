@@ -6,24 +6,28 @@ Instructions for AI coding agents working on FinDash. Humans: README.md has the 
 
 FinDash (https://findash.tech) is a free web app that turns a small business's monthly figures into a profit and
 loss dashboard. It is a static site in `frontend/` (served by Vercel), Node server implementations in `backend/api/` (with Vercel wrappers in `api/`),
-Vercel Routing Middleware in `middleware.js`, and the original Java command-line app in `src/main/java/`.
+Vercel Routing Middleware in `middleware.js`, and the original Java command-line app in `backend/legacy-java/src/main/java/`.
 
 ## Layout
 
 - `frontend/`: the website. `frontend/js/dashboard/` is the dashboard; its arithmetic (`import/months-from-sheet.js`,
   `periods.js`, `cost-groups.js`) is also used by the public API through `frontend/js/dashboard/analysis.js`.
 - `frontend/AGENTS.md` and `backend/AGENTS.md`: ownership rules for parallel agents.
-- `contracts/inventory.md`: shared daily-stock API and schema.
-- `backend/api/`: server implementations. `backend/inventory.js`: the stock API.
+- `docs/contracts/inventory.md`: shared daily-stock API and schema.
+- `backend/api/`: server implementations. `backend/api/inventory.js`: the stock API.
 - `api/`: thin Vercel deployment wrappers. `api/agent.js` serves the public API (`/api/v1/*`) and the two MCP servers
   (`/api/mcp`, `/api/mcp/docs`) through rewrites in `vercel.json`. Vercel's Hobby plan allows twelve functions,
   so add new agent endpoints as routes there rather than as new files.
-- `lib/`: code shared by the functions and the middleware.
+- `backend/lib/`: code shared by the functions and the middleware.
+- `backend/services/`: invoice synchronization, shelf-photo reading and the optional forecast service.
+- `backend/database/supabase/migrations/`: database setup and changes.
+- `backend/legacy-java/`: the original Java console app, its Maven project and example CSVs.
+- `docs/README.md`: the beginner's code tour and a map from previous paths to current paths.
 - `tools/build-pages.py`: writes every generated part of the site (page heads, every page's nav bar and footer,
-  structured data, the glossary, the Markdown versions of the pages in `lib/markdown-pages.js`, the agent-skills
+  structured data, the glossary, the Markdown versions of the pages in `backend/lib/markdown-pages.js`, the agent-skills
   index, the schema feed).
-- `skills/findash/SKILL.md`: the agent skill, published at `/.well-known/agent-skills/`.
-- `DESIGN-SYSTEM.md`: the design tokens, components, icons and styling, and how to build a page from a Figma design.
+- `docs/skills/findash/SKILL.md`: the agent skill, published at `/.well-known/agent-skills/`.
+- `docs/design/DESIGN-SYSTEM.md`: the design tokens, components, icons and styling, and how to build a page from a Figma design.
 - `tests/`: unit, API and browser tests, against stand-ins for Supabase and Claude.
 
 ## Commands
@@ -34,13 +38,13 @@ npx playwright install chromium         # once, for the browser tests
 npm test                                # every test (about two minutes)
 python3 tools/build-pages.py            # after changing any page's text, a title or the skill
 python3 tools/build-pages.py --check    # fails if generated files are out of date (a test runs it)
-mvn -q test                             # the Java command-line app, if you changed src/main/java
+mvn -q -f backend/legacy-java/pom.xml test # the Java command-line app
 ```
 
 ## Rules
 
 - Never edit generated content by hand: the blocks between `page-head`, `site-nav`, `site-footer` and `glossary`
-  markers in `frontend/*.html`, `lib/markdown-pages.js`, `frontend/.well-known/agent-skills/`,
+  markers in `frontend/*.html`, `backend/lib/markdown-pages.js`, `frontend/.well-known/agent-skills/`,
   `frontend/schema-feed.jsonl`. Change the source and run
   `tools/build-pages.py`.
 - Every figure the dashboard, the API and the MCP tools show comes from the same arithmetic. Don't duplicate it:

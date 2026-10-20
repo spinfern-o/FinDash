@@ -2,11 +2,13 @@
 
 `backend/api/` contains the existing function implementations. The root `api/` files are
 thin Vercel entry points, preserving public routes and function count. Add implementation
-here and keep deployment wrappers small. `backend/inventory.js` implements `/api/inventory`.
-Root `lib/` remains shared server/middleware infrastructure.
+here and keep deployment wrappers small. `backend/api/inventory.js` implements `/api/inventory`.
+`backend/lib/` holds shared server/middleware infrastructure. `services/` holds business
+operations and the optional Python forecast service. `database/supabase/migrations/`
+holds database setup. `legacy-java/` holds the original console app and its sample CSVs.
 
 Frontend agents own `frontend/`; coordinate changes to the pure shared stock ledger
-`frontend/js/stock/ledger.js` and `contracts/inventory.md` before changing the contract.
+`frontend/js/stock/ledger.js` and `docs/contracts/inventory.md` before changing the contract.
 Reuse existing sessions, same-site checks, RLS, AI limits and provider settings.
 Never log customer records or photos. No account data may be exposed without the user's token.
 

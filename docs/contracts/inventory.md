@@ -9,12 +9,13 @@ Settings is separate. Figma/Claude can restyle the workspace without changing th
 | Owner | Source |
 | --- | --- |
 | Frontend / Claude + Figma | `frontend/stock.html`, `frontend/css/stock.css`, `frontend/js/stock/` views and forms |
-| Backend | `backend/api/`, `backend/inventory.js`, `supabase/migrations/` |
+| Backend | `backend/api/`, `backend/api/inventory.js`, `backend/database/supabase/migrations/` |
 | Shared contract | This document and pure `frontend/js/stock/ledger.js` |
 | Integration | Root `api/` deployment wrappers, `vercel.json`, generated pages and tests |
 
-`docs/` has moved to `frontend/`. Root `api/` is still required by Vercel; it re-exports
-backend functions. Root `lib/` remains shared server/middleware code, and tests/tools stay at root.
+The website lives in `frontend/`; `docs/` contains documentation only. Root `api/` is
+still required by Vercel; it re-exports backend functions. `backend/lib/` holds shared
+server/middleware code, and tests/tools stay at root.
 Public asset URLs stay `/js/...`, `/css/...`, etc. There is no build step.
 
 ## Ledger
@@ -103,7 +104,7 @@ is no new feature name and no migration. The request adds `items: [{id, name, or
 repeats. The model is given them as a numbered list with their wording and units, never their ids, and
 answers by number, so it cannot name a product the owner did not pick.
 
-The answer is `{reading, model}`, rebuilt field by field in `backend/vision/shelf-count.js`:
+The answer is `{reading, model}`, rebuilt field by field in `backend/services/vision/shelf-count.js`:
 `{usable, qualityFlags, unmatched, explanation, observations}`. There is exactly one observation per product
 asked about, in the order asked: an answer pointing outside the list is dropped, the first answer for a
 product wins, and a product the model said nothing about comes back unobserved. Each observation is
@@ -141,7 +142,7 @@ a price change is shown only when both prices are for the same amount (`price-co
 - Send `X-FinDash-Owner` with the email returned by `/api/auth?action=me` on GET and PUT; PUT requires it and rejects an account switch.
 - Existing session cookies + same-site checks; RLS isolates each owner.
 - 401 needs login; 409 means stale revision (do not overwrite); 503 means setup is incomplete.
-- Apply `supabase/migrations/20261018000000_account_inventory.sql` and then `supabase/migrations/20261019000000_stock_invoice_sync.sql` before deploying the new handlers. The second migration is required for financial PUT as well as invoice/stock confirmation. Missing RPCs fail with 503; there is no partial-save fallback.
+- Apply `backend/database/supabase/migrations/20261018000000_account_inventory.sql` and then `backend/database/supabase/migrations/20261019000000_stock_invoice_sync.sql` before deploying the new handlers. The second migration is required for financial PUT as well as invoice/stock confirmation. Missing RPCs fail with 503; there is no partial-save fallback.
 - `POST /api/read-document`: existing image payload plus optional `language:'zh-CN'`.
   `document.lines[].description` is Chinese; `original` preserves printed text. English remains default.
   With `task:'shelf-count'` and `items`, the same address counts one shelf instead (above); it answers

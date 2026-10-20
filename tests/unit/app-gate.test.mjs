@@ -4,7 +4,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isClosedAppPage, appIsOpen, appStateScript } from "../../lib/app-gate.js";
+import { isClosedAppPage, appIsOpen, appStateScript } from "../../backend/lib/app-gate.js";
 
 const CLOSED = {};
 const OPEN = { FINDASH_APP_OPEN: "1" };

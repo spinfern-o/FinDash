@@ -1,6 +1,6 @@
 /* The built-in sample months, shown when data.json cannot be loaded (for
    example when the page is opened straight from disk). The same figures as
-   data/expenses.csv. */
+   backend/legacy-java/data/expenses.csv. */
 
 /* The fourteen cost lines of one month, in the order the cost groups list
    them, so the months below stay readable. */

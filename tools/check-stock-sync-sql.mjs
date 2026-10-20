@@ -18,7 +18,7 @@ await database.exec(`
   insert into auth.users values ('11111111-1111-4111-8111-111111111111'), ('22222222-2222-4222-8222-222222222222');
 `);
 for (const filename of ['20261011000000_account_figures.sql', '20261018000000_account_inventory.sql', '20261019000000_stock_invoice_sync.sql']) {
-  await database.exec(await readFile(new URL('../supabase/migrations/' + filename, import.meta.url), 'utf8'));
+  await database.exec(await readFile(new URL('../backend/database/supabase/migrations/' + filename, import.meta.url), 'utf8'));
 }
 await database.exec("set role authenticated; select set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', false)");
 

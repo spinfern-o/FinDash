@@ -13,7 +13,7 @@ import { startSite } from "../support/site.mjs";
 import { launchBrowser, openPage, signUp, logIn, newEmail, waitUntilNotBusy, text } from "../support/browser.mjs";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
-const TWO_FILES = [path.join(ROOT, "data/dashboard.csv"), path.join(ROOT, "data/expenses.csv")];
+const TWO_FILES = [path.join(ROOT, "backend/legacy-java/data/dashboard.csv"), path.join(ROOT, "backend/legacy-java/data/expenses.csv")];
 const PASSWORD = "correct horse battery";
 const FIRST = newEmail("first-person");
 const SECOND = newEmail("second-person");

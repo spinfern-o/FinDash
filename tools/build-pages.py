@@ -362,8 +362,20 @@ def nav_html(file_name):
     menu_links = "\n          ".join(f"<li>{nav_link(label, href, address)}</li>" for label, href in NAV_LINKS)
     menu_links += '\n          <li class="waitlist-only"><a href="/waitlist">Join the waitlist</a></li>'
     menu_links += f'\n          <li class="app-only"><a href="{app_href}">{app_label}</a></li>'
+    if on_dashboard:
+        app_button = (
+            '<button type="button" '
+            'class="button solid enter-link app-only" disabled>'
+            'Stock — Work in progress</button>'
+        )
+    else:
+        app_button = (
+            f'<a class="button solid enter-link app-only" '
+            f'href="{app_href}">{app_label}{ARROW_ICON}</a>'
+        )
     main_button = (f'\n      <a class="button solid enter-link waitlist-only" href="/waitlist">Join the waitlist{ARROW_ICON}</a>'
-                   f'\n      <a class="button solid enter-link app-only" href="{app_href}">{app_label}{ARROW_ICON}</a>')
+                   f'\n      {app_button}')
+
     if on_dashboard:
         account = ('<div class="account" id="account">\n'
                    '        <a class="account-link login-link" href="/login">Log in</a>\n'

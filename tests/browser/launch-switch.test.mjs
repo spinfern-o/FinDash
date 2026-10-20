@@ -96,7 +96,8 @@ test("open: the waitlist page says FinDash is open and offers the way in instead
     [["Open the dashboard", "/dashboard"], ["Open daily stock", "/stock"], ["Log in", "/login"]]);
   await page.goto(site.url + "/dashboard", { waitUntil: "networkidle" });
   assert.ok(page.url().endsWith("/dashboard"), "the dashboard itself is open");
-  assert.deepEqual(await visibleWaysIn("header .enter-link"), [["Stock", "/stock"]], "on the dashboard, the way to stock");
+  assert.deepEqual(await visibleWaysIn("header .enter-link"), [["Stock — Work in progress", null]]);
+  assert.ok(await page.locator("header button.enter-link").isDisabled(), "stock is still being developed");
 });
 
 test("open: the restaurant page and the 404 lead into the app too", async function () {

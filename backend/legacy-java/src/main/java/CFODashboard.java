@@ -10,12 +10,12 @@ import java.util.Scanner;
 /**
  * The FinDash command-line app.
  *
- * Reads data/dashboard.csv (month, revenue, budget) and data/expenses.csv
+ * Reads the dashboard.csv and expenses.csv files in backend/legacy-java/data/
  * (the cost lines), joins them on the month number, writes frontend/data.json for
  * the web dashboard, then lets you look at any month in the terminal and
  * compare it with another.
  *
- *   mvn -q compile exec:java
+ *   mvn -q -f backend/legacy-java/pom.xml compile exec:java
  *
  * The other classes:
  *   MonthlyFigures   one month and the figures worked out from it
@@ -27,17 +27,17 @@ import java.util.Scanner;
  */
 public class CFODashboard {
 
-    /** The fields of data/expenses.csv, in the order that file has them. Also
+    /** The fields of backend/legacy-java/data/expenses.csv, in the order that file has them. Also
         the order assumed when the columns cannot be matched by name. */
     static final List<String> EXPENSE_FIELDS = List.of(
         "month num", "cogs", "packaging", "rent", "utilities", "maintenance",
         "hardware", "insurance", "marketing", "credit card fees",
         "business license", "telephone", "employee meals", "tax", "labor");
 
-    /** The fields of data/dashboard.csv, in the order that file has them. */
+    /** The fields of backend/legacy-java/data/dashboard.csv, in the order that file has them. */
     static final List<String> DASHBOARD_FIELDS = List.of("month", "month num", "revenue", "budget");
 
-    /** Reads data/expenses.csv: each month's costs, by month number. */
+    /** Reads backend/legacy-java/data/expenses.csv: each month's costs, by month number. */
     static Map<Integer, Expenses> readExpenses(String path) {
         Map<Integer, Expenses> expensesByMonth = new HashMap<>();
         try (Scanner reader = new Scanner(new File(path))) {
@@ -77,7 +77,7 @@ public class CFODashboard {
         return expensesByMonth;
     }
 
-    /** Reads data/dashboard.csv and pairs each month with its costs. A month
+    /** Reads backend/legacy-java/data/dashboard.csv and pairs each month with its costs. A month
         with no costs row is skipped. A Year column is optional; without one,
         every month is taken to be in the current year. */
     static List<MonthlyFigures> readMonths(String path, Map<Integer, Expenses> expensesByMonth) {
@@ -152,8 +152,8 @@ public class CFODashboard {
     }
 
     public static void main(String[] args) {
-        Map<Integer, Expenses> expensesByMonth = readExpenses("data/expenses.csv");
-        List<MonthlyFigures> months = readMonths("data/dashboard.csv", expensesByMonth);
+        Map<Integer, Expenses> expensesByMonth = readExpenses("backend/legacy-java/data/expenses.csv");
+        List<MonthlyFigures> months = readMonths("backend/legacy-java/data/dashboard.csv", expensesByMonth);
 
         System.out.println("Months on file:");
         for (MonthlyFigures month : months) {

@@ -4,8 +4,8 @@
 
 import { accountsAreSetUp, supabaseClient } from "../lib/supabase.js";
 import { currentSession, isSameSite } from "../lib/session.js";
-import { emptyInventory, validateInventory } from "../frontend/js/stock/ledger.js";
-import { reviewedInvoice } from './invoice-sync.js';
+import { emptyInventory, validateInventory } from "../../frontend/js/stock/ledger.js";
+import { reviewedInvoice } from '../services/invoice-sync.js';
 
 const TABLE = "account_inventory";
 const MAXIMUM_BYTES = 1_000_000;

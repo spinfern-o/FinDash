@@ -8,7 +8,7 @@
    { "error": { "code", "message", "hint", "docs", "problems"? } }. */
 
 import { readMonthRecords, summariseMonths, templateColumns, glossaryEntries, COST_FIELDS, MAXIMUM_MONTHS }
-  from "../frontend/js/dashboard/analysis.js";
+  from "../../frontend/js/dashboard/analysis.js";
 
 export const SITE = "https://findash.tech";
 export const API_VERSION = "1.0.0";

@@ -14,7 +14,7 @@
  * be used to fill the logs with large amounts of text.
  */
 
-import { isSameSite } from "../../lib/session.js";
+import { isSameSite } from "../lib/session.js";
 
 const MAXIMUM_FIELD_LENGTH = 300;
 

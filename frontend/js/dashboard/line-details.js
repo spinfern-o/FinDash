@@ -3,7 +3,7 @@
    owner confirmed one package holds and what the printed price is per.
 
    They are checked the same way wherever an invoice is kept: in this
-   browser (saved-figures.js) and on the server (backend/invoice-sync.js).
+   browser (saved-figures.js) and on the server (backend/services/invoice-sync.js).
    Anything that isn't one of them is dropped, never guessed at. */
 
 import { CHOOSABLE_UNITS, standardUnitName } from "./units.js";

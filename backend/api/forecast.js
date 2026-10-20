@@ -1,7 +1,7 @@
 /**
  * POST /api/forecast
  *
- * Passes a request on to the Chronos-Bolt service in forecast/. Kept behind
+ * Passes a request on to the Chronos-Bolt service in backend/services/forecast/. Kept behind
  * this site's own address so the service's address and token never reach
  * the browser.
  *
@@ -17,10 +17,10 @@
  * can keep its own trend line rather than show an error.
  *
  * Needs a logged-in person with a daily allowance left, like the other
- * model-backed features: see lib/ai-access.js.
+ * model-backed features: see backend/lib/ai-access.js.
  */
 
-import { allowAiUse } from "../../lib/ai-access.js";
+import { allowAiUse } from "../lib/ai-access.js";
 
 const MAXIMUM_POINTS = 240;
 const MAXIMUM_HORIZON = 12;
@@ -84,7 +84,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "POST only" });
   }
 
-  // A forecast runs a model on the service in forecast/, which this site pays
+  // A forecast runs a model on the service in backend/services/forecast/, which this site pays
   // for, and this function holds FORECAST_TOKEN so the caller never needs it.
   // Without this check the proxy hands out exactly the access that token
   // exists to restrict: anyone who found the address could spend the service's
@@ -97,7 +97,7 @@ export default async function handler(req, res) {
   if (!serviceUrl) {
     return res.status(503).json({
       error: "no forecast service configured",
-      hint: "set FORECAST_URL to a deployment of forecast/main.py"
+      hint: "set FORECAST_URL to a deployment of backend/services/forecast/main.py"
     });
   }
 

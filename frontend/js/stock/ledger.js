@@ -10,7 +10,7 @@
    item's own shelf, which is about refilling that shelf and not about
    buying. The ledger may also hold `checks`: deliveries that didn't
    arrive as billed, or weren't checked yet, until the owner resolves them.
-   See contracts/inventory.md. */
+   See docs/contracts/inventory.md. */
 
 const MAXIMUM_ITEMS = 2000;
 const MAXIMUM_MOVEMENTS = 10000;

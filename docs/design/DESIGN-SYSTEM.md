@@ -224,7 +224,7 @@ frontend/                The website, served as it is (formerly docs/)
   js/                    Page scripts (login.js, waitlist.js, scroll-motion.js, theme-*.js, cookie-notice.js, …)
   js/dashboard/          The dashboard: main.js, state.js, draw-dashboard.js, cards/, import/, photos/, export/
   fonts/, images/        The typefaces and the home page's pictures
-lib/app-gate.js          Which pages are closed until launch (section 9)
+backend/lib/app-gate.js          Which pages are closed until launch (section 9)
 tools/build-pages.py     Writes the generated parts of every page, the nav and footer included
 tools/home-preview/      Retakes the pictures of the dashboard
 tools/og-image/          Redraws the share image
@@ -269,7 +269,7 @@ Rules:
 
 ## 9. Before launch: the waitlist gate
 
-- `lib/app-gate.js` lists the app's pages (`/dashboard`, `/stock`). `middleware.js` sends them to `/waitlist`
+- `backend/lib/app-gate.js` lists the app's pages (`/dashboard`, `/stock`). `middleware.js` sends them to `/waitlist`
   with a temporary (307) redirect unless the environment variable `FINDASH_APP_OPEN` is `1`.
 - The log in page stays open: the privacy policy promises that account holders can delete their account there.
 - Set `FINDASH_APP_OPEN=1` in Vercel for Preview deployments to try the app before launch; set it for Production

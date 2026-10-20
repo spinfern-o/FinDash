@@ -15,7 +15,7 @@ const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const DOWNLOADS = mkdtempSync(path.join(tmpdir(), "findash-test-"));
 const EMAIL = newEmail("saving");
 const PASSWORD = "correct horse battery";
-const TWO_FILES = [path.join(ROOT, "data/dashboard.csv"), path.join(ROOT, "data/expenses.csv")];
+const TWO_FILES = [path.join(ROOT, "backend/legacy-java/data/dashboard.csv"), path.join(ROOT, "backend/legacy-java/data/expenses.csv")];
 
 let site;
 let browser;

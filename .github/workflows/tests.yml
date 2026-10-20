@@ -33,7 +33,7 @@ jobs:
         run: npm test
 
       - name: Check the forecast service compiles
-        run: python3 -m py_compile forecast/main.py
+        run: python3 -m py_compile backend/services/forecast/main.py
 
   java:
     name: Java app builds and its tests pass
@@ -49,4 +49,4 @@ jobs:
           cache: maven
 
       - name: Compile and test
-        run: mvn -B -q test
+        run: mvn -B -q -f backend/legacy-java/pom.xml test

@@ -15,7 +15,7 @@ import { validate as validateOpenApi } from "@readme/openapi-parser";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { startSite } from "../support/site.mjs";
-import { PAGES, PAGE_INFO } from "../../lib/markdown-pages.js";
+import { PAGES, PAGE_INFO } from "../../backend/lib/markdown-pages.js";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SITE = "https://findash.tech";
@@ -313,7 +313,7 @@ test("the agent skill is published with an index whose digest matches it", async
   assert.equal(file.headers.get("content-type"), "text/markdown; charset=utf-8");
   const bytes = Buffer.from(await file.arrayBuffer());
   assert.equal(skill.digest, "sha256:" + createHash("sha256").update(bytes).digest("hex"));
-  assert.equal(bytes.toString("utf8"), readFileSync(ROOT + "skills/findash/SKILL.md", "utf8"), "the same as in the repository");
+  assert.equal(bytes.toString("utf8"), readFileSync(ROOT + "docs/skills/findash/SKILL.md", "utf8"), "the same as in the repository");
   const frontmatter = /^---\nname: (.*)\ndescription: (.*)\n---\n/.exec(bytes.toString("utf8"));
   assert.deepEqual([frontmatter[1], frontmatter[2]], [skill.name, skill.description]);
   assert.ok(bytes.toString("utf8").includes("https://findash.tech/api/v1/analyze"));

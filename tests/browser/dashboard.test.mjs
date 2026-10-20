@@ -123,7 +123,7 @@ test("the templates and the Excel export read back as the same figures", async f
 });
 
 test("the older two-file layout still reads", async function () {
-  await addFiles([path.join(ROOT, "data/dashboard.csv"), path.join(ROOT, "data/expenses.csv")]);
+  await addFiles([path.join(ROOT, "backend/legacy-java/data/dashboard.csv"), path.join(ROOT, "backend/legacy-java/data/expenses.csv")]);
   assert.match(await text(page, "#status"), /3 months from dashboard\.csv \+ expenses\.csv/);
   const withoutYears = (await monthFigures()).map(function (month) {
     return [month[0], month[1], month[3], month[4], month[5], month[6]];

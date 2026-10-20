@@ -11,7 +11,7 @@
      to its Markdown, the sitemap, llms.txt and the API's descriptions
 
    The Markdown is written by tools/build-pages.py from each page's own
-   HTML (lib/markdown-pages.js), so it always says what the page says. */
+   HTML (backend/lib/markdown-pages.js), so it always says what the page says. */
 
 import { PAGES, NOT_FOUND, FILES, AGENT_VIEW, SECTION_INDEXES } from "./markdown-pages.js";
 

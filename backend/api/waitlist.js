@@ -13,7 +13,7 @@
  * says so to no one: joining again simply answers "ok".
  */
 
-import { accountsAreSetUp, supabaseClient } from "../../lib/supabase.js";
+import { accountsAreSetUp, supabaseClient } from "../lib/supabase.js";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // The longest email address there can be, and the most the table keeps.
@@ -38,7 +38,7 @@ function rowFromAnswers(answers) {
 }
 
 /* The waitlist table isn't ready: the site's owner has not run the SQL in
-   supabase/migrations/ (42P01, PGRST205), or not the newest of it, which
+   backend/database/supabase/migrations/ (42P01, PGRST205), or not the newest of it, which
    lets a row be just an email (23502: a column still insists on an
    answer). */
 function isTableNotReady(error) {
@@ -48,7 +48,7 @@ function isTableNotReady(error) {
 /* A browser always says which page a form was sent from. Answers sent from
    another site, or by a script that doesn't say, are refused.
 
-   Deliberately NOT lib/session.js's isSameSite, which allows a request that
+   Deliberately NOT backend/lib/session.js's isSameSite, which allows a request that
    says nothing: that one guards addresses where the session cookie is the
    real gate, and nothing here needs a session. Joining the waitlist writes a
    row for anyone, so the stricter rule applies. Don't merge the two. */

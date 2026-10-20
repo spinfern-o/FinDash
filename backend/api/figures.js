@@ -12,14 +12,14 @@
  * monthly totals and the invoice lines the owner confirmed. Never the
  * spreadsheet itself, never a photo.
  *
- * Requests go to the database as the logged-in person (lib/supabase.js), and
- * the table's row-level security (supabase/migrations/) only lets anyone
+ * Requests go to the database as the logged-in person (backend/lib/supabase.js), and
+ * the table's row-level security (backend/database/supabase/migrations/) only lets anyone
  * reach their own row. This function could not read someone else's figures
  * even if it tried.
  */
 
-import { accountsAreSetUp, supabaseClient } from "../../lib/supabase.js";
-import { currentSession, isSameSite } from "../../lib/session.js";
+import { accountsAreSetUp, supabaseClient } from "../lib/supabase.js";
+import { currentSession, isSameSite } from "../lib/session.js";
 
 const TABLE = "account_figures";
 
@@ -30,7 +30,7 @@ const MAXIMUM_MONTHS = 600;
 const MAXIMUM_INVOICES = 5000;
 
 /* The table has not been created yet: the site's owner has not run the SQL
-   in supabase/migrations/. */
+   in backend/database/supabase/migrations/. */
 function isMissingTable(error) {
   return ["42P01", "PGRST205", "PGRST202", "42883", "42703"].includes(error.code);
 }

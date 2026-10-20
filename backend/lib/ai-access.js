@@ -2,10 +2,10 @@
 
    Reading a photo, writing advice and matching column names each cost
    money per use, paid from this site's Anthropic account. The forecast
-   costs processor time on the service in forecast/, which this site also
+   costs processor time on the service in backend/services/forecast/, which this site also
    pays for. So each needs a logged-in person, and each person has a daily
    allowance per feature, counted in Supabase
-   (supabase/migrations/20261012000000_ai_usage_limits.sql, and
+   (backend/database/supabase/migrations/20261012000000_ai_usage_limits.sql, and
    20261021000000_forecast_ai_limit.sql for the forecast).
 
    Without that, anyone who found these addresses could run up the bill. The

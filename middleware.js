@@ -5,12 +5,12 @@
    with no page gets a Markdown 404 that points to /llms.txt and the sitemap.
    Everyone else gets the pages exactly as before, with "Vary: Accept" so a
    cache never mixes the two up, and Link headers saying where the Markdown,
-   llms.txt and the API's descriptions are. lib/markdown-negotiation.js
+   llms.txt and the API's descriptions are. backend/lib/markdown-negotiation.js
    decides; this file only turns the decision into a response. */
 
 import { next } from "@vercel/functions/middleware";
-import { negotiate } from "./lib/markdown-negotiation.js";
-import { isClosedAppPage, WAITLIST, APP_STATE_SCRIPT, appStateScript } from "./lib/app-gate.js";
+import { negotiate } from "./backend/lib/markdown-negotiation.js";
+import { isClosedAppPage, WAITLIST, APP_STATE_SCRIPT, appStateScript } from "./backend/lib/app-gate.js";
 
 // Not for the server functions, Vercel's own scripts, or the stylesheets,
 // scripts and fonts the pages load: none of them have a Markdown version.
@@ -23,7 +23,7 @@ export default function middleware(request) {
   try {
     const url = new URL(request.url);
     // Whether the app is open, for the pages to show the way in: the
-    // waitlist, or the app (lib/app-gate.js). Kept a minute in the browser.
+    // waitlist, or the app (backend/lib/app-gate.js). Kept a minute in the browser.
     if (url.pathname === APP_STATE_SCRIPT) {
       const script = request.method === "HEAD" ? null : appStateScript(process.env);
       return new Response(script, { status: 200, headers: {
@@ -33,7 +33,7 @@ export default function middleware(request) {
       } });
     }
     // Before launch, the app's pages send visitors to the waitlist
-    // (lib/app-gate.js). A temporary redirect, so nothing remembers it, to
+    // (backend/lib/app-gate.js). A temporary redirect, so nothing remembers it, to
     // the waitlist on whichever address the visitor came in on.
     if (isClosedAppPage(url.pathname, process.env)) {
       return new Response(null, { status: 307, headers: { "Location": WAITLIST, "Cache-Control": "no-store" } });

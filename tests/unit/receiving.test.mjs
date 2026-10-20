@@ -8,7 +8,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { emptyInventory, addItem, addChecks, replaceCheck, validateInventory } from '../../frontend/js/stock/ledger.js';
 import { newCheck, resolvedCheck, possibleValue, billedInItemUnits, openChecks, creditInvoice } from '../../frontend/js/stock/receiving.js';
-import { reviewedInvoice } from '../../backend/invoice-sync.js';
+import { reviewedInvoice } from '../../backend/services/invoice-sync.js';
 
 const OIL = { id: 'oil', original: 'Soybean oil 35 lb', description: '黄豆油', unit: 'case', location: 'Back' };
 const RICE = { id: 'rice', original: 'Jasmine rice', description: '香米', unit: 'bag', location: 'Back',

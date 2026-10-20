@@ -88,7 +88,7 @@ test("figures: a missing table is reported plainly", async function () {
 test("every feature that costs money needs a login, and spends nothing without one", async function () {
   const visitor = httpClient(site);
   // The forecast is here too: it passes the request to the service in
-  // forecast/, which costs processor time this site pays for, and this
+  // backend/services/forecast/, which costs processor time this site pays for, and this
   // function holds FORECAST_TOKEN. It is refused before FORECAST_URL is even
   // looked at, so an anonymous caller learns nothing about the setup either.
   for (const [path, body] of [["/api/read-document", PHOTO_REQUEST], ["/api/briefing", ADVICE_REQUEST],

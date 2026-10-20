@@ -173,7 +173,7 @@ export function wireAdviceButton() {
 
   button.addEventListener("click", async function () {
     // Each request costs money, so advice is only for someone logged in,
-    // within a daily allowance (lib/ai-access.js on the server checks both).
+    // within a daily allowance (backend/lib/ai-access.js on the server checks both).
     if (!(await loggedInUser())) {
       output.innerHTML = NEEDS_LOGIN_HTML;
       return;

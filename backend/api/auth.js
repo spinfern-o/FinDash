@@ -8,7 +8,7 @@
  * browser library would need both rules loosened: it is usually loaded from
  * a CDN, and it calls https://<project>.supabase.co directly. Instead, the
  * page posts to this function, which makes the Supabase calls and keeps the
- * session in cookies page scripts cannot read (see lib/session.js), where
+ * session in cookies page scripts cannot read (see backend/lib/session.js), where
  * the browser library would keep it in localStorage.
  *
  * One function for every action: Vercel's Hobby plan allows 12 per deployment.
@@ -22,7 +22,7 @@
  *   GET  me                                        -> { user }   user is null when logged out
  */
 
-import { accountsAreSetUp, supabaseClient } from "../../lib/supabase.js";
+import { accountsAreSetUp, supabaseClient } from "../lib/supabase.js";
 import {
   clearSessionCookies,
   currentSession,
@@ -30,7 +30,7 @@ import {
   secondsUntilExpiry,
   sessionTokens,
   setSessionCookies
-} from "../../lib/session.js";
+} from "../lib/session.js";
 
 const MINIMUM_PASSWORD_LENGTH = 8;
 

@@ -178,7 +178,7 @@ async function answeredByMiddleware(request, response, url) {
 /* options.accounts: false runs the site without Supabase settings.
    options.claude: false runs it without an Anthropic key.
    options.appClosed: true runs it as the live site is before launch, with
-   the app's pages sending visitors to the waitlist (lib/app-gate.js); the
+   the app's pages sending visitors to the waitlist (backend/lib/app-gate.js); the
    other tests open them, as FINDASH_APP_OPEN=1 does on a preview. */
 export async function startSite(options = {}) {
   const supabase = await startMockSupabase();

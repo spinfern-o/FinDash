@@ -78,7 +78,7 @@ async function readNextPhoto() {
       return;
     }
     // Each reading costs money, so it is only for someone logged in, within a
-    // daily allowance (lib/ai-access.js on the server checks both).
+    // daily allowance (backend/lib/ai-access.js on the server checks both).
     const user = await loggedInUser();
     if (!user) {
       dropWaitingPhotos();

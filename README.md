@@ -19,17 +19,24 @@ or a service business.
 - [Working on the code](#working-on-the-code)
 - [The Java command-line app](#the-java-command-line-app)
 
+## Code organization
+
+Start with the [beginner code tour](docs/README.md), including the Stock workflow and a
+map of moved files. Website code lives in `frontend/`; server code, database setup, the
+optional forecast service and the original Java app live in `backend/`. Contracts, design
+guidance and historical handoffs live in `docs/`.
+
 ## Daily stock workspace and parallel development
 
 Website source is now in `frontend/`; server implementations are in `backend/`. Root `api/`
 keeps stable Vercel routes. See [frontend ownership](frontend/AGENTS.md), [backend ownership](backend/AGENTS.md),
-and the [shared inventory contract](contracts/inventory.md). Claude/Figma can refine the frontend
+and the [shared inventory contract](docs/contracts/inventory.md). Claude/Figma can refine the frontend
 independently of backend changes. Rebase older `docs/` work onto `frontend/` before integrating it.
 
 `/stock` provides English/Chinese files, review, shelf counts and stock movements. Manual items
 work in this browser without signup; signed-in stock uses a separate account table. Apply
-`supabase/migrations/20261018000000_account_inventory.sql` before using account stock, then
-`supabase/migrations/20261019000000_stock_invoice_sync.sql` **before deploying the sync handlers**.
+`backend/database/supabase/migrations/20261018000000_account_inventory.sql` before using account stock, then
+`backend/database/supabase/migrations/20261019000000_stock_invoice_sync.sql` **before deploying the sync handlers**.
 The P&L dashboard now uses the same stock-entry forms and ledger as `/stock`. Confirmed invoice
 costs can update the graphs in the same transaction as shelf counts; exclude costs already in a
 monthly spreadsheet. Counts and movements update quantities without creating another purchase cost.
@@ -220,8 +227,8 @@ these under **Settings → Environment Variables** and redeploy:
 | `SUPABASE_URL` and `SUPABASE_ANON_KEY` | Accounts. The Supabase integration in the Vercel Marketplace adds these for you. `SUPABASE_PUBLISHABLE_KEY` and the `NEXT_PUBLIC_` forms work too. |
 | `ANTHROPIC_API_KEY` | Photos, advice and column matching (also needs accounts) |
 | `SITE_URL` | The address used in login and password-reset emails, e.g. `https://yourdomain.com`. Set it: without it those emails fall back to the Site URL configured in Supabase, and the links may not come back to this deployment. |
-| `FORECAST_URL` and `FORECAST_TOKEN` | Optional: the forecast model (see `forecast/README.md`) |
-| `FINDASH_APP_OPEN` | `1` opens the dashboard and the stock workspace, and every public page's way in (the nav button, the home page, the sticky phone button, the waitlist page) leads into the app instead of the waitlist. Without it the app's pages send visitors to the waitlist, as before launch (`lib/app-gate.js`). Set it for Preview to try the app, and for Production on launch day; redeploy after changing it. |
+| `FORECAST_URL` and `FORECAST_TOKEN` | Optional: the forecast model (see `backend/services/forecast/README.md`) |
+| `FINDASH_APP_OPEN` | `1` opens the dashboard and the stock workspace, and every public page's way in (the nav button, the home page, the sticky phone button, the waitlist page) leads into the app instead of the waitlist. Without it the app's pages send visitors to the waitlist, as before launch (`backend/lib/app-gate.js`). Set it for Preview to try the app, and for Production on launch day; redeploy after changing it. |
 
 The site never uses Supabase's service-role key (the integration adds one; nothing reads
 it). `/api/capabilities` says which features are on, as true or false, never the keys.
@@ -232,7 +239,7 @@ nothing.
 
 ### 2. Supabase (accounts)
 
-1. In Supabase open **SQL Editor**. For each file in `supabase/migrations/`, in order,
+1. In Supabase open **SQL Editor**. For each file in `backend/database/supabase/migrations/`, in order,
    paste it and press **Run**:
    - `20261011000000_account_figures.sql`: where saved figures are kept
    - `20261012000000_ai_usage_limits.sql`: the daily limits on paid features
@@ -297,7 +304,7 @@ allowance (days run midnight to midnight UTC):
 | Advice | 10 |
 | Matching column names | 60 |
 
-Change them in `DAILY_LIMITS` in `lib/ai-access.js`. The counts are kept in Supabase by
+Change them in `DAILY_LIMITS` in `backend/lib/ai-access.js`. The counts are kept in Supabase by
 the second migration; without it, the three features stay off rather than run without a
 limit. Set a monthly spending limit in the Anthropic Console as well.
 
@@ -318,7 +325,7 @@ refuses requests from other sites, quietly drops form robots (a hidden field onl
 fill in), and adds a row to the `waitlist` table in Supabase. Nobody is emailed
 automatically: no confirmation is sent, and you aren't notified of new names.
 
-The table needs two SQL files from `supabase/migrations/`, run in order in **Supabase →
+The table needs two SQL files from `backend/database/supabase/migrations/`, run in order in **Supabase →
 SQL Editor**: `20261017000000_waitlist.sql` (the table), then
 `20261020000000_waitlist_email_only.sql` (lets a row be just an email). Until both have
 run, the page says the waitlist isn't open yet. Earlier sign-ups also answered a few
@@ -420,7 +427,7 @@ that say plainly what something is and answer the questions people actually ask.
   Markdown 404 pointing to `llms.txt` and the sitemap. Browsers and search engines get the
   HTML exactly as before, with `Link` headers saying where the Markdown, llms.txt and the
   API's descriptions are. `middleware.js` (Vercel Routing Middleware) decides, using
-  `lib/markdown-negotiation.js`; the Markdown itself is in `lib/markdown-pages.js`, which
+  `backend/lib/markdown-negotiation.js`; the Markdown itself is in `backend/lib/markdown-pages.js`, which
   `tools/build-pages.py` converts from each page's own HTML. **After changing any page's
   text, run `python3 tools/build-pages.py`**: a test fails if the Markdown no longer
   matches the pages.
@@ -444,7 +451,7 @@ that say plainly what something is and answer the questions people actually ask.
 - **WebMCP tools on the dashboard** (`frontend/js/dashboard/agent-tools.js`), for agents in
   browsers that support it: load figures, read the dashboard, pick the month, save the
   template.
-- **An agent skill**, `skills/findash/SKILL.md`, published by the script at
+- **An agent skill**, `docs/skills/findash/SKILL.md`, published by the script at
   `/.well-known/agent-skills/` with its digest; and `AGENTS.md` for coding agents.
 
 The API and both MCP servers are one server function, `api/agent.js` (Vercel's Hobby plan
@@ -556,100 +563,55 @@ Where to start:
 | How figures are remembered | `saved-figures.js` (this browser), `account-figures.js` (the account) |
 | What you buy and the count sheet | `items.js`, `cards/item-log.js`, `count-sheet.js` |
 | Comparing prices fairly | `units.js`, `price-comparison.js`, `line-details.js` |
-| How logging in works | `api/auth.js`, `lib/session.js`, `frontend/js/login.js` |
-| Who may use the paid features | `lib/ai-access.js` |
+| How logging in works | `api/auth.js`, `backend/lib/session.js`, `frontend/js/login.js` |
+| Who may use the paid features | `backend/lib/ai-access.js` |
 | The cost groups | `frontend/js/dashboard/cost-groups.js` |
 | What the tests check | `tests/browser/dashboard.test.mjs`, then the rest of `tests/` |
 
 ### Project layout
 
-```
-frontend/                    The website (Vercel serves this folder)
-  index.html             Landing page
-  dashboard.html         The dashboard
-  help.html              Getting data in, glossary, how data is handled
-  waitlist.html          The waitlist: an email, nothing else (js/waitlist.js)
-  about.html, contact.html   Who runs FinDash and how to reach it
-  developers.html        The API, MCP servers, WebMCP tools and agent skill
-  openapi.json           The API's OpenAPI description
-  .well-known/           The API catalog, the AI Catalog and the agent skills index
-  schema-feed.jsonl, schemamap.xml   Every page's structured data in one file
-  restaurant-profit-and-loss.html   Food cost, labor and prime cost, for restaurants
-  login.html             Log in, create an account, reset a password, delete an account
-  privacy.html, terms.html   The privacy policy and terms of service
-  thanks.html            After creating an account: "check your email"
-  404.html               Shown for any address with no page
-  robots.txt, sitemap.xml    For search engines
-  llms.txt               What FinDash is, in plain text for AI tools
-  og-image.png           The preview shown when a link is shared
-  screenshot-dashboard.jpg   The dashboard, for search engines' app listings
-  fonts/                 DM Sans, Crimson Text, Roboto Mono and Noto Sans SC, with their licences
-  images/                The home page's pictures: the dashboard, and two photos from the Figma file
-  favicon.ico, icon-*.png, apple-touch-icon.png, site.webmanifest   Icons
-  data.json              The demo figures, written by the Java app
-  css/                   site.css (shared by every page: colours, type, buttons, nav, footer),
-                         and one stylesheet per kind of page
-  js/
-    glossary.js          Plain-language definitions for the ? buttons and the help page
-    error-reporter.js    Sends errors on the page to the site's log
-    cookie-notice.js     The one-time note that only login cookies are used
-    sticky-cta.js        The landing page's Join the waitlist button that follows on phones
-    scroll-motion.js     The home page's scroll animation (DESIGN-SYSTEM.md, section 8)
-    theme-init.js, theme-toggle.js   Light mode, or dark when the visitor switches
-    login.js, thanks.js  Each page's own script
-    dashboard/
-      main.js            Starts the dashboard
-      state.js           Everything the dashboard keeps track of
-      draw-dashboard.js  The month buttons, the heading and every card
-      cards/             One file per card
-      import/            Reading spreadsheets: CSV, Excel, column names, months
-      photos/            Reading photos of invoices and checking them
-      export/            The template and Export to Excel
-      saved-figures.js   Remembering figures in this browser
-      account-figures.js Saving them to the account
-      items.js           What the owner buys, item by item, from the invoices
-      count-sheet.js     The count sheet made from those items, printed or for Excel
-api/                     Server functions: accounts, saved figures, photo reading, advice,
-                         column matching, forecast, capabilities, error reports, the
-                         waitlist, and agent.js: the public API and the MCP servers
-lib/                     Shared by the functions: Supabase, login cookies, daily limits,
-                         the API (agent-api.js) and MCP servers (mcp-servers.js); and the
-                         Markdown versions of the pages (markdown-pages.js, written by
-                         tools/build-pages.py) with the rules for serving them
-middleware.js            Sends AI agents the Markdown version of a page, and Link headers;
-                         before launch, sends the app's pages to the waitlist (lib/app-gate.js)
-skills/                  The agent skill (SKILL.md), published under .well-known/
-AGENTS.md                Instructions for AI coding agents working on this code
-DESIGN-SYSTEM.md         How the pages look (tokens, components, icons), and building from Figma
-supabase/migrations/     The SQL for saved figures, daily limits and the waitlist
-tests/                   The tests (npm test)
-.github/workflows/       Runs the tests on every pull request
-forecast/                The optional forecast service (Python, Chronos)
-tools/                   build-pages.py (head tags, every page's nav and footer, structured
-                         data, the glossary, the Markdown versions of the pages, the skill
-                         index, the schema feed), og-image/ (the share image), home-preview/
-                         (the pictures of the dashboard)
-src/main/java/           The Java command-line app
-data/                    The Java app's input CSVs
-```
+| Location | Contents |
+| --- | --- |
+| `frontend/*.html` | Pages served directly by Vercel, including `/stock` and `/dashboard`. |
+| `frontend/css/` | Shared design tokens and page styles. |
+| `frontend/js/stock/` | Uploads, review, item counts, movements, buying and shelf scanning. |
+| `frontend/js/dashboard/` | P&L calculations, cards, imports, photos and exports. |
+| `frontend/js/` | Shared browser helpers and scripts for public pages. |
+| `frontend/fonts/`, `frontend/images/` | Fonts and images. |
+| `frontend/.well-known/` | Published API catalogs and agent skills. |
+| `backend/api/` | Server request handlers. |
+| `backend/services/` | Invoice synchronization, `vision/` shelf counting and the optional `forecast/` service. |
+| `backend/lib/` | Sessions, Supabase, usage limits, launch gating, API/MCP helpers and generated Markdown. |
+| `backend/database/supabase/migrations/` | SQL migrations, in the same order as before. |
+| `backend/legacy-java/` | Original console app, Maven project and sample CSVs. |
+| `docs/` | Code tour, `contracts/`, `design/`, `skills/` and historical `archive/`. |
+| `tests/` | Unit, API and browser tests, fixtures and helpers. |
+| `tools/` | Page generation, screenshots and database verification scripts. |
+| `api/` | Thin Vercel entry points that forward to `backend/api/`. |
+| `middleware.js`, `vercel.json` | Request routing and deployment settings. |
+| `package.json`, `package-lock.json`, `.github/` | Dependencies, commands and automated checks. |
+| `AGENTS.md` | Instructions for coding agents, with folder ownership rules in frontend and backend. |
+
+See [the code tour](docs/README.md) for a step-by-step explanation and the old-to-new
+path map. Frontend URLs and API addresses are unchanged; there is no extra build step.
 
 ## The Java command-line app
 
 The project began as a Java console app, and it still works: it reads two CSV files from
-`data/`, prints a month's figures, compares any two months, and writes `frontend/data.json`
+`backend/legacy-java/data/`, prints a month's figures, compares any two months, and writes `frontend/data.json`
 (the demo figures the website opens on).
 
 You'll need JDK 21 or newer and Maven. Run it from the project root, since the CSV paths
 are relative to it:
 
 ```bash
-mvn -q compile exec:java
+mvn -q -f backend/legacy-java/pom.xml compile exec:java
 ```
 
 Its own tests, which cover reading the CSV cells, run with:
 
 ```bash
-mvn -q test
+mvn -q -f backend/legacy-java/pom.xml test
 ```
 
 It lists the months it loaded, then asks for a month number to show, and another to
@@ -671,7 +633,7 @@ percentage points (`pts`) for everything else.
 
 ### Its two files
 
-`data/dashboard.csv` has one row per month: `month` (a name), `month num` (the number you
+`backend/legacy-java/data/dashboard.csv` has one row per month: `month` (a name), `month num` (the number you
 type, and the key that joins the two files), `revenue`, `budget`, and optionally `year`.
 
 ```csv
@@ -681,7 +643,7 @@ august,8,64000,57000
 september,9,33000,34000
 ```
 
-`data/expenses.csv` has `month num` and the fourteen cost lines. The group totals are
+`backend/legacy-java/data/expenses.csv` has `month num` and the fourteen cost lines. The group totals are
 always worked out from the lines, never stored, so they can't drift apart.
 
 ```csv

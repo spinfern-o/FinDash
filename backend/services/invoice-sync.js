@@ -1,8 +1,8 @@
 /* A reviewed invoice is money printed on a document, never a shelf count
    multiplied by a guessed price. Rebuild only the dashboard's invoice shape. */
-import { ALL_COST_LINES } from '../frontend/js/dashboard/cost-groups.js';
-import { roundToCents } from '../frontend/js/dashboard/numbers.js';
-import { cleanCurrency, linePriceDetails } from '../frontend/js/dashboard/line-details.js';
+import { ALL_COST_LINES } from '../../frontend/js/dashboard/cost-groups.js';
+import { roundToCents } from '../../frontend/js/dashboard/numbers.js';
+import { cleanCurrency, linePriceDetails } from '../../frontend/js/dashboard/line-details.js';
 
 /* Required text is bounded rather than silently truncating an invoice id. */
 function text(value, maximum, label, optional = false) {

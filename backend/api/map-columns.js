@@ -20,7 +20,7 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
-import { allowAiUse } from "../../lib/ai-access.js";
+import { allowAiUse } from "../lib/ai-access.js";
 
 const client = new Anthropic(); // reads ANTHROPIC_API_KEY from the environment
 
@@ -158,7 +158,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "nothing to map: send unplaced fields or unclaimed headers" });
   }
 
-  // Only for a logged-in person within today's allowance (lib/ai-access.js).
+  // Only for a logged-in person within today's allowance (backend/lib/ai-access.js).
   if (!(await allowAiUse(req, res, "columns"))) {
     return;
   }

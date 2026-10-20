@@ -18,7 +18,7 @@
  *
  * The same photo path also counts one shelf, for the stock page: a request
  * with "task": "shelf-count" and "items" (the products the owner tracks
- * on that one shelf) goes to backend/vision/shelf-count.js and answers
+ * on that one shelf) goes to backend/services/vision/shelf-count.js and answers
  * { "reading": { "observations": [...] } }, one observation per product.
  * It is the same login, the same site check and the same daily photo
  * allowance; only the question and the answer differ. A request without
@@ -33,8 +33,8 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
-import { allowAiUse } from "../../lib/ai-access.js";
-import { readShelfCount, shelfItemsProblem } from "../vision/shelf-count.js";
+import { allowAiUse } from "../lib/ai-access.js";
+import { readShelfCount, shelfItemsProblem } from "../services/vision/shelf-count.js";
 
 const client = new Anthropic();
 
@@ -46,7 +46,7 @@ const MAXIMUM_BASE64_LENGTH = 6_000_000;
 const MEDIA_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const DOCUMENT_KINDS = ["purchase", "sale", "other"];
 
-/* The dashboard's cost lines, named as data/expenses.csv names them. */
+/* The dashboard's cost lines, named as backend/legacy-java/data/expenses.csv names them. */
 const CATEGORIES = [
   "cogs", "labor", "employee meals", "tax",
   "packaging", "credit card fees", "marketing", "hardware",
@@ -416,7 +416,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "mediaType must be one of " + MEDIA_TYPES.join(", ") });
   }
 
-  // Only for a logged-in person within today's allowance (lib/ai-access.js).
+  // Only for a logged-in person within today's allowance (backend/lib/ai-access.js).
   if (!(await allowAiUse(req, res, "photo"))) {
     return;
   }

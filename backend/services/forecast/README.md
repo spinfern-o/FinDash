@@ -10,7 +10,7 @@ URL and token never reach the browser.
 ## Run it locally
 
 ```bash
-cd forecast
+cd backend/services/forecast
 pip install -r requirements.txt
 uvicorn main:app --port 8000
 ```

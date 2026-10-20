@@ -4,7 +4,7 @@
                     password reset, log out
      Database       the account_figures and waitlist tables, and the
                     claim_ai_use function, each with the same row-level
-                    rules as the real SQL in supabase/migrations/
+                    rules as the real SQL in backend/database/supabase/migrations/
 
    It runs inside the test's own process, so a test can look at and change
    its state directly (users, figures, usage, options). */

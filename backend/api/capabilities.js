@@ -9,7 +9,7 @@
  * useful; knowing where it lives would.
  */
 
-import { accountsAreSetUp } from "../../lib/supabase.js";
+import { accountsAreSetUp } from "../lib/supabase.js";
 
 export default function handler(req, res) {
   if (req.method !== "GET") {
@@ -22,7 +22,7 @@ export default function handler(req, res) {
 
   // The features that call Claude need a key, and accounts too: they are
   // only for logged-in people, so each person's daily use can be capped
-  // (lib/ai-access.js).
+  // (backend/lib/ai-access.js).
   const hasAccounts = accountsAreSetUp();
   const hasClaude = Boolean(process.env.ANTHROPIC_API_KEY) && hasAccounts;
   return res.status(200).json({

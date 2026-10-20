@@ -1,7 +1,7 @@
 # Counting a shelf from a photo — the audit behind it, and what P0 is
 
 The owner's question is "I photographed the milk shelf. How many cartons should I put out now?"
-The schema and the API for this are in `contracts/inventory.md`; this page is why it was built this
+The schema and the API for this are in `docs/contracts/inventory.md`; this page is why it was built this
 way, what was already here, and what was deliberately left for later.
 
 ## What the repository already had
@@ -11,7 +11,7 @@ way, what was already here, and what was deliberately left for later.
   adding to it. A confirmed photo count is exactly that, so no new movement type was added, and no
   usage or delivery is ever recorded for the difference between two photos.
 - **An authenticated, rate-limited, bounded photo path already existed.** `backend/api/read-document.js`
-  with `lib/ai-access.js`: logged in, same site, a daily allowance per person counted in Supabase,
+  with `backend/lib/ai-access.js`: logged in, same site, a daily allowance per person counted in Supabase,
   structured output, and the model's answer rebuilt field by field before the page sees it.
 - **Photo handling already existed.** `frontend/js/dashboard/photos/photo-reader.js` turns a photo
   upright, shrinks it under the request limit and makes a preview; `frontend/js/stock/files.js` takes
@@ -35,7 +35,7 @@ way, what was already here, and what was deliberately left for later.
 | --- | --- |
 | `shelfTarget`, one optional positive number on an item | `frontend/js/stock/ledger.js` |
 | The refill arithmetic, the duplicate and stale-count guards, the request | `frontend/js/stock/shelf.js` |
-| The shelf-counting question, schema and rebuilt answer | `backend/vision/shelf-count.js` |
+| The shelf-counting question, schema and rebuilt answer | `backend/services/vision/shelf-count.js` |
 | `task: "shelf-count"` dispatch, invoices unchanged without it | `backend/api/read-document.js` |
 | "Scan shelf" per item, the four-step dialog, the shelf target field | `frontend/js/stock/forms.js` |
 | "Needs refilling", and the target beside each count | `frontend/js/stock/views.js` |

@@ -22,7 +22,7 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
-import { allowAiUse } from "../../lib/ai-access.js";
+import { allowAiUse } from "../lib/ai-access.js";
 
 const client = new Anthropic();
 
@@ -137,7 +137,7 @@ export default async function handler(req, res) {
     currencyCode = body.currency;
   }
 
-  // Only for a logged-in person within today's allowance (lib/ai-access.js).
+  // Only for a logged-in person within today's allowance (backend/lib/ai-access.js).
   if (!(await allowAiUse(req, res, "advice"))) {
     return;
   }

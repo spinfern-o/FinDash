@@ -9,7 +9,7 @@
        (and, on the home page, the sticky button on phones)
 
    Each page's own stylesheet (dashboard.css, landing.css, …) only adds what
-   that page has that others don't. DESIGN-SYSTEM.md explains the parts. */
+   that page has that others don't. docs/design/DESIGN-SYSTEM.md explains the parts. */
 
 /* The kit's three typefaces, served from this site rather than Google Fonts:
    one request fewer before anything shows, and no visitor's address sent to
@@ -143,7 +143,7 @@ a {
 }
 /* The way in: before launch, the waitlist's version of a button or
    sentence; once the app is open, the app's. /app-state.js marks the page
-   "app-open" before it is drawn (lib/app-gate.js). */
+   "app-open" before it is drawn (backend/lib/app-gate.js). */
 html:not(.app-open) .app-only,
 html.app-open .waitlist-only {
   display: none !important;

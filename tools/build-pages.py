@@ -14,12 +14,12 @@
   - the dashboard's <link rel="modulepreload"> list: every module main.js
     imports, however deep, so the browser asks for them all at once instead
     of discovering them one level at a time
-  - lib/markdown-pages.js: every page as Markdown, converted from the page's
+  - backend/lib/markdown-pages.js: every page as Markdown, converted from the page's
     own HTML, which middleware.js sends to AI agents that ask for Markdown
     ("Accept: text/markdown") or ask for /page.md, plus the Markdown 404, the
     view for agents (?mode=agent), each section's llms.txt and the list of
     files in frontend/
-  - the agent skill at /.well-known/agent-skills/ (from skills/), with its
+  - the agent skill at /.well-known/agent-skills/ (from docs/skills/), with its
     index and digest, and the structured data of every page as a Schema
     Feed (frontend/schema-feed.jsonl, listed in frontend/schemamap.xml)
 
@@ -46,7 +46,7 @@ from html.parser import HTMLParser
 SITE = "https://findash.tech"
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DOCS = ROOT / "frontend"
-MARKDOWN_MODULE = ROOT / "lib" / "markdown-pages.js"
+MARKDOWN_MODULE = ROOT / "backend" / "lib" / "markdown-pages.js"
 SUPPORT = "support.findash@findash.tech"
 SOURCE_CODE = "https://github.com/spinfern-o/FinDash"
 
@@ -110,7 +110,7 @@ FOOTER_START = "<!-- site-footer: start (tools/build-pages.py writes this) -->"
 FOOTER_END = "<!-- site-footer: end -->"
 
 # The links in the nav bar along the top of every page, and in its phone menu.
-# Before launch the app is closed (lib/app-gate.js), so the nav leads to the
+# Before launch the app is closed (backend/lib/app-gate.js), so the nav leads to the
 # home page's sections and the waitlist; once it opens, to the app instead
 # (the waitlist-only and app-only versions, chosen by /app-state.js).
 NAV_LINKS = [("About", "/#what-is-findash"), ("How it works", "/#how-it-works"), ("Questions", "/#questions"),
@@ -297,7 +297,7 @@ def head_block(file_name, page_text):
         '<meta name="theme-color" content="#ffffff">',
         # Whether the app is open yet, answered by middleware.js before the
         # page is drawn, so it shows the waitlist's way in or the app's
-        # (lib/app-gate.js). Waits for nothing else; sets no cookie.
+        # (backend/lib/app-gate.js). Waits for nothing else; sets no cookie.
         '<script src="/app-state.js"></script>',
         # Vercel Web Analytics: counts page visits without cookies. Only
         # active once Analytics is switched on for the project in Vercel.
@@ -734,7 +734,7 @@ SITE_LINKS = [("Home", "/"), ("Dashboard", "/dashboard"), ("Help", "/help"), ("W
 
 # The sections with an llms.txt of their own, for an agent working in one area.
 SECTION_PAGES = ["help.html", "dashboard.html", "developers.html"]
-SKILLS = ROOT / "skills"
+SKILLS = ROOT / "docs" / "skills"
 SKILLS_PUBLISHED = DOCS / ".well-known" / "agent-skills"
 SKILLS_SCHEMA = "https://schemas.agentskills.io/discovery/0.2.0/schema.json"
 # Folders the middleware never sees (see middleware.js), so not listed in FILES.
@@ -810,7 +810,7 @@ def section_index(file_name, page_html):
 
 
 def published_skills():
-    """Each skill in skills/, copied to /.well-known/agent-skills/, and the
+    """Each skill in docs/skills/, copied to /.well-known/agent-skills/, and the
     discovery index listing them (Agent Skills Discovery 0.2.0): name,
     description, address and the SHA-256 of the file as served."""
     outputs = {}
@@ -874,7 +874,7 @@ def site_files(also):
 
 
 def markdown_module(pages, files):
-    """lib/markdown-pages.js: what middleware.js and the docs MCP server serve."""
+    """backend/lib/markdown-pages.js: what middleware.js and the docs MCP server serve."""
     markdown = {}
     info = {}
     for name, (address, title, description, listed) in PAGES.items():

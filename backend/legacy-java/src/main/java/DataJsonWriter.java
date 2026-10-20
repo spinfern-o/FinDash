@@ -52,7 +52,7 @@ public class DataJsonWriter {
         out.println("      \"cogs\": " + number(expenses.costOfGoodsSold) + ",");
         out.println("      \"labor\": " + number(expenses.labor) + ",");
         out.println();
-        // Every cost line, named as data/expenses.csv names it, so the web
+        // Every cost line, named as backend/legacy-java/data/expenses.csv names it, so the web
         // report can list each group in full. The five fields above stay for
         // anything already reading them.
         out.println("      \"lines\": {");

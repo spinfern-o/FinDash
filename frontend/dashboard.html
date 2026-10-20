@@ -134,7 +134,7 @@
         <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
       </button>
       <a class="button solid enter-link waitlist-only" href="/waitlist">Join the waitlist<svg class="button-arrow" width="7" height="7" viewBox="0 0 6 7" aria-hidden="true"><path d="M5.01037 4.9934V1.05184L5.64939 1.09142L0.735155 6.01131L0 5.27615L4.91423 0.361923L4.96513 1.00094H1.0066V0L6 0.0113101V4.9934H5.01037Z" fill="currentColor"/></svg></a>
-      <a class="button solid enter-link app-only" href="/stock">Stock<svg class="button-arrow" width="7" height="7" viewBox="0 0 6 7" aria-hidden="true"><path d="M5.01037 4.9934V1.05184L5.64939 1.09142L0.735155 6.01131L0 5.27615L4.91423 0.361923L4.96513 1.00094H1.0066V0L6 0.0113101V4.9934H5.01037Z" fill="currentColor"/></svg></a>
+      <button type="button" class="button solid enter-link app-only" disabled>Stock — Work in progress</button>
       <details class="nav-menu">
         <summary aria-label="Menu"><svg class="icon-menu" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.6665H21V7.6665H3V5.6665ZM3 10.6665H21V12.6665H3V10.6665ZM3 15.6665H21V17.6665H3V15.6665Z" fill="currentColor"/></svg><svg class="icon-close" width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M13.46 12L19 17.54V19H17.54L12 13.46L6.46 19H5V17.54L10.54 12L5 6.46V5H6.46L12 10.54L17.54 5H19V6.46L13.46 12Z" fill="currentColor"/></svg></summary>
         <div class="nav-menu-panel">
@@ -243,8 +243,8 @@
       <h2 id="dashboard-stock-title" data-text="dashboardStock">Stock on shelves</h2>
       <label class="stock-language"><span data-text="language">Language</span><select id="stock-language"><option value="en">English</option><option value="zh-CN">简体中文</option></select></label>
     </div>
-    <p data-text="dashboardStockHint">Add and count stock here. The Stock page uses the same records.</p>
-    <div class="stock-actions"><button class="btn primary" id="add-item" data-text="addItem" disabled>Add an item</button><a href="/stock#items" data-text="openStock">Open stock page</a></div>
+    <p data-text="dashboardStockHint">Stock system for inventory tracking coming soon.</p>
+    <button type="button" clas="btn" disabled>Work in progress...</button>
     <p id="stock-storage" role="status"></p>
     <p id="stock-message" class="stock-danger" role="alert" hidden></p>
     <div id="dashboard-stock-items"></div>

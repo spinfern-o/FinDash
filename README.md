@@ -29,7 +29,7 @@ guidance and historical handoffs live in `docs/`.
 ## Daily stock workspace and parallel development
 
 Website source is now in `frontend/`; server implementations are in `backend/`. Root `api/`
-keeps stable Vercel routes. See [frontend ownership](frontend/AGENTS.md), [backend ownership](backend/AGENTS.md),
+keeps stable Vercel routes. See [frontend ownership](docs/frontend-rules.md), [backend ownership](backend/AGENTS.md),
 and the [shared inventory contract](docs/contracts/inventory.md). Claude/Figma can refine the frontend
 independently of backend changes. Rebase older `docs/` work onto `frontend/` before integrating it.
 
@@ -584,7 +584,7 @@ Where to start:
 | `backend/lib/` | Sessions, Supabase, usage limits, launch gating, API/MCP helpers and generated Markdown. |
 | `backend/database/supabase/migrations/` | SQL migrations, in the same order as before. |
 | `backend/legacy-java/` | Original console app, Maven project and sample CSVs. |
-| `docs/` | Code tour, `contracts/`, `design/`, `skills/` and historical `archive/`. |
+| `docs/` | Code tour, `contracts/`, `design/`, and `skills/`. |
 | `tests/` | Unit, API and browser tests, fixtures and helpers. |
 | `tools/` | Page generation, screenshots and database verification scripts. |
 | `api/` | Thin Vercel entry points that forward to `backend/api/`. |

@@ -107,7 +107,6 @@ export const FILES = [
   "/.well-known/ai-catalog.json",
   "/.well-known/api-catalog",
   "/404.html",
-  "/AGENTS.md",
   "/about.html",
   "/apple-touch-icon.png",
   "/contact.html",

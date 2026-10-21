@@ -12,7 +12,8 @@ Vercel Routing Middleware in `middleware.js`, and the original Java command-line
 
 - `frontend/`: the website. `frontend/js/dashboard/` is the dashboard; its arithmetic (`import/months-from-sheet.js`,
   `periods.js`, `cost-groups.js`) is also used by the public API through `frontend/js/dashboard/analysis.js`.
-- `frontend/AGENTS.md` and `backend/AGENTS.md`: ownership rules for parallel agents.
+- `docs/frontend-rules.md` and `backend/AGENTS.md`: ownership rules for parallel agents. The frontend rules
+  live in `docs/` because everything in `frontend/` is public on the website.
 - `docs/contracts/inventory.md`: shared daily-stock API and schema.
 - `backend/api/`: server implementations. `backend/api/inventory.js`: the stock API.
 - `api/`: thin Vercel deployment wrappers. `api/agent.js` serves the public API (`/api/v1/*`) and the two MCP servers

@@ -3,7 +3,7 @@
 import { store, loadStock, saveStock } from '../stock/storage.js';
 import { words, loadLanguage, setLanguage } from '../stock/language.js';
 import { itemRowsHtml } from '../stock/views.js';
-import { wireForms, showAddItem, showMovement, showItemSettings, showShelfScan, canChange } from '../stock/forms.js';
+import { wireForms, showMovement, showItemSettings, showShelfScan } from '../stock/forms.js';
 import { watchStockChanges } from '../stock/changes.js';
 import { refreshAccountFigures } from './account-figures.js';
 import { state } from './state.js';
@@ -17,10 +17,11 @@ function message(key) {
 
 /* Stock rows redraw independently of the monthly financial cards. */
 export function renderDashboardStock() {
-  document.getElementById('add-item').disabled = !canChange();
-  document.getElementById('stock-storage').textContent = words(store.note || 'loading');
+  // Adding items here is switched off while the restocking tracker is unfinished; problems still show.
+  const isSaved = ['accountSaved', 'guest'].includes(store.note);
+  document.getElementById('stock-storage').textContent = words(isSaved ? 'stockWorkInProgress' : store.note || 'loading');
   const panel = document.getElementById('dashboard-stock-items');
-  panel.innerHTML = itemRowsHtml();
+  panel.innerHTML = store.inventory.items.length ? itemRowsHtml() : `<p>${words('stockTrackerAbout')}</p>`;
   if (store.dirty && !state.photoReview?.stockInvoiceId) {
     const retry = document.createElement('button');
     retry.id = 'retry-stock';
@@ -42,7 +43,6 @@ async function refresh() {
 export async function startDashboardStock() {
   setLanguage(loadLanguage());
   wireForms(renderDashboardStock, message);
-  document.getElementById('add-item').addEventListener('click', showAddItem);
   document.getElementById('stock-language').addEventListener('change', function (event) {
     setLanguage(event.target.value);
     renderDashboardStock();

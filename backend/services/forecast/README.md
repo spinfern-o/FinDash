@@ -12,7 +12,7 @@ URL and token never reach the browser.
 ```bash
 cd backend/services/forecast
 pip install -r requirements.txt
-uvicorn main:app --port 8000
+FORECAST_TOKEN=local-test uvicorn main:app --port 8000
 ```
 
 First call downloads the model (~200 MB) and takes a while; after that a
@@ -20,7 +20,7 @@ forecast is fast on CPU.
 
 ```bash
 curl -s localhost:8000/forecast -H 'Content-Type: application/json' \
-  -d '{"series":[1040,2880,3850,4600,6900,7210,7580,5420,-3640,3070,3420,8940],"horizon":3}'
+  -d '{"series":[1040,2880,3850,4600,6900,7210,7580,5420,-3640,3070,3420,8940],"horizon":3,"token":"local-test"}'
 ```
 
 ## Deploy it
@@ -34,8 +34,8 @@ Any host that runs a Python container works. In rough order of least effort:
 | **Hugging Face Spaces** | Docker space, free CPU tier |
 | **Fly.io** | scales to zero with a small volume for the model cache |
 
-Set a `FORECAST_TOKEN` env var on the service, or it is an open endpoint anyone
-can spend your CPU on.
+Set a `FORECAST_TOKEN` env var on the service. Without it the service refuses
+every forecast, so it can never be an open endpoint anyone can spend your CPU on.
 
 ## Point Vercel at it
 

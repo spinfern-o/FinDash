@@ -38,10 +38,9 @@ import { readShelfCount, shelfItemsProblem } from "../services/vision/shelf-coun
 
 const client = new Anthropic();
 
-// Public and needs no login, like the other functions: these limits bound
-// what one request can cost. A spending limit in the Anthropic console is the
-// hard stop. Vercel refuses request bodies over 4.5 MB before this code runs;
-// the page shrinks photos well under that.
+// These limits bound what one request can cost. A spending limit in the
+// Anthropic console is the hard stop. Vercel refuses request bodies over
+// 4.5 MB before this code runs; the page shrinks photos well under that.
 const MAXIMUM_BASE64_LENGTH = 6_000_000;
 const MEDIA_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const DOCUMENT_KINDS = ["purchase", "sale", "other"];

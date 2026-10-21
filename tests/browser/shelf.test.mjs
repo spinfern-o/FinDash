@@ -140,7 +140,7 @@ test('T01-T03, T22: 7, then 8, then 10 cartons against a target of 10 asks for 3
 
   // T22: the P&L page's stock area reads the same ledger.
   await page.goto(site.url + '/dashboard', { waitUntil: 'networkidle' });
-  await page.locator('#add-item:enabled').waitFor();
+  await page.locator('#dashboard-stock-items .stock-count').first().waitFor();
   assert.match(await page.locator('#dashboard-stock-items .stock-count').first().innerText(), /^10/);
   assert.deepEqual(page.errors, []);
   await page.context().close();

@@ -20,11 +20,12 @@ export function parseAmount(value) {
   // Drop currency symbols and anything else that is not part of a number.
   text = text.replace(/[^0-9.,\-\s]/g, "").trim();
 
-  // Only the unambiguous European forms are converted. "1.250,00" and
-  // "1 250,00" can mean nothing else. A bare "1,25" is genuinely ambiguous:
-  // it is left as thousands rather than guessed at, since guessing wrong
-  // here is a 100x error either way.
-  const europeanWithDots = /^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(text);
+  // Only the unambiguous European forms are converted. "1.250,00",
+  // "1.250.000" and "1 250,00" can mean nothing else. A bare "1,25" or
+  // "1.250" is genuinely ambiguous: each is read the way a spreadsheet
+  // writes numbers (a cell holding 152.125 arrives as "152.125"), since
+  // guessing wrong here is a 1000x error either way.
+  const europeanWithDots = /^-?\d{1,3}((\.\d{3})+,\d+|(\.\d{3}){2,})$/.test(text);
   const europeanWithSpaces = /^-?\d{1,3}( \d{3})+(,\d+)?$/.test(text);
   if (europeanWithDots || europeanWithSpaces) {
     text = text.replace(/[. ]/g, "").replace(",", ".");

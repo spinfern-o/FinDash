@@ -12,11 +12,10 @@ The root README describes the product and setup. This page explains where to wor
 | `backend/services/` | Business operations: invoice synchronization, shelf-photo reading in `vision/`, and the optional Python service in `forecast/`. |
 | `backend/lib/` | Shared server helpers: sessions, Supabase, usage limits, API/MCP helpers and the app launch gate. |
 | `backend/database/supabase/migrations/` | Ordered SQL files for database setup and changes. |
-| `backend/legacy-java/` | The original Java app: `src/`, `data/`, `pom.xml` and its editor workspace. |
+| `backend/legacy-java/` | The original Java app: `src/`, `data/` and `pom.xml`. |
 | `docs/contracts/` | The inventory data format and the agreement between frontend and backend. |
 | `docs/design/` | Design tokens, components and Figma guidance. |
 | `docs/skills/` | The source of the public FinDash agent skill. The page generator publishes it. |
-| `docs/archive/` | Historical handoff notes and patches. Paths inside archived records describe their original date, not the current layout. |
 | `tests/` | Unit, API and browser checks, plus fixtures and test helpers. |
 | `tools/` | Page generation, screenshots and other development scripts. |
 
@@ -64,16 +63,15 @@ This folder reorganization does not change that setting or any product behaviour
 | `backend/vision/` | `backend/services/vision/` |
 | `forecast/` | `backend/services/forecast/` |
 | `supabase/` | `backend/database/supabase/` |
-| `src/`, `data/`, `pom.xml`, `CFO_Dashboard.code-workspace` | `backend/legacy-java/` |
+| `src/`, `data/`, `pom.xml` | `backend/legacy-java/` |
 | `contracts/` | `docs/contracts/` |
 | `DESIGN-SYSTEM.md` | `docs/design/DESIGN-SYSTEM.md` |
 | `skills/` | `docs/skills/` |
-| `findash-organization-stock/` | `docs/archive/organization-stock/` |
 
 ## Working alongside another agent
 
-Frontend work belongs in `frontend/`; server work belongs in `backend/`. Read each
-folder's `AGENTS.md`. Coordinate any changes to the shared ledger and contracts before
+Frontend work belongs in `frontend/`; server work belongs in `backend/`. Read
+`docs/frontend-rules.md` and `backend/AGENTS.md`. Coordinate any changes to the shared ledger and contracts before
 changing request fields. Rebase older branches before merging; use the path table above
 to resolve moves instead of recreating old root folders.
 

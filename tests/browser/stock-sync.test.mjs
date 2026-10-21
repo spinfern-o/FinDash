@@ -1,5 +1,5 @@
-/* Follow the same records from invoice review to graphs and from dashboard
-   stock entry back to the stock page, using the real UI and mocked services. */
+/* Follow the same records from invoice review to graphs and from stock-page
+   entry to the dashboard, using the real UI and mocked services. */
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { startSite } from '../support/site.mjs';
@@ -23,6 +23,10 @@ async function account(page) {
 }
 async function dashboard(page) {
   await page.goto(site.url + '/dashboard', { waitUntil: 'networkidle' });
+  await page.locator('#dashboard-stock-items > *').first().waitFor();
+}
+async function stockPage(page) {
+  await page.goto(site.url + '/stock#items');
   await page.locator('#add-item:enabled').waitFor();
 }
 async function readStockPhoto(page) {
@@ -72,24 +76,24 @@ test('stock photo confirmation updates an already-open P&L graph and survives re
   await page.context().close();
 });
 
-test('stock entered on P&L appears on the stock page and stock usage refreshes the dashboard without another expense', async function () {
+test('stock entered on the stock page appears on P&L and stock usage refreshes the dashboard without another expense', async function () {
   const page = await openPage(browser);
   await account(page);
   await dashboard(page);
   await page.selectOption('#stock-language', 'zh-CN');
-  assert.equal(await page.locator('#add-item').innerText(), '手动添加商品');
   assert.equal(await page.locator('#dashboard-stock-title').innerText(), '货架实存');
-  await page.click('#add-item');
-  for (const [name, value] of Object.entries({ original: 'Jasmine rice', description: '大米', unit: '袋', location: '后仓', quantity: '8' })) {
-    await page.locator('#manual-item [name="' + name + '"]').fill(value);
-  }
-  await page.locator('#manual-item button[type="submit"]').click();
-  await page.locator('#stock-dialog').waitFor({ state: 'hidden' });
+  assert.equal(await page.locator('#stock-storage').innerText(), '开发中');
+  assert.ok(await page.locator('#add-item').isDisabled(), 'adding items on P&L is switched off while the tracker is unfinished');
   const stock = await page.context().newPage();
-  await stock.goto(site.url + '/stock#items');
-  await stock.locator('#add-item:enabled').waitFor();
-  assert.equal(await stock.locator('.stock-count').innerText(), '8');
-  assert.match(await stock.locator('[data-stock-row]').innerText(), /大米/);
+  await stockPage(stock);
+  await stock.click('#add-item');
+  for (const [name, value] of Object.entries({ original: 'Jasmine rice', description: '大米', unit: '袋', location: '后仓', quantity: '8' })) {
+    await stock.locator('#manual-item [name="' + name + '"]').fill(value);
+  }
+  await stock.locator('#manual-item button[type="submit"]').click();
+  await stock.locator('#stock-dialog').waitFor({ state: 'hidden' });
+  await page.waitForFunction(function () { return document.querySelector('.stock-count')?.textContent === '8'; });
+  assert.match(await page.locator('[data-stock-row]').innerText(), /大米/);
   await stock.locator('[data-movement="usage"]').click();
   await stock.locator('[name="quantity"]').fill('3');
   await stock.locator('#movement-form button[type="submit"]').click();
@@ -273,12 +277,11 @@ test('queued financial edits stop at a conflict so another tab’s synced invoic
   await page.context().close();
 });
 
-test('guest dashboard and stock pages share entries and preserve an unfinished form from stale overwrites', async function () {
+test('guest stock pages preserve an unfinished form from stale overwrites and share entries with the dashboard', async function () {
   const page = await openPage(browser, { ignore: /a^/ });
-  await dashboard(page);
+  await stockPage(page);
   const stock = await page.context().newPage();
-  await stock.goto(site.url + '/stock#items');
-  await stock.locator('#add-item:enabled').waitFor();
+  await stockPage(stock);
   await stock.click('#add-item');
   await page.click('#add-item');
   for (const [name, value] of Object.entries({ original: 'Rice', description: 'Rice', unit: 'bag', location: 'Store', quantity: '8' })) {
@@ -294,5 +297,7 @@ test('guest dashboard and stock pages share entries and preserve an unfinished f
   assert.equal(saved.items.length, 1);
   assert.equal(saved.movements.length, 1);
   assert.equal(saved.items[0].id, await page.locator('[data-movement="count"]').getAttribute('data-item'));
+  await dashboard(page);
+  assert.equal(await page.locator('#dashboard-stock-items .stock-count').innerText(), '8');
   await page.context().close();
 });

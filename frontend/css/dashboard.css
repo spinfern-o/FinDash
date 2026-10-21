@@ -15,6 +15,7 @@ main {
 
 /* ---- who is logged in, in the nav bar (account.js fills #account) ---- */
 .account {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -36,7 +37,11 @@ main {
 .account-link:hover {
   color: var(--accent);
 }
+/* Sits under Log out, out of the row, so it never runs into the centred links. */
 .account-email {
+  position: absolute;
+  top: 100%;
+  right: 0;
   max-width: 22ch;
   overflow: hidden;
   text-overflow: ellipsis;

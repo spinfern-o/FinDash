@@ -5,7 +5,7 @@ Public URLs remain unchanged. HTML/JS/CSS are buildless; use the existing design
 
 Claude + Figma may own layouts, components, spacing, typography and responsive styling.
 The new daily workflow is `/stock` with `#files`, `#review`, `#items`, `#settings`.
-`/dashboard` retains the financial report and imports, and reuses the stock forms and ledger for direct stock entry. Reviewed invoice costs sync to its existing arithmetic; counts and movements do not invent financial costs.
+`/dashboard` retains the financial report and imports, and shows the same stock ledger; adding items there is switched off while the restocking tracker is a work in progress. Reviewed invoice costs sync to its existing arithmetic; counts and movements do not invent financial costs.
 
 - Interface words: `js/stock/language.js` (English and Simplified Chinese).
 - Views: `js/stock/views.js`; interactions: `forms.js`, `main.js`, `files.js`.

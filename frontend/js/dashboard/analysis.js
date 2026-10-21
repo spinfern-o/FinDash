@@ -71,9 +71,7 @@ function monthNumberOf(value) {
   return index + 1;
 }
 
-/* An amount from the input, to the cent, or null when it isn't one. Rounded
-   before it is written as text: "1.234" would otherwise be read the
-   European way, as 1,234. */
+/* An amount from the input, to the cent, or null when it isn't one. */
 function amountOf(value) {
   if (typeof value !== "number" || !Number.isFinite(value) || Math.abs(value) >= LARGEST_AMOUNT) {
     return null;

@@ -20,6 +20,7 @@ serverless Inference API: the model card has `inference: null`, so there is
 no hosted endpoint to call. Running this service is the way to use it.
 """
 
+import hmac
 import math
 import os
 from typing import List, Optional
@@ -30,7 +31,8 @@ from pydantic import BaseModel, Field
 MODEL_ID = os.environ.get("CHRONOS_MODEL", "amazon/chronos-bolt-base")
 
 # A shared secret, so the service is not a free computer for anyone on the
-# internet. api/forecast.js sends it with every request.
+# internet. api/forecast.js sends it with every request. Without one set,
+# every forecast is refused rather than open to all.
 SERVICE_TOKEN = os.environ.get("FORECAST_TOKEN", "")
 
 # Monthly business figures: a handful of points, never thousands.
@@ -59,7 +61,9 @@ def load_model():
     nobody reads. Now the service always starts and says what is wrong.
     """
     global chronos_pipeline, torch_module, load_error
-    if chronos_pipeline is not None or load_error is not None:
+    # A failed load is tried again on the next request: a download that broke
+    # once should not need a restart to recover.
+    if chronos_pipeline is not None:
         return
 
     try:
@@ -76,6 +80,7 @@ def load_model():
             device_map="cpu",
             torch_dtype=torch.float32,
         )
+        load_error = None
     except Exception as error:  # network, disk, a removed repository, a wrong model id
         torch_module = None
         load_error = f"could not load {MODEL_ID}: {type(error).__name__}: {error}"
@@ -111,8 +116,8 @@ def health():
 
 def check_request(request: ForecastRequest):
     """Raises an HTTP error for a request that cannot be forecast."""
-    if SERVICE_TOKEN and request.token != SERVICE_TOKEN:
-        raise HTTPException(status_code=403, detail="bad token")
+    if not SERVICE_TOKEN or not hmac.compare_digest(request.token, SERVICE_TOKEN):
+        raise HTTPException(status_code=403, detail="bad token, or FORECAST_TOKEN is not set on the service")
 
     if not request.series or len(request.series) > MAXIMUM_POINTS:
         raise HTTPException(status_code=400, detail=f"series must be 1-{MAXIMUM_POINTS} points")

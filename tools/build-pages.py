@@ -878,6 +878,9 @@ def site_files(also):
     the ones in frontend/ now, and `also`, the ones this run is about to write."""
     found = set()
     for path in list(DOCS.rglob("*")) + list(also):
+        # Hidden files such as macOS's .DS_Store are never committed, so never served.
+        if path.name.startswith("."):
+            continue
         if path.is_relative_to(DOCS) and (path.is_file() or path in also):
             relative = path.relative_to(DOCS).as_posix()
             if not relative.startswith(UNLISTED_FOLDERS):
@@ -925,9 +928,8 @@ def main():
     outputs = {}
     pages = {}
     for name in PAGES:
-        if (DOCS / name).exists():
-            pages[name] = updated_page(name)
-            outputs[DOCS / name] = pages[name]
+        pages[name] = updated_page(name)
+        outputs[DOCS / name] = pages[name]
     outputs.update(published_skills())
     outputs.update(schema_feed(pages))
     outputs[MARKDOWN_MODULE] = markdown_module(pages, site_files(outputs))

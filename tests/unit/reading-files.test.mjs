@@ -16,6 +16,9 @@ test("amounts are read however a spreadsheet wrote them", function () {
   assert.equal(parseAmount("1 250,00"), 1250);          // European, with spaces
   assert.equal(parseAmount("€4.000,00"), 4000);
   assert.equal(parseAmount("1,25"), 125);               // ambiguous: read as thousands, not guessed
+  assert.equal(parseAmount("1.250.000"), 1250000);      // European, two groups of dots
+  assert.equal(parseAmount("152.125"), 152.125);        // an Excel cell with three decimals
+  assert.equal(parseAmount(0.125), 0.125);
   assert.equal(parseAmount("-5"), -5);
   assert.equal(parseAmount(""), 0);
   assert.equal(parseAmount("n/a"), 0);

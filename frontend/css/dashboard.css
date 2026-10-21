@@ -158,11 +158,6 @@ main {
   outline-offset: 2px;
   border-radius: 4px;
 }
-.howto .howto-source {
-  margin: 10px 0 3px;
-  font-size: 12px;
-  color: var(--ink);
-}
 .howto ol {
   margin: 0;
   padding-left: 18px;

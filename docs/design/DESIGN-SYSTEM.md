@@ -172,9 +172,9 @@ The kit has no text boxes, dropdowns, tick boxes, cards or charts. They are draw
 
 - **Where:** `frontend/fonts/` (the three typefaces and their licences), `frontend/images/` (the home page's pictures),
   and the icons, share image and screenshot at the root of `frontend/`.
-- **The kit's photos** (`frontend/images/mountains.webp`, `columns.webp`) are decoration: `alt=""`. They were
-  exported from the Figma file, cropped just inside their rounded corners (the CSS rounds them again) and saved
-  as WebP.
+- **Product examples on the home page** (`.product-story`, `.owner-visual`) replace the kit's mountain and column
+  photos. They use readable HTML, theme tokens and the September demo figures to explain the adjacent text.
+  Keep the amounts aligned with `frontend/data.json`; format examples show number parsing, not currency conversion.
 - **The security policy decides what loads** (`vercel.json`: `img-src 'self' data:`, `font-src 'self'`). A Figma
   asset URL, a CDN or Google Fonts is blocked in production. Save every asset into `frontend/` and reference it by a
   root path (`/images/…`). Leave no Figma URL in the code.

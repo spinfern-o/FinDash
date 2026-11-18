@@ -13,7 +13,8 @@ on:
 jobs:
   website:
     name: Website and server functions
-    runs-on: ubuntu-latest
+    # Keep the runner compatible with the pinned Playwright release.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4

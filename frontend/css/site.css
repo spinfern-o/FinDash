@@ -42,31 +42,32 @@
 }
 
 /* ---- colours ----
-   Light is the kit's own palette; the page opens in it. Dark is drawn from
-   the same colours for anyone who switches (theme-toggle.js). */
+   Deep green on warm white, with a matching forest-green dark appearance.
+   Both use the same roles, including the sun and moon switch. */
 :root {
   color-scheme: light;
-  --ground: #ffffff;        /* the page */
+  --ground: #f7f8f4;        /* the page */
   --card: #ffffff;          /* cards and panels, told apart by --line */
-  --card-2: #f5f5f3;        /* text boxes, chips, a surface inside a card */
-  --surface: #e4e4e4;       /* the kit's light grey: arrow buttons, toggles */
-  --line: #e9e9e9;          /* dividers and borders */
-  --line-soft: #f1f1f1;
-  --line-strong: #929292;   /* the darker rule above a big section */
-  --ink: #000000;           /* headings and main text */
-  --ink-2: #6f6f6f;         /* paragraphs */
-  --ink-3: #737373;         /* labels and hints, still readable on white */
-  --ink-faint: #929292;     /* only for large figures, such as the 01 02 03 of steps */
+  --card-2: #edf2ed;        /* text boxes, chips, a surface inside a card */
+  --surface: #e0e9e1;       /* arrow buttons, toggles */
+  --line: #dce5de;          /* dividers and borders */
+  --line-soft: #e9eee8;
+  --line-strong: #708277;   /* the darker rule above a big section */
+  --ink: #18211b;           /* headings and main text */
+  --ink-2: #536258;         /* paragraphs */
+  --ink-3: #5e675f;         /* labels and hints */
+  --ink-faint: #819087;     /* only for large figures, such as the 01 02 03 of steps */
 
-  /* The brand colour, olive, for buttons, links and focus. The money colours
-     below are kept clearly apart from it: profit is a bluer green, a loss is
-     red, so a button never reads as good or bad news. */
-  --accent: #485c11;
+  /* The forest-green brand is for actions and emphasis. Financial figures
+     retain their existing positive, critical and cost-group colours. */
+  --accent: #234b3a;
   --accent-ink: #ffffff;    /* text on --accent */
-  --accent-soft: #dfecc6;   /* the pale green of soft buttons, tags, selection */
-  --accent-soft-ink: #000000;
-  --accent-hover: #8e9c78;  /* sage, what a button turns on hover */
-  --caption: #485c11;       /* the small mono captions above headings */
+  --accent-soft: #e1ebdf;   /* soft buttons, tags, selection */
+  --accent-soft-ink: #1b3d2d;
+  --accent-hover: #183b2b;
+  --accent-hover-ink: #ffffff;
+  --caption: #234b3a;       /* the small mono captions above headings */
+  --hero-ground: #d8e5d7;  /* the backdrop behind the dashboard picture */
 
   --positive: #15803d;      /* profit, good news */
   --critical: #c62828;      /* loss, over budget, errors */
@@ -93,23 +94,25 @@
 
 html[data-theme="dark"] {
   color-scheme: dark;
-  --ground: #0e100b;
-  --card: #15180f;
-  --card-2: #1c2016;
-  --surface: #262a1f;
-  --line: #2b2f24;
-  --line-soft: #20231a;
-  --line-strong: #5d6253;
-  --ink: #f3f4ee;
-  --ink-2: #b7baae;
-  --ink-3: #9a9e90;
-  --ink-faint: #6f7366;
-  --accent: #c2d69a;
-  --accent-ink: #141a05;
-  --accent-soft: #2e3819;
-  --accent-soft-ink: #e7f0d3;
-  --accent-hover: #8e9c78;
-  --caption: #b8cc8c;
+  --ground: #101c16;
+  --card: #16291f;
+  --card-2: #1d3427;
+  --surface: #274333;
+  --line: #34503f;
+  --line-soft: #243d2e;
+  --line-strong: #6d8877;
+  --ink: #f4f7f0;
+  --ink-2: #c2d0c4;
+  --ink-3: #a8bdae;
+  --ink-faint: #7f9a87;
+  --accent: #c6e3b8;
+  --accent-ink: #163224;
+  --accent-soft: #294832;
+  --accent-soft-ink: #e5f1df;
+  --accent-hover: #afd39e;
+  --accent-hover-ink: #163224;
+  --caption: #c6e3b8;
+  --hero-ground: #234b3a;
   --positive: #34d399;
   --critical: #f87171;
   --s1: #4fb8a3;
@@ -204,7 +207,7 @@ html.app-open .waitlist-only {
 
 /* ---- buttons ----
    Pills, as in the kit. .button is the soft pale-green one; .button.solid
-   the olive one, for the one thing a page most wants done; an arrow after
+   the deep-green one, for the one thing a page most wants done; an arrow after
    the words (.button-arrow) means it leads to another page. */
 .button {
   display: inline-flex;
@@ -228,7 +231,7 @@ html.app-open .waitlist-only {
 }
 .button:hover {
   background: var(--accent-hover);
-  color: #ffffff;
+  color: var(--accent-hover-ink);
 }
 .button.solid {
   background: var(--accent);
@@ -236,7 +239,7 @@ html.app-open .waitlist-only {
 }
 .button.solid:hover {
   background: var(--accent-hover);
-  color: #ffffff;
+  color: var(--accent-hover-ink);
 }
 .button:disabled {
   opacity: 0.55;
@@ -352,13 +355,13 @@ html.app-open .waitlist-only {
   padding: 0;
   border: 0;
   border-radius: 10px;
-  background: var(--surface);
-  color: var(--ink);
+  background: var(--accent-soft);
+  color: var(--accent-soft-ink);
   cursor: pointer;
 }
 .theme-toggle:hover {
-  background: var(--accent-soft);
-  color: var(--accent-soft-ink);
+  background: var(--accent);
+  color: var(--accent-ink);
 }
 .theme-toggle .icon-sun {
   display: none;

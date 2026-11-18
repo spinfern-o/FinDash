@@ -13,7 +13,8 @@ on:
 jobs:
   website:
     name: Website and server functions
-    runs-on: ubuntu-latest
+    # Playwright 1.56 supports Ubuntu 24.04; ubuntu-latest now selects 26.04.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4

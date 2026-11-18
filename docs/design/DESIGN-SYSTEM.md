@@ -7,9 +7,9 @@ working through Figma's MCP server; AGENTS.md's rules still apply on top of thes
 
 - The look comes from the FinDash Figma file (https://www.figma.com/design/RsZgRDOoDJvBLLWVozZclQ/FinDash-Design),
   built on the "Area" kit, with these parts:
-  - white pages, with serif headings in Crimson Text
+  - warm-white pages, with serif headings in Crimson Text
   - DM Sans for body text and Roboto Mono for small captions
-  - olive pill buttons, and sections divided by thin rules
+  - deep-green pill buttons, and sections divided by thin rules
 - Pages open in light. A dark version, drawn from the same colours, is one click away.
 - No framework, no build step, no CSS library. Pages are hand-written HTML in `frontend/`, styled by plain CSS files in
   `frontend/css/` and made interactive by ES modules in `frontend/js/`. Vercel serves `frontend/` as it is.
@@ -29,21 +29,23 @@ All in `frontend/css/site.css`, as CSS custom properties on `:root` (light), red
 
 | Token | Light | Dark | Figma variable | For |
 | --- | --- | --- | --- | --- |
-| `--ground` | `#ffffff` | `#0e100b` | Background 1 | the page |
-| `--card` | `#ffffff` | `#15180f` | Background 1 | cards, told apart by `--line` |
-| `--card-2` | `#f5f5f3` | `#1c2016` | (derived) | text boxes, chips, a surface in a card |
-| `--surface` | `#e4e4e4` | `#262a1f` | Light Grey - Surfaces | arrow buttons, toggles, month pills |
-| `--line` | `#e9e9e9` | `#2b2f24` | Divider 1 | dividers and borders |
-| `--line-strong` | `#929292` | `#5d6253` | Accent 6 | the rule above a big section, table heads |
-| `--ink` | `#000000` | `#f3f4ee` | Text/Headline | headings, main text |
-| `--ink-2` | `#6f6f6f` | `#b7baae` | Text/Paragraph | paragraphs |
-| `--ink-3` | `#737373` | `#9a9e90` | (derived) | labels, hints: `#929292` is too faint for small text |
-| `--ink-faint` | `#929292` | `#6f7366` | Accent 6 | only large figures (the 01 02 03 of steps) |
-| `--accent` | `#485c11` | `#c2d69a` | Accent 1 | the olive of buttons, links and focus |
-| `--accent-ink` | `#ffffff` | `#141a05` | Text/On accent 1 | text on `--accent` |
-| `--accent-soft` | `#dfecc6` | `#2e3819` | Accent 2 | soft pill buttons, tags, selection |
-| `--accent-hover` | `#8e9c78` | `#8e9c78` | Accent 3 (Mid Green) | what a button turns on hover; the hero block |
-| `--caption` | `#485c11` | `#b8cc8c` | Text/Captions | the mono captions |
+| `--ground` | `#f7f8f4` | `#101c16` | Background 1 | the page |
+| `--card` | `#ffffff` | `#16291f` | Background 1 | cards, told apart by `--line` |
+| `--card-2` | `#edf2ed` | `#1d3427` | (derived) | text boxes, chips, a surface in a card |
+| `--surface` | `#e0e9e1` | `#274333` | Light Grey - Surfaces | arrow buttons, toggles, month pills |
+| `--line` | `#dce5de` | `#34503f` | Divider 1 | dividers and borders |
+| `--line-strong` | `#708277` | `#6d8877` | Accent 6 | the rule above a big section, table heads |
+| `--ink` | `#18211b` | `#f4f7f0` | Text/Headline | headings, main text |
+| `--ink-2` | `#536258` | `#c2d0c4` | Text/Paragraph | paragraphs |
+| `--ink-3` | `#5e675f` | `#a8bdae` | (derived) | labels, hints: `#929292` is too faint for small text |
+| `--ink-faint` | `#819087` | `#7f9a87` | Accent 6 | only large figures (the 01 02 03 of steps) |
+| `--accent` | `#234b3a` | `#c6e3b8` | Accent 1 | the deep green of buttons, links and focus |
+| `--accent-ink` | `#ffffff` | `#163224` | Text/On accent 1 | text on `--accent` |
+| `--accent-soft` | `#e1ebdf` | `#294832` | Accent 2 | soft pill buttons, tags, selection |
+| `--accent-hover` | `#183b2b` | `#afd39e` | Accent 3 (Mid Green) | what a button turns on hover |
+| `--accent-hover-ink` | `#ffffff` | `#163224` | (derived) | readable text on hovered buttons |
+| `--hero-ground` | `#d8e5d7` | `#234b3a` | (derived) | backdrop behind the existing dashboard picture |
+| `--caption` | `#234b3a` | `#c6e3b8` | Text/Captions | the mono captions |
 | `--positive` | `#15803d` | `#34d399` | (FinDash) | profit, good news |
 | `--critical` | `#c62828` | `#f87171` | (FinDash) | loss, over budget, errors |
 | `--s1` … `--s4`, `--rest` | teal, blue, ochre, violet, green | lighter | (FinDash) | the four cost groups and profit |
@@ -56,10 +58,10 @@ cards, `--radius-control` 12px for text boxes, `--radius-image` 30px for photos,
 
 - **Map Figma variables onto these names.** The table gives each token's Figma variable; use the token, not the
   hex value. A colour with no matching role becomes a new token in `site.css`, with a dark value too.
-- **Money colours stay apart from the brand.** Olive is the brand: buttons, links, captions. Profit is a bluer green
-  (`--positive`) and loss is red (`--critical`), so a button never reads as good or bad news and the profit colour
-  never looks like a button. Don't use `--accent` for a figure.
-- **Contrast:** `--ink-3` and darker for any text under 18px. The kit's `#929292` is only for large figures.
+- **Money colours stay apart from the brand.** Deep green is the brand: buttons, links, captions. Profit keeps its own green
+  (`--positive`) and loss is red (`--critical`). Keep those financial meanings and chart colours unchanged;
+  don't use `--accent` for a figure.
+- **Contrast:** `--ink-3` and darker for any text under 18px. Use `--ink-faint` only for large figures.
 - **Print** (`dashboard.css`, `@media print`) resets the tokens to the light values, whatever the screen theme.
 
 ### Typography
@@ -70,7 +72,7 @@ Chinese reads the same everywhere:
 
 | Role | Font | Size, line height, tracking | Class or where |
 | --- | --- | --- | --- |
-| Display | Crimson Text 400 | 160px (`clamp`ed), 0.9, -0.0425em | `.display`; the home page's `.hero-title` (150px, one line on a laptop) |
+| Display | Crimson Text 400 | 160px (`clamp`ed), 0.9, -0.0425em | `.display`; the home page's `.hero-title` (108px maximum, wrapping to fit the invoice headline) |
 | Heading 1 | Crimson Text 400 | 60px (`clamp`ed), 0.9, -0.03em | `.heading-1`; page `h1`s |
 | Heading 2 | Crimson Text 400 | 40px, 1, -0.03em | `.heading-2`; reading pages' `h2` |
 | Heading 3 | Crimson Text 400 | 18px, 1, -0.03em | `.heading-3`; card titles at 24px |
@@ -86,7 +88,8 @@ its licence beside it, declared in `site.css`. A test fails if any page loads Go
 
 `frontend/js/theme-init.js` is an ordinary script in each page's `<head>`. Before anything is drawn, it sets
 `data-theme="dark"` on `<html>` when the visitor chose dark (saved as `findash-theme`). Otherwise the page is light.
-`frontend/js/theme-toggle.js` wires the sun and moon button `#theme-toggle` in the nav. Check every change in both.
+`frontend/js/theme-toggle.js` wires the sun and moon button `#theme-toggle` in the nav. The homepage highlights
+only “invoices” with `--accent` and `--accent-ink`; both it and the toggle reverse with the theme. Check every change in both.
 
 ## 2. Components
 
@@ -110,7 +113,7 @@ in that page's stylesheet), sometimes with a small JavaScript function around it
 | Navigation (desktop, tablet) | `.site-nav`, `.wordmark`, `.nav-links`, `.nav-end` | `site.css`, written by build-pages |
 | Navigation mobile (closed, open) | `.nav-menu` (a `<details>`), `.nav-menu-panel` | `site.css` |
 | Button, Type=Primary / Hover | `.button` (pale green, sage on hover) | `site.css` |
-| Button linkout, State=Default / Hover | `.button.solid` + `.button-arrow` (olive, ↗) | `site.css` |
+| Button linkout, State=Default / Hover | `.button.solid` + `.button-arrow` (deep green, ↗) | `site.css` |
 | Arrow right / left | `.arrow-button` | `site.css` |
 | Footer | `.site-footer`, `.footer-links`, `.footer-credits` | `site.css`, written by build-pages |
 | Caption above a heading | `.caption`, `.tag`, `.eyebrow` | `site.css`, `login.css`, `landing.css` |

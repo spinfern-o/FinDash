@@ -33,12 +33,21 @@ main > .product-story {
   color: var(--caption);
   text-wrap: balance;
 }
-/* The kit's display headline: one line from a small laptop up, two on a
-   phone. */
+/* Keep the existing centred hero, with room for the longer invoice message. */
 .hero-title {
   margin: 0;
-  font-size: clamp(52px, 10.4vw, 150px);
+  max-width: 20ch;
+  font-size: clamp(46px, 7.4vw, 108px);
+  line-height: 1.08;
   text-wrap: balance;
+}
+/* The emphasis reverses with the same theme tokens as the main buttons. */
+.hero-emphasis {
+  display: inline-block;
+  padding: 0.02em 0.16em 0.08em;
+  border-radius: 0.14em;
+  background: var(--accent);
+  color: var(--accent-ink);
 }
 /* What FinDash is, and the waitlist button, under the product. */
 .intro {
@@ -90,7 +99,7 @@ main > .product-story {
   right: 0;
   bottom: 0;
   height: 80%;
-  background: #8e9c78;
+  background: var(--hero-ground);
   border-radius: var(--radius-image);
 }
 .device {

@@ -477,7 +477,7 @@ main {
 }
 .btn:hover {
   background: var(--accent-hover);
-  color: #ffffff;
+  color: var(--accent-hover-ink);
 }
 .btn.primary {
   background: var(--accent);
@@ -485,7 +485,7 @@ main {
 }
 .btn.primary:hover {
   background: var(--accent-hover);
-  color: #ffffff;
+  color: var(--accent-hover-ink);
 }
 .btn.small {
   font-size: 13px;
@@ -1934,11 +1934,11 @@ td.share,
     --ink: #000000;
     --ink-2: #4f4f4f;
     --ink-3: #5f5f5f;
-    --accent: #485c11;
+    --accent: #234b3a;
     --accent-ink: #ffffff;
-    --accent-soft: #dfecc6;
-    --accent-soft-ink: #000000;
-    --caption: #485c11;
+    --accent-soft: #e1ebdf;
+    --accent-soft-ink: #1b3d2d;
+    --caption: #234b3a;
     --positive: #15803d;
     --critical: #c62828;
     --s1: #2f7d6d;

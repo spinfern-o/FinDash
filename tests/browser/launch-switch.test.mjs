@@ -69,7 +69,7 @@ test("closed: every way in on the home page leads to the waitlist, and the app's
   assert.equal(await page.locator(".open-actions >> visible=true").count(), 0);
 });
 
-test("open: every way in leads into the app, from the first frame, with Log in beside it", async function () {
+test("open: dashboard links work from the first frame, while daily stock stays in progress", async function () {
   process.env.FINDASH_APP_OPEN = "1";
   // A browser keeps /app-state.js for a minute; a new visitor asks afresh.
   const errors = page.errors;
@@ -81,7 +81,9 @@ test("open: every way in leads into the app, from the first frame, with Log in b
   assert.deepEqual(await visibleWaysIn("header .enter-link"), [["Open the dashboard", "/dashboard"]]);
   assert.ok(await page.locator("header .login-link").isVisible());
   assert.deepEqual((await visibleWaysIn(".intro .cta-row a"))[0], ["Open the dashboard", "/dashboard"]);
-  assert.deepEqual(await visibleWaysIn("#coming-next a"), [["Open daily stock", "/stock"]]);
+  assert.deepEqual(await visibleWaysIn("#coming-next a"), [], "daily stock has no active launch link");
+  assert.equal(await text(page, "#coming-next button"), "Work in progress");
+  assert.ok(await page.locator("#coming-next button").isDisabled(), "daily stock is still being developed");
   assert.equal(await page.locator('main a[href="/waitlist"] >> visible=true').count(), 0, "no waitlist buttons");
   assert.doesNotMatch(await text(page, ".intro .lede"), /waitlist/);
   assert.deepEqual(await visibleWaysIn(".footer-links a[href='/dashboard']"), [["Dashboard", "/dashboard"]]);

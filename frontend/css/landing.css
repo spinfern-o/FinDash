@@ -9,7 +9,7 @@ main {
   padding: 0 var(--gutter);
 }
 main > section,
-main > .photo {
+main > .product-story {
   max-width: var(--page-width);
   margin-left: auto;
   margin-right: auto;
@@ -192,23 +192,259 @@ main > .photo {
   color: var(--ink-2);
 }
 
-/* ---- photos: the kit's, as decoration ---- */
-.photo {
-  overflow: hidden;
+/* Product examples use the same figures and cost colours as the demo.
+   They are ordinary text, so they stay sharp, readable and theme-aware. */
+.product-story {
+  padding: clamp(24px, 4.5vw, 56px);
+  border: 1px solid var(--line);
   border-radius: var(--radius-image);
-}
-.photo img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.photo-wide {
-  aspect-ratio: 1200 / 620;
+  background: var(--accent-soft);
+  margin-top: 0;
   margin-bottom: clamp(64px, 9vw, 120px);
 }
+.product-story > figcaption {
+  margin-bottom: 32px;
+  max-width: 54ch;
+  line-height: 1.6;
+}
+.story-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) 32px minmax(0, 1.15fr);
+  align-items: center;
+  gap: clamp(16px, 2.5vw, 32px);
+}
+.story-sheet,
+.story-result,
+.owner-sheet,
+.owner-formats {
+  min-width: 0;
+  padding: clamp(20px, 2.5vw, 30px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+}
+.visual-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.4;
+}
+.story-sheet .visual-card-heading {
+  justify-content: flex-start;
+}
+.visual-card-heading svg {
+  flex: none;
+  color: var(--accent);
+}
+.visual-note {
+  margin: 10px 0 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.story-totals,
+.story-costs {
+  margin: 28px 0 0;
+}
+.story-totals > div,
+.story-costs > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 0;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+  line-height: 1.4;
+}
+.story-totals dt,
+.story-costs dt {
+  color: var(--ink-2);
+}
+.story-totals dd,
+.story-costs dd {
+  margin: 0;
+  flex: none;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.visual-file-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 24px;
+}
+.visual-file-types span,
+.visual-period {
+  padding: 6px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--card-2);
+  color: var(--ink-2);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.story-arrow {
+  color: var(--accent);
+}
+.story-profit {
+  margin: 25px 0 0;
+  color: var(--critical);
+  font-size: clamp(36px, 5vw, 60px);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+.story-cost-bar {
+  display: flex;
+  gap: 3px;
+  height: 12px;
+  margin-top: 28px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+}
+.cost-direct { background: var(--s1); flex: 20200; }
+.cost-operating { background: var(--s2); flex: 5560; }
+.cost-variable { background: var(--s3); flex: 2210; }
+.cost-fixed { background: var(--s4); flex: 8670; }
+.story-costs {
+  margin-top: 14px;
+}
+.story-costs > div {
+  border: 0;
+  padding: 6px 0;
+  font-size: 13px;
+}
+.story-costs dt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.story-costs i {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 2px;
+}
+.story-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 22px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  color: var(--critical);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.story-alert svg {
+  flex: none;
+}
 
-/* ---- the kit's numbered list beside a photo ---- */
+/* The owner's example combines a familiar sheet, number formats and the
+   browser privacy promise in the adjacent audience copy. */
+.owner-visual {
+  min-width: 0;
+  margin: 0;
+  padding: clamp(20px, 3vw, 38px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-image);
+}
+.owner-visual > figcaption {
+  margin-bottom: 8px;
+}
+.owner-sheet table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 22px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.owner-sheet th,
+.owner-sheet td {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+}
+.owner-sheet thead th {
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 400;
+}
+.owner-sheet th:first-child {
+  text-align: left;
+}
+.owner-sheet tbody th {
+  font-weight: 400;
+}
+.owner-sheet tbody tr:last-child {
+  background: var(--accent-soft);
+}
+.owner-help {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 22px 0 0;
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.owner-help > span:first-child {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--ink);
+}
+.owner-help strong,
+.owner-private strong {
+  display: block;
+  color: var(--ink);
+  font-weight: 500;
+}
+.format-pair {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 22px;
+  font-family: var(--mono);
+  font-size: clamp(12px, 1.4vw, 17px);
+  color: var(--ink);
+}
+.format-pair > span:nth-child(2) {
+  color: var(--ink-3);
+}
+.owner-private {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 6px 4px;
+  color: var(--accent);
+}
+.owner-private svg {
+  flex: none;
+}
+.owner-private p {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+/* ---- the kit's numbered list beside the product examples ---- */
 .split {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -249,9 +485,6 @@ main > .photo {
 .numbered p {
   margin: 0;
   color: var(--ink);
-}
-.photo-tall {
-  min-height: 480px;
 }
 
 /* ---- the sample figures, as the kit's comparison table ---- */
@@ -502,10 +735,10 @@ main > .photo {
   .numbered li {
     padding-right: 0;
   }
-  .photo-tall {
-    min-height: 0;
-    aspect-ratio: 590 / 711;
-    max-height: 560px;
+  .owner-visual {
+    max-width: 620px;
+    width: 100%;
+    justify-self: center;
   }
   .preview {
     grid-template-columns: repeat(2, 1fr);
@@ -517,6 +750,16 @@ main > .photo {
   .centered-cta {
     padding-left: 0;
     padding-right: 0;
+  }
+}
+@media (max-width: 760px) {
+  .story-flow {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+  .story-arrow {
+    justify-self: center;
+    transform: rotate(90deg);
   }
 }
 @media (max-width: 560px) {
